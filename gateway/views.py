@@ -15,18 +15,19 @@ provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 from gateway.middleware import LoggingMiddleware, logger
+from fastmcp.server.providers.proxy import FastMCPProxy
 from fastmcp.server import create_proxy
 from fastmcp import FastMCP
 import json
 
 
-# monkey patch to add secondary server name
+# monkey patch 
 FastMCP.alias = "default"
-
-mcp = FastMCP(name="GATEWAY")
-
+FastMCP.proxies = []
 
 async def setup():
+    mcp = FastMCP(name="GATEWAY")
+
     # config
     try:
         with open("config.json", "r") as f:
@@ -55,28 +56,23 @@ async def setup():
             namespace=alias
             )
 
+        mcp.proxies.append(proxy)
+
     await gateway_info(mcp)
     return mcp
 
 
-async def list_tools(proxy):
-    tools = await proxy.get_tools()
-    for i in tools:
-        tool = await proxy.get_tool(i)
-        print(tool.name)
-    return tools
+async def gateway_info(prox):
+    data = dict()
+    for i in prox.proxies:
+        data[i.alias] = dict()
+        data[i.alias]["name"] = f"{i}"
+        data[i.alias]["tools"] = await i.list_tools()
+        data[i.alias]["prompts"] = await i.list_prompts()
+        data[i.alias]["resources"] = await i.list_resources()
 
 
-async def list_components(prox):
-    logger.info(
-    f'''{prox} ({prox.alias})
-    "Tools:", {list(await prox.list_tools())}
-    "Prompts:", {list(await prox.list_prompts())}
-    "Resources:", {list(await prox.list_resources())}\n'''
-    # "Resource Templates:", {list(await prox.list_resource_templates())}
-    )
+    logger.info(str(data))
+    logger.info(40 * "-")
 
-
-async def gateway_info(gateway):
-    await list_components(gateway)
-    logger.info(40*"-")
+    return data
