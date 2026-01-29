@@ -1,28 +1,13 @@
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-
-resource = Resource.create({
-    "service.name": "mcp-gateway"
-})
-
-# Configure the SDK with OTLP exporter
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317"))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
-from gateway.middleware import LoggingMiddleware, logger
-from fastmcp.server.providers.proxy import FastMCPProxy
-from fastmcp.server import create_proxy
-from fastmcp import FastMCP
 import json
+from fastmcp import FastMCP
+from async_lru import alru_cache
+from fastmcp.server import create_proxy
+from gateway.middleware import LoggingMiddleware, logger
 
 
 # monkey patch 
 FastMCP.alias = "default"
+
 FastMCP.proxies = []
 
 async def setup():
@@ -41,14 +26,10 @@ async def setup():
 
     # set up proxies
     for alias in config.keys():
-        proxy = create_proxy({alias: config[alias]})
+        proxy = create_proxy({alias: config[alias]}, name=alias)
         proxy.alias = alias
 
         interceptor = LoggingMiddleware()
-        interceptor.key = alias
-
-        await gateway_info(proxy)
-
         proxy.add_middleware(interceptor)
 
         mcp.mount(
@@ -58,21 +39,27 @@ async def setup():
 
         mcp.proxies.append(proxy)
 
-    await gateway_info(mcp)
     return mcp
 
-
+@alru_cache(maxsize=1)
 async def gateway_info(prox):
     data = dict()
     for i in prox.proxies:
         data[i.alias] = dict()
-        data[i.alias]["name"] = f"{i}"
-        data[i.alias]["tools"] = await i.list_tools()
-        data[i.alias]["prompts"] = await i.list_prompts()
-        data[i.alias]["resources"] = await i.list_resources()
+        try:
+            data[i.alias]["name"] = f"{i}"
+            data[i.alias]["tools"] = await i.list_tools()
+            data[i.alias]["prompts"] = await i.list_prompts()
+            data[i.alias]["resources"] = await i.list_resources()
+        
+        except:
+            data[i.alias]["name"] = f"{i}"
+            data[i.alias]["tools"] = []
+            data[i.alias]["prompts"] = []
+            data[i.alias]["resources"] = []
+ 
+        #logger.info(str(data[i.alias]))
 
-
-    logger.info(str(data))
-    logger.info(40 * "-")
+    #logger.info(40 * "-")
 
     return data
