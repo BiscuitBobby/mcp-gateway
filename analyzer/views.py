@@ -2,14 +2,18 @@ import asyncio
 from typing import Literal
 from fastapi.concurrency import run_in_threadpool
 
-from analyzer.models import store, database, get_scan_id
+from analyzer.models import (
+    store,
+    get_scan_id,
+    SessionLocal,
+    Scan,
+)
 
 # pretend scanners
 SCANNERS = {
     "base64_exploit": "virus",
     "sql_injection": "select",
 }
-
 
 # --------------------
 # scanning logic
@@ -26,6 +30,7 @@ def scan(logger, traceparent: str, text_type: Literal["input", "output"], text):
 
         results[name] = {
             text_type: {
+                "status": "complete",
                 "detected": detected
             }
         }
@@ -35,15 +40,24 @@ def scan(logger, traceparent: str, text_type: Literal["input", "output"], text):
     logger.info(f"scan:{record}")
 
 
-# --------------------
-# async wrapper
-# --------------------
-
 def run_scan(logger, traceparent, text_type, text):
     asyncio.create_task(
         run_in_threadpool(scan, logger, traceparent, text_type, text)
     )
 
 
+# --------------------
+# status lookup
+# --------------------
+
 def status(scan_id: str):
-    return database.get(scan_id)
+    with SessionLocal() as session:
+        scan = session.query(Scan).filter_by(scan_id=scan_id).first()
+        if not scan:
+            return None
+
+        return {
+            "input": scan.input,
+            "output": scan.output,
+            "scans": scan.scans,
+        }
