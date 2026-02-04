@@ -2,6 +2,7 @@ from fastmcp.server.middleware import Middleware, MiddlewareContext
 from fastmcp.client.mixins.tools import ClientToolsMixin
 from fastmcp.telemetry import inject_trace_context
 from fastapi import BackgroundTasks
+from analyzer.filters import ScanFailure, dynamic_scan
 from analyzer.views import run_scan
 import logging
 
@@ -15,7 +16,7 @@ logger.addHandler(file_handler)
 background_tasks = BackgroundTasks()
 
 '''
-patched_call_tool_mcp may need to be updated in case of framework updates
+need to watch out for changes in call_tool_mcp since I've monkey patched an internal function
 '''
 
 # Save original
@@ -30,8 +31,16 @@ async def patched_call_tool_mcp(
     timeout=None,
     meta=None,
 ):
-
     propagated_meta = inject_trace_context(meta)
+
+    if propagated_meta:
+        traceparent = propagated_meta["fastmcp.traceparent"]
+
+        run_scan(logger, traceparent, "input", arguments)
+
+        scan_result = dynamic_scan(logger, traceparent, "input", arguments)
+        if isinstance(scan_result, ScanFailure):
+            raise Exception(f"Input scan failed: {scan_result.error}")
 
     out = await _original_call_tool_mcp(
         self,
@@ -39,13 +48,18 @@ async def patched_call_tool_mcp(
         arguments=arguments,
         progress_handler=progress_handler,
         timeout=timeout,
-        meta=meta,
+        meta=propagated_meta,
     )
 
-    # ---- scan trace ----
     if propagated_meta:
-        run_scan(logger, propagated_meta["fastmcp.traceparent"], "input", arguments)
-        run_scan(logger, propagated_meta["fastmcp.traceparent"], "output", out)
+        traceparent = propagated_meta["fastmcp.traceparent"]
+
+        run_scan(logger, traceparent, "output", out)
+
+        scan_result = dynamic_scan(logger, traceparent, "output", out)
+        if isinstance(scan_result, ScanFailure):
+            raise Exception(f"Output scan failed: {scan_result.error}")
+
     return out
 
 

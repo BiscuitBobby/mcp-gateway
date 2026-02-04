@@ -1,8 +1,15 @@
 from typing import Literal
+from pydantic import BaseModel, Field
 from sqlalchemy import insert, select
 from sqlalchemy import create_engine, Column, String, JSON
 from sqlalchemy.orm import declarative_base, sessionmaker
 
+
+class Report(BaseModel):
+    """Analysis of LLM I/O"""
+    threat: bool = Field(..., description="Whether the text contains an attack")
+    rating: float = Field(..., description="The threat's rating out of 10")
+    description: str = Field(..., description="The description of the attack")
 
 DATABASE_URL = "sqlite:///scan.db"
 
@@ -57,8 +64,8 @@ def store(scan_id: str, text_type: Literal["input", "output"], text: str, scan_r
             output=None,
             scans={}
         ).prefix_with("OR IGNORE")
-
-        session.execute(stmt)
+        
+        result = session.execute(stmt)
 
         # Now it DEFINITELY exists
         scan = session.execute(
@@ -68,16 +75,20 @@ def store(scan_id: str, text_type: Literal["input", "output"], text: str, scan_r
         # Update input/output
         setattr(scan, text_type, text)
 
-        # Merge scans
-        current = scan.scans or {}
-        report = {"scans": scan_results}
+        # Merge scans - FIX: Use text_type as the key
+        current = dict(scan.scans) if scan.scans else {}
+        
+        # Store under the correct key (input or output)
+        report = {text_type: scan_results}
+        
         deep_update(current, report)
 
         scan.scans = current
 
-        return {
+        result = {
             "input": scan.input,
             "output": scan.output,
             "scans": scan.scans,
         }
-
+        
+        return result
