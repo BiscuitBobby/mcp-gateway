@@ -1,7 +1,6 @@
 from fastapi.concurrency import run_in_threadpool
 import asyncio
 from sqlalchemy.orm import Session
-from analyzer.filters import scan
 from analyzer.models import (
     SessionLocal,
     Scan,
@@ -14,10 +13,6 @@ import base64
 import json
 
 
-def run_scan(logger, traceparent, text_type, text):
-    asyncio.create_task(
-        run_in_threadpool(scan, logger, traceparent, text_type, text)
-    )
 
 def encode_cursor(created_at: datetime, scan_id: str) -> str:
     payload = {

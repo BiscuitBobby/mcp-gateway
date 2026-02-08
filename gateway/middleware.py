@@ -3,7 +3,6 @@ from fastmcp.client.mixins.tools import ClientToolsMixin
 from fastmcp.telemetry import inject_trace_context
 from fastapi import BackgroundTasks
 from analyzer.filters import ScanFailure, dynamic_scan
-from analyzer.views import run_scan
 import logging
 
 
@@ -31,16 +30,31 @@ async def patched_call_tool_mcp(
     timeout=None,
     meta=None,
 ):
+    from gateway.urls import mcp
     propagated_meta = inject_trace_context(meta)
 
     if propagated_meta:
         traceparent = propagated_meta["fastmcp.traceparent"]
+    
+    # This has to be optimized
+    session_response = await self.session.list_tools()
+    session_tool_names = {tool.name for tool in session_response.tools}
 
-        run_scan(logger, traceparent, "input", arguments)
+    for proxy in mcp.proxies:
+        proxy_tools = await proxy.list_tools()
+        proxy_tool_names = {tool.name for tool in proxy_tools}
 
-        scan_result = dynamic_scan(logger, traceparent, "input", arguments)
-        if isinstance(scan_result, ScanFailure):
-            raise Exception(f"Input scan failed: {scan_result.error}")
+        if proxy_tool_names == session_tool_names:
+            print(f"MATCH: {proxy.alias}")
+            alias = proxy.alias
+            break
+        else:
+            print(f"NO MATCH: {proxy.alias}")
+
+    try:
+        scan_result = dynamic_scan(logger, traceparent, "input", arguments, alias)
+    except Exception as e:
+        raise Exception(f"Input scan failed: {e}")
 
     out = await _original_call_tool_mcp(
         self,
@@ -54,9 +68,11 @@ async def patched_call_tool_mcp(
     if propagated_meta:
         traceparent = propagated_meta["fastmcp.traceparent"]
 
-        run_scan(logger, traceparent, "output", out)
+        try:
+            scan_result = dynamic_scan(logger, traceparent, "output", out, alias)
+        except Exception as e:
+            raise Exception(f"Output scan failed: {e}")
 
-        scan_result = dynamic_scan(logger, traceparent, "output", out)
         if isinstance(scan_result, ScanFailure):
             raise Exception(f"Output scan failed: {scan_result.error}")
 
