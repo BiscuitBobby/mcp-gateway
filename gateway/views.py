@@ -31,7 +31,7 @@ async def mount_proxy(mcp: FastMCP, alias: str, cfg: dict):
     proxy = create_proxy({alias: cfg}, name=alias)
     proxy.alias = alias
 
-    interceptor = LoggingMiddleware()
+    interceptor = LoggingMiddleware(alias)
     proxy.add_middleware(interceptor)
 
     mcp.mount(proxy, namespace=alias)

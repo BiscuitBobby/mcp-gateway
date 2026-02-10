@@ -17,26 +17,27 @@ trace.set_tracer_provider(provider)
 from fastapi.middleware.cors import CORSMiddleware
 from analyzer.urls import router as analyzer_router
 from gateway.urls import router as gateway_router
+from policies.urls import router as policy_router
 from gateway.urls import mcp
 from fastapi import FastAPI
 import uvicorn
 
+# lifespan passed, path="/" since we mount at /mcp
+mcp_app = mcp.http_app(path="/")
+
+app = FastAPI(lifespan=mcp_app.lifespan)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # local host port for Jaeger or ["*"] for dev
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.mount("/mcp", mcp_app)  # MCP endpoint at /mcp
+app.include_router(gateway_router)
+app.include_router(analyzer_router)
+app.include_router(policy_router)
 
 if __name__ == "__main__":
-    # lifespan passed, path="/" since we mount at /mcp
-    mcp_app = mcp.http_app(path="/")
-
-    app = FastAPI(lifespan=mcp_app.lifespan)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],  # local host port for Jaeger or ["*"] for dev
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-
-    app.mount("/mcp", mcp_app)  # MCP endpoint at /mcp
-    app.include_router(gateway_router)
-    app.include_router(analyzer_router)
-
     uvicorn.run(app, host="0.0.0.0", port=8000)

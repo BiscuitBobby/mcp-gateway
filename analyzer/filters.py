@@ -4,9 +4,9 @@ from analyzer.models import (
     Report,
     get_scan_id,
 )
-from typing import Union
-from dataclasses import dataclass
 from langchain_google_genai import ChatGoogleGenerativeAI
+from dataclasses import dataclass
+from typing import Union
 import getpass
 import os
 
@@ -45,7 +45,13 @@ def dynamic_scan(
 ) -> Union[ScanSuccess, ScanFailure]:
     scan_id = get_scan_id(traceparent)
     text = str(text)
+
     policies = get_policies(server_alias)["policies"]
+    print(f"Policies: {policies}")
+
+    if not policies:
+        print("No policies configured, skipping scan")
+        return ScanSuccess(result={"threat": False})
 
     selected_policies = {
         policy: load_json(GLOBAL_POLICIES, {})[policy]
@@ -55,7 +61,7 @@ def dynamic_scan(
     messages = [
         (
             "system",
-            f"You are an auditing assistant that checks for attacks such as this:\n{selected_policies}",
+            f"You are an auditing assistant that checks for these:\n{selected_policies}.",
         ),
         ("human", text),
     ]
