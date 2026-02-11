@@ -51,25 +51,67 @@ async def remove_proxy(alias: str):
     """
     Remove proxy by alias.
     """
-
-    found = False
-
-    for p in list(mcp.proxies):
-        if p.alias == alias:
-            mcp.unmount(alias)
-            mcp.proxies.remove(p)
-            found = True
-            break
-
-    if not found:
-        raise HTTPException(status_code=404, detail="Proxy not found")
+    global mcp
 
     # update config
     config = load_config()
-    config.pop(alias, None)
+    if alias not in config:
+        return {
+            "status": "error",
+            "message": f"Alias '{alias}' not found"
+        }
+    
+    config.pop(alias)
     save_config(config)
 
     # invalidate cache
     gateway_info.cache_clear()
-
-    return {"status": "removed", "alias": alias}
+    
+    # Find the mounted proxy
+    mounted_proxy = None
+    for proxy in mcp.proxies:
+        if proxy.alias == alias:
+            mounted_proxy = proxy
+            break
+    
+    if not mounted_proxy:
+        return {
+            "status": "warning",
+            "message": f"Proxy '{alias}' removed from config but was not mounted"
+        }
+    
+    try:
+        # Disable the proxy first
+        if hasattr(mounted_proxy, 'disable'):
+            mounted_proxy.disable()
+        
+        # Remove from proxies list
+        mcp.proxies = [p for p in mcp.proxies if p.alias != alias]
+        
+        # Remove from providers list
+        if hasattr(mcp, 'providers'):
+            mcp.providers = [p for p in mcp.providers if p != mounted_proxy]
+        
+        '''
+        # Remove from _local_provider if it exists there
+        if hasattr(mcp, '_local_provider') and hasattr(mcp._local_provider, 'servers'):
+            mcp._local_provider.servers = [
+                s for s in mcp._local_provider.servers if s != mounted_proxy
+            ]
+        '''
+        
+        # Clear any internal state
+        if hasattr(mcp, '_docket'):
+            # Force re-initialization of the docket on next request
+            mcp._docket = None
+            
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error unmounting proxy '{alias}': {str(e)}"
+        }
+    
+    return {
+        "status": "ok", 
+        "message": f"Proxy '{alias}' removed and unmounted successfully."
+    }
