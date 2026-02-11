@@ -18,7 +18,7 @@ services:
       retries: 30
 
   jaeger:
-    image: cr.jaegertracing.io/jaegertracing/jaeger:2.14.0
+    image: cr.jaegertracing.io/jaegertracing/jaeger:latest
     container_name: jaeger
     network_mode: host
     volumes:
@@ -34,7 +34,7 @@ services:
       - "9411:9411"
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
-      SPAN_STORAGE_TYPE: "elasticsearch"
+      SPAN_STORAGE: "elasticsearch"
       ES_SERVER_URLS: http://localhost:9200
       ES_VERSION: "7"
       ES_TLS_ENABLED: "false"

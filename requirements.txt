@@ -2,8 +2,12 @@ fastmcp>=3.0.0b1
 opentelemetry-distro
 opentelemetry-exporter-otlp
 
+sqlalchemy
+
 fastapi
 uvicorn
 aiocache
 pydantic
 async-lru
+
+langchain-google-genai

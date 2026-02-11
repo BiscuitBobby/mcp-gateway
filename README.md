@@ -1,28 +1,46 @@
-# Quick start
+# Quick Start
 
-first time setup
-```
+Follow these steps to get the project up and running.
+
+## First-Time Setup
+
+Install Python dependencies and bootstrap OpenTelemetry:
+
+```bash
 pip install -r requirements.txt
 opentelemetry-bootstrap -a install
 ```
 
-set up open telemetry:
-https://opentelemetry.io/docs/collector/quick-start/
+---
 
-```
-opentelemetry-instrument \
-  --service_name my-fastmcp-server \
-  --exporter_otlp_endpoint http://localhost:4317 \
-  fastmcp run server.py --transport http
+## Start Observability Stack (Jaeger + OpenSearch)
+
+This will start Jaeger, OpenSearch, the OTEL Collector, and related services via Docker Compose.
+
+```bash
+cd services
+docker compose -f docker-compose.yml up
 ```
 
-get jaegar up and running
+> Make sure Docker is installed and running before executing this step.
+
+---
+
+## Run the Application Server
+
+From the project root directory:
+
+```bash
+python main.py
 ```
-docker run --rm --name jaeger \
-  -p 16686:16686 \
-  -p 4317:4317 \
-  -p 4318:4318 \
-  -p 5778:5778 \
-  -p 9411:9411 \
-  cr.jaegertracing.io/jaegertracing/jaeger:latest
+
+---
+
+
+Once the server is running, your application should be available and connected to the observability stack.
+
+If needed, you can stop the Docker services with:
+
+```bash
+docker compose down
 ```
