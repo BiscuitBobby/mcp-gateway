@@ -1,71 +1,113 @@
-from gateway.middleware import LoggingMiddleware, logger
-from fastmcp.server import create_proxy
-from async_lru import alru_cache
-from fastmcp import FastMCP
-import json
+from pydantic import BaseModel
+from fastapi import APIRouter
+import asyncio
 
-CONFIG_PATH = "config.json"
+from gateway.models import (
+    gateway_info,
+    load_config,
+    mount_proxy,
+    save_config,
+    setup,
+)
 
-# monkey patch
-FastMCP.alias = "default"
-FastMCP.proxies = []
+router = APIRouter()
 
-
-def load_config():
-    try:
-        with open(CONFIG_PATH, "r") as f:
-            return json.load(f)
-    except FileNotFoundError:
-        logger.info("No config file found. Using default config.")
-        with open(CONFIG_PATH, "w") as f:
-            json.dump({}, f)
-        return {}
+# Initialize MCP once
+mcp = asyncio.run(setup())
 
 
-def save_config(cfg):
-    with open(CONFIG_PATH, "w") as f:
-        json.dump(cfg, f, indent=2)
+class ProxyCreate(BaseModel):
+    alias: str
+    config: dict
 
 
-async def mount_proxy(mcp: FastMCP, alias: str, cfg: dict):
-    proxy = create_proxy({alias: cfg}, name=alias)
-    proxy.alias = alias
-
-    interceptor = LoggingMiddleware(alias)
-    proxy.add_middleware(interceptor)
-
-    mcp.mount(proxy, namespace=alias)
-    mcp.proxies.append(proxy)
-
-    return proxy
+@router.get("/inventory")
+async def inventory():
+    return await gateway_info(mcp)
 
 
-async def setup():
-    mcp = FastMCP(name="GATEWAY")
+@router.post("/new")
+async def add_proxy(payload: ProxyCreate):
+    # Add or update a proxy at runtime.
+
+    alias = payload.alias
+    cfg = payload.config
+
+    # Remove existing (update semantics)
+    for p in list(mcp.proxies):
+        if p.alias == alias:
+            mcp.unmount(alias)
+            mcp.proxies.remove(p)
+
+    await mount_proxy(mcp, alias, cfg)
+
+    # Persist
     config = load_config()
+    config[alias] = cfg
+    save_config(config)
 
-    for alias, cfg in config.items():
-        await mount_proxy(mcp, alias, cfg)
+    gateway_info.cache_clear()
 
-    return mcp
+    return {"status": "ok", "alias": alias}
 
 
-@alru_cache(maxsize=1)
-async def gateway_info(prox):
-    data = {}
+@router.delete("/delete/{alias}")
+async def remove_proxy(alias: str):
+    config = load_config()
+    if alias not in config:
+        return {
+            "status": "error",
+            "message": f"Alias '{alias}' not found"
+        }
 
-    for i in prox.proxies:
-        data[i.alias] = {}
+    # Remove from config
+    config.pop(alias)
+    save_config(config)
 
-        try:
-            data[i.alias]["name"] = f"{i}"
-            data[i.alias]["tools"] = await i.list_tools()
-            data[i.alias]["prompts"] = await i.list_prompts()
-            data[i.alias]["resources"] = await i.list_resources()
-        except:
-            data[i.alias]["name"] = f"{i}"
-            data[i.alias]["tools"] = []
-            data[i.alias]["prompts"] = []
-            data[i.alias]["resources"] = []
+    gateway_info.cache_clear()
 
-    return data
+    # Find mounted proxy
+    mounted_proxy = None
+    for proxy in mcp.proxies:
+        if proxy.alias == alias:
+            mounted_proxy = proxy
+            break
+
+    if not mounted_proxy:
+        return {
+            "status": "warning",
+            "message": f"Proxy '{alias}' removed from config but was not mounted"
+        }
+
+    try:
+        if hasattr(mounted_proxy, "disable"):
+            mounted_proxy.disable()
+
+        mcp.proxies = [p for p in mcp.proxies if p.alias != alias]
+
+        if hasattr(mcp, "providers"):
+            mcp.providers = [
+                p for p in mcp.providers if p != mounted_proxy
+            ]
+
+        '''
+        # Remove from _local_provider if it exists there
+        if hasattr(mcp, '_local_provider') and hasattr(mcp._local_provider, 'servers'):
+            mcp._local_provider.servers = [
+                s for s in mcp._local_provider.servers if s != mounted_proxy
+            ]
+        '''
+
+        if hasattr(mcp, "_docket"):
+            mcp._docket = None
+
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Error unmounting proxy '{alias}': {str(e)}"
+        }
+
+    return {
+        "status": "ok",
+        "message": f"Proxy '{alias}' removed and unmounted successfully."
+    }
