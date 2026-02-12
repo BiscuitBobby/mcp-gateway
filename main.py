@@ -18,7 +18,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from analyzer.urls import router as analyzer_router
 from gateway.urls import router as gateway_router
 from policies.urls import router as policy_router
-from gateway.urls import mcp
+from oauth.urls import router as oauth_router
+from gateway.views import mcp
 from fastapi import FastAPI
 import uvicorn
 
@@ -38,6 +39,7 @@ app.mount("/mcp", mcp_app)  # MCP endpoint at /mcp
 app.include_router(gateway_router)
 app.include_router(analyzer_router)
 app.include_router(policy_router)
+app.include_router(oauth_router)
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

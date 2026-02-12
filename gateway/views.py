@@ -1,6 +1,9 @@
+import re
+from fastapi.responses import RedirectResponse
 from pydantic import BaseModel
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 import asyncio
+import json
 
 from gateway.models import (
     gateway_info,
@@ -19,6 +22,7 @@ mcp = asyncio.run(setup())
 class ProxyCreate(BaseModel):
     alias: str
     config: dict
+    oauth: bool = False
 
 
 @router.get("/inventory")
@@ -28,12 +32,21 @@ async def inventory():
 
 @router.post("/new")
 async def add_proxy(payload: ProxyCreate):
-    # Add or update a proxy at runtime.
-
     alias = payload.alias
     cfg = payload.config
+    oauth = payload.oauth
 
-    # Remove existing (update semantics)
+    if not re.match(r"^[a-zA-Z0-9_-]+$", alias):
+        raise HTTPException(status_code=400, detail="Invalid alias")
+
+    if oauth:
+        # Save config temporarily (including URL)
+        with open(f"temp/{alias}.json", "w") as f:
+            json.dump(cfg, f, indent=2)
+
+        return RedirectResponse(url=f"/resolve_oauth?alias={alias}")
+
+    # --- Non-OAuth flow ---
     for p in list(mcp.proxies):
         if p.alias == alias:
             mcp.unmount(alias)
@@ -41,7 +54,6 @@ async def add_proxy(payload: ProxyCreate):
 
     await mount_proxy(mcp, alias, cfg)
 
-    # Persist
     config = load_config()
     config[alias] = cfg
     save_config(config)
