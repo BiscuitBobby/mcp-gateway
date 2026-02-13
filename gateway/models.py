@@ -2,6 +2,7 @@ from gateway.middleware import LoggingMiddleware, logger
 from fastmcp.server import create_proxy
 from async_lru import alru_cache
 from fastmcp import FastMCP
+import asyncio
 import json
 
 CONFIG_PATH = "config.json"
@@ -49,23 +50,50 @@ async def setup():
 
     return mcp
 
+@alru_cache(maxsize=128)
+async def proxy_info(proxy):
+    try:
+        tools, prompts, resources = await asyncio.gather(
+            proxy.list_tools(),
+            proxy.list_prompts(),
+            proxy.list_resources(),
+        )
+
+        return {
+            "name": str(proxy),
+            "tools": tools,
+            "prompts": prompts,
+            "resources": resources,
+        }
+
+    except Exception:
+        return {
+            "name": str(proxy),
+            "tools": [],
+            "prompts": [],
+            "resources": [],
+        }
+
 
 @alru_cache(maxsize=1)
 async def gateway_info(prox):
+    proxies = list(prox.proxies)
+
+    results = await asyncio.gather(
+        *(proxy_info(p) for p in proxies),
+        return_exceptions=True
+    )
+
     data = {}
-
-    for i in prox.proxies:
-        data[i.alias] = {}
-
-        try:
-            data[i.alias]["name"] = f"{i}"
-            data[i.alias]["tools"] = await i.list_tools()
-            data[i.alias]["prompts"] = await i.list_prompts()
-            data[i.alias]["resources"] = await i.list_resources()
-        except Exception:
-            data[i.alias]["name"] = f"{i}"
-            data[i.alias]["tools"] = []
-            data[i.alias]["prompts"] = []
-            data[i.alias]["resources"] = []
+    for p, result in zip(proxies, results):
+        if isinstance(result, Exception):
+            data[p.alias] = {
+                "name": str(p),
+                "tools": [],
+                "prompts": [],
+                "resources": [],
+            }
+        else:
+            data[p.alias] = result
 
     return data
