@@ -1,11 +1,13 @@
 from gateway.models import gateway_info, load_config, mount_proxy, save_config
 from oauth.utils import decode_token_endpoint, exchange_token, run_oauth_flow
-from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi import Request, HTTPException, Query
+from fastapi.responses import RedirectResponse
+from sub_proxy.test import refresh
 from gateway.views import mcp
 import requests
 import json
 import re
+
 
 async def resolve_oauth(alias: str = Query(...)):
     if not re.match(r"^[a-zA-Z0-9_-]+$", alias):
@@ -81,12 +83,25 @@ async def oauth_callback(
         except:
             raise HTTPException(status_code=400, detail="Alias config not found")
 
+        # Load oauth_state to get client credentials
+        try:
+            oauth_state_path = f"temp/{alias}_oauth_state.json"
+            with open(oauth_state_path, "r") as f:
+                oauth_state = json.load(f)
+        except:
+            raise HTTPException(status_code=400, detail="OAuth state not found")
+
         # Ensure headers exist
         if "headers" not in cfg:
             cfg["headers"] = {}
 
         # Replace Authorization header
         cfg["headers"]["Authorization"] = f"Bearer {access_token}"
+
+        # Store client credentials in config
+        cfg["headers"]["client_id"] = oauth_state.get("client_id")
+        if oauth_state.get("client_secret"):
+            cfg["headers"]["client_secret"] = oauth_state.get("client_secret")
 
         # Save updated config
         with open(config_path, "w") as f:
@@ -95,7 +110,6 @@ async def oauth_callback(
         # Mount proxy now that token exists
         for p in list(mcp.proxies):
             if p.alias == alias:
-                mcp.unmount(alias)
                 mcp.proxies.remove(p)
 
         await mount_proxy(mcp, alias, cfg)
@@ -106,6 +120,7 @@ async def oauth_callback(
         save_config(full_config)
 
         gateway_info.cache_clear()
+        await refresh()
 
         return RedirectResponse(url="http://localhost:5173/agent-gateway")
 

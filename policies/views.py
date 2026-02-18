@@ -8,14 +8,16 @@ from .models import GlobalPolicyRequest, PolicyRequest
 router = APIRouter()
 
 CONFIG_FILE = "config.json"
-POLICY_MAP_FILE = "key_policies.json"
-GLOBAL_POLICIES = "policies.json"
+POLICY_MAP_FILE = "temp/key_policies.json"
+GLOBAL_POLICIES = "temp/policies.json"
 
 
 def load_json(path, default):
     if os.path.exists(path):
         with open(path, "r") as f:
             return json.load(f)
+    with open(path, "w") as f:
+        json.dump(default, f, indent=2)
     return default
 
 

@@ -1,9 +1,10 @@
-import re
 from fastapi.responses import RedirectResponse
-from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException
+from sub_proxy.test import refresh
+from pydantic import BaseModel
 import asyncio
 import json
+import re
 
 from gateway.models import (
     gateway_info,
@@ -49,16 +50,16 @@ async def add_proxy(payload: ProxyCreate):
     # --- Non-OAuth flow ---
     for p in list(mcp.proxies):
         if p.alias == alias:
-            mcp.unmount(alias)
             mcp.proxies.remove(p)
 
     await mount_proxy(mcp, alias, cfg)
-
+    
     config = load_config()
     config[alias] = cfg
     save_config(config)
 
     gateway_info.cache_clear()
+    await refresh()
 
     return {"status": "ok", "alias": alias}
 
@@ -77,6 +78,7 @@ async def remove_proxy(alias: str):
     save_config(config)
 
     gateway_info.cache_clear()
+    await refresh()
 
     # Find mounted proxy
     mounted_proxy = None
