@@ -18,7 +18,6 @@ class LoggingMiddleware(Middleware):
         if context.method == "tools/call":
             context.message.meta = inject_trace_context(context.message.meta)
 
-
         result = await call_next(context)
 
         if context.method != "tools/call":

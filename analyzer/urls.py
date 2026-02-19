@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from analyzer.models import Scan, get_db, normalize_scans
 from analyzer.graphs import init_graph_state, build_graph_payload, finalize_graph
+from analyzer.models import Scan, get_db, normalize_scans
 from analyzer.views import list_scans, status
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 router = APIRouter()
+
 
 @router.get("/status")
 async def status_endpoint(id: str):
@@ -61,9 +61,11 @@ def get_all_graphs(db: Session = Depends(get_db)):
         "graphs": finalize_graph(graph_state),
     }
 
+
 @router.get("/scans/cursor")
-def reports(limit: int = Query(20, ge=1, le=100),
+def reports(
+    limit: int = Query(20, ge=1, le=100),
     cursor: str | None = None,
-    db: Session = Depends(get_db)):
+    db: Session = Depends(get_db),
+):
     return list_scans(limit, cursor, db)
-    

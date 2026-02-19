@@ -1,20 +1,4 @@
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from config import settings
-
-resource = Resource.create({
-    "service.name": settings.app_name
-})
-
-# Configure the SDK with OTLP exporter
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.otl_exporter_url))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
+from config import settings  # always import first for telemetry
 from fastapi.responses import Response, StreamingResponse
 from fastmcp.utilities.lifespan import combine_lifespans
 from analyzer.urls import router as analyzer_router
@@ -34,12 +18,16 @@ routes = ServerRoutes()
 TIMEOUT = httpx.Timeout(None)
 mcp_app = mcp.http_app(path="/")
 
+
 @asynccontextmanager
 async def app_lifespan(app):
     asyncio.create_task(run_all())
     yield
 
-app = FastAPI(lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan))
+
+app = FastAPI(
+    title=settings.app_name, lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan)
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -82,6 +70,7 @@ async def proxy_alias(alias: str, request: Request):
     )
 
     if is_streaming:
+
         async def stream_generator():
             try:
                 async for chunk in response.aiter_bytes():
@@ -94,8 +83,10 @@ async def proxy_alias(alias: str, request: Request):
             stream_generator(),
             status_code=response.status_code,
             headers={
-                k: v for k, v in response.headers.items()
-                if k.lower() not in ("transfer-encoding", "content-encoding", "content-length")
+                k: v
+                for k, v in response.headers.items()
+                if k.lower()
+                not in ("transfer-encoding", "content-encoding", "content-length")
             },
             media_type=content_type,
         )

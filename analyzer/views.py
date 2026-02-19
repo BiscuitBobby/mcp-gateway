@@ -1,17 +1,14 @@
-from fastapi.concurrency import run_in_threadpool
-import asyncio
+from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session
+from fastapi import Depends, Query
+from datetime import datetime
 from analyzer.models import (
     SessionLocal,
     Scan,
     get_db,
 )
-from sqlalchemy import select, and_, or_
-from datetime import datetime
-from fastapi import Depends, Query
 import base64
 import json
-
 
 
 def encode_cursor(created_at: datetime, scan_id: str) -> str:
@@ -28,9 +25,11 @@ def decode_cursor(cursor: str):
     data = json.loads(raw)
     return datetime.fromisoformat(data["created_at"]), data["scan_id"]
 
+
 # --------------------
 # status lookup
 # --------------------
+
 
 def status(scan_id: str):
     with SessionLocal() as session:
@@ -45,6 +44,7 @@ def status(scan_id: str):
             "scans": scan.scans,
         }
 
+
 def build_graph_payload(scans: list[dict]) -> dict:
     ratings = [s["rating"] for s in scans]
     threats = [s["threat"] for s in scans]
@@ -58,25 +58,25 @@ def build_graph_payload(scans: list[dict]) -> dict:
     graphs["threat_distribution"] = {
         "type": "pie",
         "labels": ["Threat", "Safe"],
-        "values": [threat_count, safe_count]
+        "values": [threat_count, safe_count],
     }
 
     # ---- Graph 2: Ratings ----
     graphs["ratings"] = {
         "type": "bar",
         "labels": [f"scan_{i}" for i in range(len(ratings))],
-        "values": ratings
+        "values": ratings,
     }
 
     # ---- Graph 3: Severity Histogram ----
-    buckets = [0]*11
+    buckets = [0] * 11
     for r in ratings:
         buckets[int(r)] += 1
 
     graphs["severity_histogram"] = {
         "type": "histogram",
         "x": list(range(11)),
-        "y": buckets
+        "y": buckets,
     }
 
     return graphs

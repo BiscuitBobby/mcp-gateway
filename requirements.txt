@@ -15,3 +15,5 @@ langchain-google-genai
 
 pydantic-settings
 python-dotenv
+
+ruff

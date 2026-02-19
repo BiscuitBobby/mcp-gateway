@@ -51,6 +51,7 @@ async def setup():
 
     return mcp
 
+
 @alru_cache(maxsize=128)
 async def proxy_info(proxy):
     try:
@@ -81,8 +82,7 @@ async def gateway_info(prox):
     proxies = list(prox.proxies)
 
     results = await asyncio.gather(
-        *(proxy_info(p) for p in proxies),
-        return_exceptions=True
+        *(proxy_info(p) for p in proxies), return_exceptions=True
     )
 
     data = {}

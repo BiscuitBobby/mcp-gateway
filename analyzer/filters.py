@@ -1,11 +1,11 @@
+from langchain_google_genai import ChatGoogleGenerativeAI
+from dataclasses import dataclass
 from typing import Literal
 from analyzer.models import (
     store,
     Report,
     get_scan_id,
 )
-from langchain_google_genai import ChatGoogleGenerativeAI
-from dataclasses import dataclass
 from typing import Union
 import getpass
 import os
@@ -25,6 +25,7 @@ model = ChatGoogleGenerativeAI(
 
 model_with_structure = model.with_structured_output(Report)
 
+
 # --------------------
 # scanning logic
 # --------------------
@@ -32,16 +33,14 @@ model_with_structure = model.with_structured_output(Report)
 class ScanSuccess:
     result: dict
 
+
 @dataclass
 class ScanFailure:
     error: str
 
+
 def dynamic_scan(
-    logger, 
-    traceparent: str, 
-    text_type: Literal["input", "output"], 
-    text,
-    server_alias
+    logger, traceparent: str, text_type: Literal["input", "output"], text, server_alias
 ) -> Union[ScanSuccess, ScanFailure]:
     scan_id = get_scan_id(traceparent)
     text = str(text)
@@ -54,8 +53,7 @@ def dynamic_scan(
         return ScanSuccess(result={"threat": False})
 
     selected_policies = {
-        policy: load_json(GLOBAL_POLICIES, {})[policy]
-        for policy in policies
+        policy: load_json(GLOBAL_POLICIES, {})[policy] for policy in policies
     }
 
     messages = [
@@ -65,15 +63,15 @@ def dynamic_scan(
         ),
         ("human", text),
     ]
-    
+
     try:
         ai_msg = model_with_structure.invoke(messages)
         store(scan_id, text_type, text, {text_type: ai_msg.model_dump()})
         logger.info(f"scan:{ai_msg}")
-        
+
         if ai_msg.threat:
             return ScanFailure(error="Attack detected")
-        
+
         return ScanSuccess(result=ai_msg)
     except Exception as e:
         logger.error(f"Scan error: {e}")

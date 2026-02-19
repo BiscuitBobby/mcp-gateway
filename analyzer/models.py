@@ -7,13 +7,14 @@ from typing import Literal, Optional
 
 class Report(BaseModel):
     """Analysis of LLM I/O"""
+
     threat: bool = Field(..., description="Whether the text contains an attack")
     rating: float = Field(..., description="The threat's rating out of 10")
     category: Optional[str] = Field(
-        None,
-        description="category of the attack ({category: category description})"
+        None, description="category of the attack ({category: category description})"
     )
     description: str = Field(..., description="The description of the attack")
+
 
 DATABASE_URL = "sqlite:///scan.db"
 
@@ -30,7 +31,7 @@ class Scan(Base):
     input = Column(String, nullable=True)
     output = Column(String, nullable=True)
     scans = Column(JSON, default=dict)
-    
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -40,6 +41,7 @@ Base.metadata.create_all(bind=engine)
 # -------------------------
 # Helpers
 # -------------------------
+
 
 def get_db():
     db = SessionLocal()
@@ -56,6 +58,7 @@ def normalize_scans(node, out: list):
         else:
             for v in node.values():
                 normalize_scans(v, out)
+
 
 def deep_update(dst: dict, src: dict):
     for k, v in src.items():
@@ -78,28 +81,27 @@ def get_scan_id(traceparent: str) -> str:
 # Main store function
 # -------------------------
 
-def store(scan_id: str, text_type: Literal["input", "output"], text: dict, scan_results: dict):
-    with SessionLocal.begin() as session:
 
-        stmt = insert(Scan).values(
-            scan_id=scan_id,
-            input=None,
-            output=None,
-            scans={}
-        ).prefix_with("OR IGNORE")
-        
+def store(
+    scan_id: str, text_type: Literal["input", "output"], text: dict, scan_results: dict
+):
+    with SessionLocal.begin() as session:
+        stmt = (
+            insert(Scan)
+            .values(scan_id=scan_id, input=None, output=None, scans={})
+            .prefix_with("OR IGNORE")
+        )
+
         result = session.execute(stmt)
 
-        scan = session.execute(
-            select(Scan).where(Scan.scan_id == scan_id)
-        ).scalar_one()
+        scan = session.execute(select(Scan).where(Scan.scan_id == scan_id)).scalar_one()
 
         setattr(scan, text_type, text)
 
         current = dict(scan.scans) if scan.scans else {}
-        
+
         report = {text_type: scan_results}
-        
+
         deep_update(current, report)
 
         scan.scans = current
@@ -109,5 +111,5 @@ def store(scan_id: str, text_type: Literal["input", "output"], text: dict, scan_
             "output": scan.output,
             "scans": scan.scans,
         }
-        
+
         return result

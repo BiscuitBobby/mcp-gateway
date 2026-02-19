@@ -1,20 +1,4 @@
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from config import settings
-
-resource = Resource.create({
-    "service.name": settings.app_name
-})
-
-# Configure the SDK with OTLP exporter
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.otl_exporter_url))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
+from config import settings  # always import first for telemetry
 from gateway.models import load_config, mount_proxy
 from fastapi import FastAPI
 from fastmcp import FastMCP
@@ -23,11 +7,12 @@ import asyncio
 import uvicorn
 import json
 
+
 class ServerRoutes:
-    _file = Path("temp/server_routes.json")
+    _file = Path(f"{settings.temp_dir}/server_routes.json")
 
     def __new__(cls):
-        if not hasattr(cls, 'inst'):
+        if not hasattr(cls, "inst"):
             cls.inst = super().__new__(cls)
             cls.inst._data = cls._load()
         return cls.inst
@@ -69,7 +54,7 @@ _running_servers: dict[str, tuple[uvicorn.Server, asyncio.Task]] = {}
 
 
 def create_app(proxy, alias):
-    mcp_app = proxy.http_app(path=f"/")
+    mcp_app = proxy.http_app(path="/")
     app = FastAPI(lifespan=mcp_app.lifespan)
     app.mount(f"/v1/{alias}", mcp_app)
     return app
@@ -97,7 +82,7 @@ async def stop_server(alias: str):
         return
 
     server, task = entry
-    server.should_exit = True          # signals uvicorn to stop
+    server.should_exit = True  # signals uvicorn to stop
     try:
         await asyncio.wait_for(task, timeout=10)
     except (asyncio.TimeoutError, asyncio.CancelledError):
@@ -129,6 +114,7 @@ async def refresh():
     # Determine next available port (above the highest currently used, or base)
     used_ports = set(sd.all().values())
     base_port = 8001
+
     def next_free_port():
         port = base_port
         while port in used_ports:
@@ -137,10 +123,12 @@ async def refresh():
         return port
 
     # Start new servers
-    await asyncio.gather(*[
-        start_server(alias, new_config[alias], next_free_port())
-        for alias in to_start
-    ])
+    await asyncio.gather(
+        *[
+            start_server(alias, new_config[alias], next_free_port())
+            for alias in to_start
+        ]
+    )
 
     print(f"Refresh complete. Running: {sd.all()}")
 
@@ -151,10 +139,12 @@ async def run_all():
     sd = ServerRoutes()
     sd.clear()
 
-    await asyncio.gather(*[
-        start_server(alias, cfg, base_port + idx)
-        for idx, (alias, cfg) in enumerate(config.items())
-    ])
+    await asyncio.gather(
+        *[
+            start_server(alias, cfg, base_port + idx)
+            for idx, (alias, cfg) in enumerate(config.items())
+        ]
+    )
 
     print(sd.all())
 

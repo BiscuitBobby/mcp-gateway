@@ -2,6 +2,7 @@ from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, HTTPException
 from sub_proxy.test import refresh
 from pydantic import BaseModel
+from config import settings
 import asyncio
 import json
 import re
@@ -42,7 +43,7 @@ async def add_proxy(payload: ProxyCreate):
 
     if oauth:
         # Save config temporarily (including URL)
-        with open(f"temp/{alias}.json", "w") as f:
+        with open(f"{settings.temp_dir}/{alias}.json", "w") as f:
             json.dump(cfg, f, indent=2)
 
         return RedirectResponse(url=f"/resolve_oauth?alias={alias}")
@@ -53,7 +54,7 @@ async def add_proxy(payload: ProxyCreate):
             mcp.proxies.remove(p)
 
     await mount_proxy(mcp, alias, cfg)
-    
+
     config = load_config()
     config[alias] = cfg
     save_config(config)
@@ -68,10 +69,7 @@ async def add_proxy(payload: ProxyCreate):
 async def remove_proxy(alias: str):
     config = load_config()
     if alias not in config:
-        return {
-            "status": "error",
-            "message": f"Alias '{alias}' not found"
-        }
+        return {"status": "error", "message": f"Alias '{alias}' not found"}
 
     # Remove from config
     config.pop(alias)
@@ -90,7 +88,7 @@ async def remove_proxy(alias: str):
     if not mounted_proxy:
         return {
             "status": "warning",
-            "message": f"Proxy '{alias}' removed from config but was not mounted"
+            "message": f"Proxy '{alias}' removed from config but was not mounted",
         }
 
     try:
@@ -100,17 +98,15 @@ async def remove_proxy(alias: str):
         mcp.proxies = [p for p in mcp.proxies if p.alias != alias]
 
         if hasattr(mcp, "providers"):
-            mcp.providers = [
-                p for p in mcp.providers if p != mounted_proxy
-            ]
+            mcp.providers = [p for p in mcp.providers if p != mounted_proxy]
 
-        '''
+        """
         # Remove from _local_provider if it exists there
         if hasattr(mcp, '_local_provider') and hasattr(mcp._local_provider, 'servers'):
             mcp._local_provider.servers = [
                 s for s in mcp._local_provider.servers if s != mounted_proxy
             ]
-        '''
+        """
 
         if hasattr(mcp, "_docket"):
             mcp._docket = None
@@ -118,10 +114,10 @@ async def remove_proxy(alias: str):
     except Exception as e:
         return {
             "status": "error",
-            "message": f"Error unmounting proxy '{alias}': {str(e)}"
+            "message": f"Error unmounting proxy '{alias}': {str(e)}",
         }
 
     return {
         "status": "ok",
-        "message": f"Proxy '{alias}' removed and unmounted successfully."
+        "message": f"Proxy '{alias}' removed and unmounted successfully.",
     }
