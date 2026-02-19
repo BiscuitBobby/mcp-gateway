@@ -4,7 +4,6 @@ import requests
 import secrets
 import hashlib
 import base64
-import json
 
 
 def generate_pkce_pair():
@@ -57,17 +56,6 @@ def encode_token_endpoint(token_endpoint):
     # Base64 encode the token endpoint to make it URL-safe
     encoded = base64.urlsafe_b64encode(token_endpoint.encode('utf-8')).decode('utf-8').rstrip('=')
     return encoded
-
-
-def decode_token_endpoint(encoded_token_endpoint):
-    """Decode token endpoint from URL path."""
-    # Add padding if needed
-    padding = 4 - (len(encoded_token_endpoint) % 4)
-    if padding != 4:
-        encoded_token_endpoint += '=' * padding
-    
-    decoded = base64.urlsafe_b64decode(encoded_token_endpoint).decode('utf-8')
-    return decoded
 
 
 def register_client(registration_endpoint, redirect_uris, client_name):

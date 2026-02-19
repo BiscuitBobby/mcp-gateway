@@ -20,7 +20,6 @@ def build_graph_payload(scans, state=None):
         rating = scan.get("rating")
         is_threat = scan.get("threat")
         category = scan.get("category")
-        description = scan.get("description", "")
 
         # Rating distribution and statistics
         if rating is not None:

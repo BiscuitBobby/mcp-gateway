@@ -1,15 +1,16 @@
+from .models import GlobalPolicyRequest, PolicyRequest
+from fastapi import APIRouter, HTTPException
+from config import settings
+from typing import Dict
 import json
 import os
-from fastapi import APIRouter, HTTPException
-from typing import Dict
 
-from .models import GlobalPolicyRequest, PolicyRequest
 
 router = APIRouter()
 
 CONFIG_FILE = "config.json"
-POLICY_MAP_FILE = "temp/key_policies.json"
-GLOBAL_POLICIES = "temp/policies.json"
+POLICY_MAP_FILE = f"{settings.temp_dir}/key_policies.json"
+GLOBAL_POLICIES = f"{settings.temp_dir}/policies.json"
 
 
 def load_json(path, default):

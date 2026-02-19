@@ -1,20 +1,4 @@
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from config import settings
-
-resource = Resource.create({
-    "service.name": settings.app_name
-})
-
-# Configure the SDK with OTLP exporter
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.otl_exporter_url))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
+from config import settings # always import first for telemetry
 from fastapi.responses import Response, StreamingResponse
 from fastmcp.utilities.lifespan import combine_lifespans
 from analyzer.urls import router as analyzer_router
@@ -39,7 +23,7 @@ async def app_lifespan(app):
     asyncio.create_task(run_all())
     yield
 
-app = FastAPI(lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan))
+app = FastAPI(title=settings.app_name, lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

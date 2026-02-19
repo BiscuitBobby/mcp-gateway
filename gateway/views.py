@@ -2,6 +2,7 @@ from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, HTTPException
 from sub_proxy.test import refresh
 from pydantic import BaseModel
+from config import settings
 import asyncio
 import json
 import re
@@ -42,7 +43,7 @@ async def add_proxy(payload: ProxyCreate):
 
     if oauth:
         # Save config temporarily (including URL)
-        with open(f"temp/{alias}.json", "w") as f:
+        with open(f"{settings.temp_dir}/{alias}.json", "w") as f:
             json.dump(cfg, f, indent=2)
 
         return RedirectResponse(url=f"/resolve_oauth?alias={alias}")

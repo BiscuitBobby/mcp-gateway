@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from config import settings
 from typing import Optional
 import json
 
@@ -12,7 +13,7 @@ class OAuthState(BaseModel):
 
 def load_oauth_state(alias) -> OAuthState:
     try:
-        with open(f"temp/{alias}_oauth_state.json", "r") as f:
+        with open(f"{settings.temp_dir}/{alias}_oauth_state.json", "r") as f:
             data = json.load(f)
             return OAuthState(**data)
     except FileNotFoundError:

@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse
 from sub_proxy.test import refresh
 from gateway.views import mcp
 from config import settings
+from pathlib import Path
 import requests
 import json
 import re
@@ -15,11 +16,12 @@ async def resolve_oauth(alias: str = Query(...)):
         raise HTTPException(status_code=400, detail="Invalid alias")
 
     try:
-        config_path = f"temp/{alias}.json"
+        config_path = f"{settings.temp_dir}/{alias}.json"
         with open(config_path, "r") as f:
             cfg = json.load(f)
 
-    except:
+    except Exception as e:
+        print(f"Error loading config: {e}")
         raise HTTPException(status_code=400, detail="Alias config not found")
 
     resource_url = cfg.get("url")
@@ -38,7 +40,7 @@ async def resolve_oauth(alias: str = Query(...)):
             client_name,
         )
 
-        with open(f"temp/{alias}_oauth_state.json", "w") as f:
+        with open(f"{settings.temp_dir}/{alias}_oauth_state.json", "w") as f:
             json.dump(oauth_state, f, indent=2)
 
         return RedirectResponse(url=auth_url)
@@ -77,19 +79,21 @@ async def oauth_callback(
 
         # Load original config
         try:
-            config_path = f"temp/{alias}.json"
+            config_path = f"{settings.temp_dir}/{alias}.json"
 
             with open(config_path, "r") as f:
                 cfg = json.load(f)
-        except:
+        except Exception as e:
+            print(f"Error loading config: {e}")
             raise HTTPException(status_code=400, detail="Alias config not found")
 
         # Load oauth_state to get client credentials
         try:
-            oauth_state_path = f"temp/{alias}_oauth_state.json"
+            oauth_state_path = f"{settings.temp_dir}/{alias}_oauth_state.json"
             with open(oauth_state_path, "r") as f:
                 oauth_state = json.load(f)
-        except:
+        except Exception as e:
+            print(f"Error loading oauth state: {e}")
             raise HTTPException(status_code=400, detail="OAuth state not found")
 
         # Ensure headers exist
@@ -122,6 +126,20 @@ async def oauth_callback(
 
         gateway_info.cache_clear()
         await refresh()
+
+        base_path = Path(settings.temp_dir)
+
+        # Delete temporary files
+        files_to_delete = [
+            base_path / f"{alias}.json",
+            base_path / f"{alias}_oauth_state.json",
+        ]
+
+        for file_path in files_to_delete:
+            try:
+                file_path.unlink(missing_ok=True)
+            except Exception as e:
+                print(f"Failed to delete {file_path}: {e}")
 
         return RedirectResponse(url=f"{settings.frontend_url}/agent-gateway")
 

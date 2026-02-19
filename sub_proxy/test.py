@@ -1,20 +1,4 @@
-from opentelemetry import trace
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from config import settings
-
-resource = Resource.create({
-    "service.name": settings.app_name
-})
-
-# Configure the SDK with OTLP exporter
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.otl_exporter_url))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
+from config import settings # always import first for telemetry
 from gateway.models import load_config, mount_proxy
 from fastapi import FastAPI
 from fastmcp import FastMCP
@@ -24,7 +8,7 @@ import uvicorn
 import json
 
 class ServerRoutes:
-    _file = Path("temp/server_routes.json")
+    _file = Path(f"{settings.temp_dir}/server_routes.json")
 
     def __new__(cls):
         if not hasattr(cls, 'inst'):
@@ -69,7 +53,7 @@ _running_servers: dict[str, tuple[uvicorn.Server, asyncio.Task]] = {}
 
 
 def create_app(proxy, alias):
-    mcp_app = proxy.http_app(path=f"/")
+    mcp_app = proxy.http_app(path="/")
     app = FastAPI(lifespan=mcp_app.lifespan)
     app.mount(f"/v1/{alias}", mcp_app)
     return app

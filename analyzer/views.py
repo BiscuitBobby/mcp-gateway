@@ -1,17 +1,15 @@
-from fastapi.concurrency import run_in_threadpool
-import asyncio
+
+from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session
+from fastapi import Depends, Query
+from datetime import datetime
 from analyzer.models import (
     SessionLocal,
     Scan,
     get_db,
 )
-from sqlalchemy import select, and_, or_
-from datetime import datetime
-from fastapi import Depends, Query
 import base64
 import json
-
 
 
 def encode_cursor(created_at: datetime, scan_id: str) -> str:
