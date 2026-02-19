@@ -3,14 +3,15 @@ from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from config import settings
 
 resource = Resource.create({
-    "service.name": "mcp-gateway"
+    "service.name": settings.app_name
 })
 
 # Configure the SDK with OTLP exporter
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317"))
+processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=settings.otl_exporter_url))
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 

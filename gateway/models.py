@@ -2,6 +2,7 @@ from gateway.middleware import LoggingMiddleware, logger
 from fastmcp.server import create_proxy
 from async_lru import alru_cache
 from fastmcp import FastMCP
+from config import settings
 import asyncio
 import json
 
@@ -42,7 +43,7 @@ async def mount_proxy(mcp: FastMCP, alias: str, cfg: dict):
 
 
 async def setup():
-    mcp = FastMCP(name="GATEWAY")
+    mcp = FastMCP(name=settings.app_name)
     config = load_config()
 
     for alias, cfg in config.items():

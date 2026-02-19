@@ -4,6 +4,7 @@ from fastapi import Request, HTTPException, Query
 from fastapi.responses import RedirectResponse
 from sub_proxy.test import refresh
 from gateway.views import mcp
+from config import settings
 import requests
 import json
 import re
@@ -26,7 +27,7 @@ async def resolve_oauth(alias: str = Query(...)):
         raise HTTPException(status_code=400, detail="Missing resource URL in config")
 
     auth_header = ""
-    base_redirect_uri = f"http://localhost:8000/callback/{alias}"
+    base_redirect_uri = f"{settings.host}/callback/{alias}"
     client_name = "custom-client"
 
     try:
@@ -122,7 +123,7 @@ async def oauth_callback(
         gateway_info.cache_clear()
         await refresh()
 
-        return RedirectResponse(url="http://localhost:5173/agent-gateway")
+        return RedirectResponse(url=f"{settings.frontend_url}/agent-gateway")
 
 
     raise HTTPException(status_code=400, detail="Missing authorization code")

@@ -12,3 +12,6 @@ pydantic
 async-lru
 
 langchain-google-genai
+
+pydantic-settings
+python-dotenv
