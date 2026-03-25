@@ -1,3 +1,6 @@
 .env
 .venv/
 __pycache__/
+.ruff_cache/
+src/auth.json
+src/auth.json.bak
