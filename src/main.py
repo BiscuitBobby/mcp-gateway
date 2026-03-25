@@ -1,12 +1,13 @@
-from dotenv import load_dotenv
-load_dotenv()
-
-from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from dotenv import load_dotenv
+from fastapi import FastAPI
 from routes import session
+import uvicorn
 import os
+
+load_dotenv()
 
 app = FastAPI(title="AI Red-Teaming Platform")
 
@@ -35,3 +36,6 @@ async def serve_page(page: str):
     if os.path.exists(file_path):
         return FileResponse(file_path)
     return {"error": "Not Found"}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
