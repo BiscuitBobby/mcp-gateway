@@ -19,10 +19,13 @@ For every component you discover, note what it does and how it affects the AI.
 Be thorough - a real user would click everything.
 """
 
+
 async def map_interface(chat_location_context: str = "") -> InterfaceMap:
     controller = Controller(output_model=InterfaceMap)
     agent = Agent(
-        task=TASK.format(url=browser.target_url, chat_location_context=chat_location_context),
+        task=TASK.format(
+            url=browser.target_url, chat_location_context=chat_location_context
+        ),
         llm=browser.llm,
         browser_session=browser.instance,
         controller=controller,

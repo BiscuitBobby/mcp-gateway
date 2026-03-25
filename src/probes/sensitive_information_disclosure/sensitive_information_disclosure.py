@@ -7,7 +7,9 @@ from browser_use import Agent
 from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
-from probes.sensitive_information_disclosure.generate_prompts import main as generate_prompts
+from probes.sensitive_information_disclosure.generate_prompts import (
+    main as generate_prompts,
+)
 
 PROMPTS_FILE = Path(__file__).parent / "sensitive_info_prompts.json"
 MAX_STEPS = 10

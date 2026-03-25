@@ -101,6 +101,7 @@ class Vulnerability(BaseModel):
 
 # ── Interface Map ──────────────────────────────────────────────
 
+
 class InterfaceMap(BaseModel):
     chat_inputs: list[str] = []
     file_uploads: list[str] = []
@@ -108,7 +109,9 @@ class InterfaceMap(BaseModel):
     api_endpoints: list[str] = []
     notes: Optional[str] = None
 
+
 # ── Agent Profile ──────────────────────────────────────────────
+
 
 class AgentProfile(BaseModel):
     agent_type: str
@@ -120,6 +123,7 @@ class AgentProfile(BaseModel):
 
 
 # ── Tool Discovery ────────────────────────────────────────────
+
 
 class DiscoveredTool(BaseModel):
     name: str
@@ -148,6 +152,7 @@ class ToolDiscoveryProfile(BaseModel):
 
 # goal
 
+
 class GoalRequest(BaseModel):
     goal: str
     profile: AgentProfile
@@ -175,6 +180,7 @@ class ReasoningResult(BaseModel):
 
 # ── Base Probe Result ──────────────────────────────────────────
 
+
 class BaseProbeResult(BaseModel):
     type: str
     timestamp: str
@@ -189,6 +195,7 @@ class BaseProbeResult(BaseModel):
 
 # ── Probe Result Variants ──────────────────────────────────────
 
+
 class PromptInjectionResult(BaseProbeResult):
     type: Literal["prompt_injection_attack"] = "prompt_injection_attack"
     probe: Literal["prompt_injection"] = "prompt_injection"
@@ -196,9 +203,15 @@ class PromptInjectionResult(BaseProbeResult):
 
 
 class SensitiveInformationDisclosureResult(BaseProbeResult):
-    type: Literal["sensitive_information_disclosure_attack"] = "sensitive_information_disclosure_attack"
-    probe: Literal["sensitive_information_disclosure"] = "sensitive_information_disclosure"
-    category: Literal["LLM02: Sensitive Information Disclosure"] = "LLM02: Sensitive Information Disclosure"
+    type: Literal["sensitive_information_disclosure_attack"] = (
+        "sensitive_information_disclosure_attack"
+    )
+    probe: Literal["sensitive_information_disclosure"] = (
+        "sensitive_information_disclosure"
+    )
+    category: Literal["LLM02: Sensitive Information Disclosure"] = (
+        "LLM02: Sensitive Information Disclosure"
+    )
 
 
 class MisinformationResult(BaseProbeResult):
@@ -220,12 +233,15 @@ class OutputIntegrityAnalysis(BaseModel):
 class ImproperOutputHandlingResult(BaseProbeResult):
     type: Literal["improper_output_handling_attack"] = "improper_output_handling_attack"
     probe: Literal["improper_output_handling"] = "improper_output_handling"
-    category: Literal["LLM05: Improper Output Handling"] = "LLM05: Improper Output Handling"
+    category: Literal["LLM05: Improper Output Handling"] = (
+        "LLM05: Improper Output Handling"
+    )
     integrity_analysis: OutputIntegrityAnalysis
     violation_detected: bool
 
 
 # ── Attack Record (persisted to results.jsonl) ─────────────────
+
 
 class AttackRecord(BaseModel):
     timestamp: str
@@ -240,6 +256,7 @@ class AttackRecord(BaseModel):
 
 
 # ── Structured Log Entry (persisted to run.jsonl) ──────────────
+
 
 class LogEntry(BaseModel):
     event_type: EventType

@@ -6,11 +6,14 @@ ready = False
 target_url = ""
 instance = None
 
+
 async def start(url: str):
     global target_url, instance
     target_url = url
 
-    instance = BrowserSession(storage_state=STORAGE_STATE, keep_alive=True, args=["--remote-allow-origins=*"])
+    instance = BrowserSession(
+        storage_state=STORAGE_STATE, keep_alive=True, args=["--remote-allow-origins=*"]
+    )
     await instance.start()
 
     page = await instance.get_current_page()

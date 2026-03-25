@@ -32,14 +32,16 @@ async def run_all() -> dict[str, Any]:
 
         if probe is None:
             logger.warning("[executor] No probe class for action: %s", name)
-            all_results.append({
-                "probe": name,
-                "action": meta["action"],
-                "owasp": meta["owasp"],
-                "success": False,
-                "results": [],
-                "error": f"No handler for action '{name}'",
-            })
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "owasp": meta["owasp"],
+                    "success": False,
+                    "results": [],
+                    "error": f"No handler for action '{name}'",
+                }
+            )
             continue
 
         logger.info("[executor] Running: %s", name)
@@ -48,24 +50,28 @@ async def run_all() -> dict[str, Any]:
 
         try:
             result = await probe.run(session=session, llm=browser.llm)
-            all_results.append({
-                "probe": name,
-                "action": meta["action"],
-                "owasp": meta["owasp"],
-                "success": result.get("success", False),
-                "results": result.get("results", []),
-                "error": result.get("error"),
-            })
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "owasp": meta["owasp"],
+                    "success": result.get("success", False),
+                    "results": result.get("results", []),
+                    "error": result.get("error"),
+                }
+            )
         except Exception as exc:
             logger.exception("[executor] %s raised: %s", name, exc)
-            all_results.append({
-                "probe": name,
-                "action": meta["action"],
-                "owasp": meta["owasp"],
-                "success": False,
-                "results": [],
-                "error": str(exc),
-            })
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "owasp": meta["owasp"],
+                    "success": False,
+                    "results": [],
+                    "error": str(exc),
+                }
+            )
 
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),

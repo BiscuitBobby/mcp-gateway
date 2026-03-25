@@ -26,9 +26,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(current_dir, "static")
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
+
 @app.get("/")
 async def root():
     return FileResponse(os.path.join(static_dir, "index.html"))
+
 
 @app.get("/{page}")
 async def serve_page(page: str):
@@ -36,6 +38,7 @@ async def serve_page(page: str):
     if os.path.exists(file_path):
         return FileResponse(file_path)
     return {"error": "Not Found"}
+
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

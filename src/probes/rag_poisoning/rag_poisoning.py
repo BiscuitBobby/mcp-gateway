@@ -45,7 +45,9 @@ class RagPoisoningProbe(AttackProbe):
 
             if delivery == "upload":
                 doc_path = self._find_doc(file_type)
-                response = await self.execute_upload(session, llm, item["prompt"], doc_path)
+                response = await self.execute_upload(
+                    session, llm, item["prompt"], doc_path
+                )
             else:
                 response = await self.execute_url(session, llm, item["prompt"])
 
@@ -79,7 +81,9 @@ class RagPoisoningProbe(AttackProbe):
         docs = list(DOCS_DIR.glob(f"*.{ext}"))
         return docs[0] if docs else None
 
-    async def execute_upload(self, session, llm, prompt: str, doc_path: Optional[Path]) -> Optional[str]:
+    async def execute_upload(
+        self, session, llm, prompt: str, doc_path: Optional[Path]
+    ) -> Optional[str]:
         if doc_path is None:
             return None
         history = await Agent(

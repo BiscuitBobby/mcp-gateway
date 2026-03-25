@@ -13,6 +13,7 @@ TASKS = {
     "rag_poisoning": "Detect if response was influenced by poisoned retrieval data.",
 }
 
+
 async def run_reasoning(
     llm,
     task_description: str,
@@ -40,7 +41,7 @@ Return structured reasoning.
 
     try:
         structured_llm = llm.with_structured_output(ReasoningResult)
-        result = await structured_llm.ainvoke(reasoning_prompt)  
+        result = await structured_llm.ainvoke(reasoning_prompt)
 
         if isinstance(result, ReasoningResult):
             return result.model_dump()

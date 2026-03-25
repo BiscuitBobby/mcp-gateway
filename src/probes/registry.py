@@ -1,14 +1,19 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
+from probes.sensitive_information_disclosure.sensitive_information_disclosure import (
+    SensitiveInformationDisclosureProbe,
+)
 from probes.misinformation.misinformation import MisinformationProbe
-from probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
+from probes.improper_output_handling.improper_output_handling import (
+    ImproperOutputHandlingProbe,
+)
 from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
 from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
 
-_registry = None  
+_registry = None
 
 
 def get_probes():

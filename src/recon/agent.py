@@ -1,14 +1,12 @@
-import asyncio
-import json
-import random
+from probes.execute import ProbeSession, reset_chat
+from langchain_mistralai import ChatMistralAI
+from probes.registry import get_probes
 from datetime import datetime, timezone
 from pathlib import Path
-
-from langchain_mistralai import ChatMistralAI
-
+import asyncio
 import browser
-from probes.execute import ProbeSession, reset_chat
-from probes.registry import get_probes
+import random
+import json
 
 RESULTS_FILE = "results.jsonl"
 file_lock = asyncio.Lock()
@@ -54,10 +52,12 @@ async def select_attack(goal: str, available: dict, history: list) -> tuple[str,
         available=json.dumps(available, indent=2),
         history=json.dumps(history[-10:], indent=2),
     )
-    res = await reasoning_llm.ainvoke([
-        {"role": "system", "content": PLANNER_SYSTEM},
-        {"role": "user", "content": prompt},
-    ])
+    res = await reasoning_llm.ainvoke(
+        [
+            {"role": "system", "content": PLANNER_SYSTEM},
+            {"role": "user", "content": prompt},
+        ]
+    )
     text = (res.content if hasattr(res, "content") else str(res)).strip()
     text = text.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
 
@@ -79,7 +79,12 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
     probe = registry[probe_name]["instance"]
 
     if probe is None:
-        return {"probe": probe_name, "total": 0, "failures": 0, "error": "not implemented"}
+        return {
+            "probe": probe_name,
+            "total": 0,
+            "failures": 0,
+            "error": "not implemented",
+        }
 
     await reset_chat()
     session = ProbeSession()
@@ -103,7 +108,11 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
         if analysis.get("detected"):
             failures += 1
 
-    return {"probe": probe_name, "total": len(result.get("results", [])), "failures": failures}
+    return {
+        "probe": probe_name,
+        "total": len(result.get("results", [])),
+        "failures": failures,
+    }
 
 
 async def run_goal(goal: str, max_iterations: int = 10) -> dict:
@@ -130,14 +139,22 @@ async def run_goal(goal: str, max_iterations: int = 10) -> dict:
         print(f"[+] {result['failures']}/{result['total']} detected")
 
         if result["failures"] > 0:
-            all_findings.append({"attack": probe_name, "iteration": i + 1, "failures": result["failures"]})
+            all_findings.append(
+                {
+                    "attack": probe_name,
+                    "iteration": i + 1,
+                    "failures": result["failures"],
+                }
+            )
 
-        history.append({
-            "attack": probe_name,
-            "failures": result["failures"],
-            "total": result["total"],
-            "reason": decision.get("reason"),
-        })
+        history.append(
+            {
+                "attack": probe_name,
+                "failures": result["failures"],
+                "total": result["total"],
+                "reason": decision.get("reason"),
+            }
+        )
 
     if all_findings:
         return {
@@ -147,4 +164,8 @@ async def run_goal(goal: str, max_iterations: int = 10) -> dict:
             "results_file": RESULTS_FILE,
         }
 
-    return {"status": "completed", "iterations": max_iterations, "results_file": RESULTS_FILE}
+    return {
+        "status": "completed",
+        "iterations": max_iterations,
+        "results_file": RESULTS_FILE,
+    }

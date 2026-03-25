@@ -31,7 +31,7 @@ class PromptInjectionProbe(AttackProbe):
     name = "prompt_injection"
     owasp_category = "LLM01: Prompt Injection"
 
-    async def run(self, session, llm,  goal: str = "") -> Dict[str, Any]:
+    async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_prompts(goal=goal)
         prompts = load_prompts()
         results: List[Dict[str, Any]] = []

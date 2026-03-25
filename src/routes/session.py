@@ -1,20 +1,17 @@
+from recon.vulnerability_analysis import find_potential_vulnerabilities
+from recon.profiling import identify_usecase, discover_tools
+from schemas import AgentProfile, InterfaceMap, GoalRequest
+from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
+from probes.execute import run_all, run_one
+from probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
+from probes.registry import get_probes
+from recon.agent import run_goal
 from browser_use import Agent
+from pathlib import Path
 import browser
 import json
-from pathlib import Path
-
-from recon.interface_mapping import map_interface
-from recon.profiling import identify_usecase, discover_tools
-from recon.vulnerability_analysis import find_potential_vulnerabilities
-from recon.agent import run_goal
-
-from probes.generate import generate_all
-from probes.execute import run_all, run_one
-from probes.registry import get_probes
-
-from schemas import AgentProfile, InterfaceMap, GoalRequest
 
 router = APIRouter(prefix="/session")
 
@@ -68,7 +65,10 @@ async def find_chat():
     )
     history = await agent.run()
     result = history.final_result() or ""
-    return {"chat_detected": "no_chat_interface" not in result.lower(), "details": result}
+    return {
+        "chat_detected": "no_chat_interface" not in result.lower(),
+        "details": result,
+    }
 
 
 @router.post("/map-interface")
@@ -87,8 +87,8 @@ async def run_usecase_identification():
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
-    if not browser.ready:
-        raise HTTPException(400, "Not authenticated")
+    # if not browser.ready:
+    #     raise HTTPException(400, "Not authenticated")
     return safe_return(await discover_tools())
 
 

@@ -18,7 +18,11 @@ reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 
 def load_prompts() -> List[Dict[str, str]]:
     data = json.loads(PROMPTS_FILE.read_text(encoding="utf-8"))
-    return [item for item in data if "category" in item and "prompt" in item and "expected_action" in item]
+    return [
+        item
+        for item in data
+        if "category" in item and "prompt" in item and "expected_action" in item
+    ]
 
 
 async def append_jsonl(path: Path, record: dict) -> None:
@@ -43,7 +47,10 @@ class ExcessiveAgencyProbe(AttackProbe):
                 task_description=TASKS[self.name],
                 prompt=item["prompt"],
                 response=response or "",
-                trace={"expected_action": item["expected_action"], "browser_trace": trace},
+                trace={
+                    "expected_action": item["expected_action"],
+                    "browser_trace": trace,
+                },
             )
             record = {
                 "type": "excessive_agency_attack",
@@ -63,8 +70,10 @@ class ExcessiveAgencyProbe(AttackProbe):
             results.append(record)
 
         return {"success": True, "probe": self.name, "results": results}
-    
-    async def execute_prompt(self, session, llm, prompt: str) -> Tuple[Optional[str], Dict[str, Any]]:
+
+    async def execute_prompt(
+        self, session, llm, prompt: str
+    ) -> Tuple[Optional[str], Dict[str, Any]]:
         agent = Agent(
             llm=llm,
             browser=session.browser,

@@ -50,9 +50,11 @@ async def run_recon(output_model: type[BaseModel], max_steps: int = 20) -> BaseM
 
 async def identify_usecase():
     from schemas import AgentProfile
+
     return await run_recon(AgentProfile, max_steps=15)
 
 
 async def discover_tools():
     from schemas import ToolDiscoveryProfile
+
     return await run_recon(ToolDiscoveryProfile, max_steps=20)
