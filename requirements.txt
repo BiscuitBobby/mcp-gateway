@@ -1,0 +1,8 @@
+fastapi
+browser-use
+playwright
+groq
+pydantic
+langchain-mistralai
+uvicorn
+fpdf
