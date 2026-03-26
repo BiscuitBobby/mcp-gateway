@@ -1,3 +1,5 @@
+from typing import Optional, List, Any
+from datetime import datetime
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import identify_usecase, discover_tools
 from schemas import AgentProfile, InterfaceMap, GoalRequest,  AnalyseRequest
@@ -18,6 +20,7 @@ router = APIRouter(prefix="/session")
 
 class StartRequest(BaseModel):
     url: HttpUrl
+    name: Optional[str] = None
 
 
 class GenerateRequest(BaseModel):
@@ -33,7 +36,7 @@ def safe_return(result):
 
 @router.post("/start")
 async def start(body: StartRequest):
-    await browser.start(str(body.url))
+    await browser.start(str(body.url), name=body.name)
     return {"status": "browser_open"}
 
 

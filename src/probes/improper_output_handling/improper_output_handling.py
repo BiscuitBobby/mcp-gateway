@@ -94,7 +94,7 @@ class ImproperOutputHandlingProbe(AttackProbe):
                 "violation_detected": violation,
             }
             session.evidence.append(record)
-            await default_logger.log(record)
+            await default_logger.log(record, session=session)
             results.append(record)
 
         return {"success": True, "probe": self.name, "results": results}

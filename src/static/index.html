@@ -1716,7 +1716,7 @@
         const resp = await fetch(`${API}/session/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url: targetUrl }),
+          body: JSON.stringify({ url: targetUrl, name: targetName }),
         });
         if (!resp.ok) {
           const err = await resp.json().catch(() => ({}));

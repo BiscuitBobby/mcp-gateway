@@ -4,12 +4,14 @@ STORAGE_STATE = "auth.json"
 llm = ChatBrowserUse()
 ready = False
 target_url = ""
+target_name = ""
 instance = None
 
 
-async def start(url: str):
-    global target_url, instance
+async def start(url: str, name: str = ""):
+    global target_url, target_name, instance
     target_url = url
+    target_name = name or "Target"
 
     instance = BrowserSession(
         storage_state=STORAGE_STATE, keep_alive=True, args=["--remote-allow-origins=*"]

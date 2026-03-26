@@ -53,8 +53,13 @@ class AttackLogger:
         content = f"{record.get('probe')}|{record.get('technique')}|{record.get('prompt')}|{record.get('response')}"
         return str(hash(content))
 
-    async def log(self, record: dict, deduplicate: bool = True) -> None:
-        """Log a record to the JSONL file, optionally deduplicating."""
+    async def log(self, record: dict, session: Optional[Any] = None, deduplicate: bool = True) -> None:
+        """Centralized JSONL logging with optional session context and deduplication."""
+        if session:
+            record["session_id"] = getattr(session, "session_id", "N/A")
+            record["target_name"] = getattr(session, "target_name", "N/A")
+            record["target_url"] = getattr(session, "target_url", "N/A")
+
         if deduplicate:
             record_hash = self._get_hash(record)
             async with self._lock:
