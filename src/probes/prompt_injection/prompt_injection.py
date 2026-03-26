@@ -12,7 +12,7 @@ from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "prompt_injection_prompts.json"
 MAX_STEPS = 10
-ATTACK_LOG = Path("logs/attack_log.jsonl")
+ATTACK_LOG = Path("logs/attack_log.json")
 
 reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 

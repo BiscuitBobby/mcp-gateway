@@ -45,7 +45,7 @@ class AttackLogger:
     _lock = asyncio.Lock()
     _seen_hashes = set()
 
-    def __init__(self, path: Path = Path("logs/attack_log.jsonl")):
+    def __init__(self, path: Path = Path("logs/attack_log.json")):
         self.path = path
 
     def _get_hash(self, record: dict) -> str:
@@ -59,6 +59,8 @@ class AttackLogger:
             record["session_id"] = getattr(session, "session_id", "N/A")
             record["target_name"] = getattr(session, "target_name", "N/A")
             record["target_url"] = getattr(session, "target_url", "N/A")
+
+            self.path = Path(f"logs/attack_log_{session.session_id}.json")
 
         if deduplicate:
             record_hash = self._get_hash(record)
