@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
+from probes.execute import run_one
 from pydantic import BaseModel
 import browser as browser_mod
-from browser_use import Agent
 from datetime import datetime
 from typing import Optional
 from enum import Enum
@@ -20,10 +20,9 @@ class AgentStatus(str, Enum):
 
 
 class AgentRecord:
-    def __init__(self, agent_id, task, agent):
+    def __init__(self, agent_id, policies):
         self.agent_id = agent_id
-        self.task = task
-        self.agent = agent
+        self.policies = policies
         self.status = AgentStatus.IDLE
         self.result: Optional[str] = None
         self.error: Optional[str] = None
@@ -32,7 +31,7 @@ class AgentRecord:
     def to_dict(self):
         return {
             "agent_id": self.agent_id,
-            "task": self.task,
+            "policies": self.policies,
             "cdp_url": getattr(browser_mod.instance, "cdp_url", None),
             "status": self.status,
             "result": self.result,
@@ -44,24 +43,22 @@ class AgentRecord:
 registry: dict[str, AgentRecord] = {}
 
 
-async def run_agent(record: AgentRecord):
+async def run_probes(record: AgentRecord):
     record.status = AgentStatus.RUNNING
+    all_results = []
     try:
-        result = await record.agent.run()
-        record.result = str(result)
+        for action in record.policies:
+            result = await run_one(action)
+            all_results.append(result)
+        record.result = json.dumps(all_results)
         record.status = AgentStatus.DONE
     except Exception as exc:
         record.error = str(exc)
         record.status = AgentStatus.ERROR
 
 
-class CreateAgentRequest(BaseModel):
-    task: str
-    autorun: bool = True
-
-
-class InteractRequest(BaseModel):
-    message: str
+class ScanRequest(BaseModel):
+    policies: list[str]
 
 
 @router.get("")
@@ -77,35 +74,18 @@ async def get_agent(agent_id: str):
     return record.to_dict()
 
 
-@router.post("", status_code=201)
-async def create_agent(body: CreateAgentRequest, background_tasks: BackgroundTasks):
+@router.post("/scan", status_code=201)
+async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
     if not browser_mod.ready:
         raise HTTPException(400, "Browser not ready. Call /session/start and /session/confirm first.")
     agent_id = str(uuid.uuid4())
     record = AgentRecord(
         agent_id=agent_id,
-        task=body.task,
-        agent=Agent(llm=browser_mod.llm, task=body.task, browser_session=browser_mod.instance),
+        policies=body.policies,
     )
     registry[agent_id] = record
-    if body.autorun:
-        background_tasks.add_task(run_agent, record)
+    background_tasks.add_task(run_probes, record)
     return record.to_dict()
-
-
-@router.post("/{agent_id}/interact")
-async def interact_with_agent(agent_id: str, body: InteractRequest, background_tasks: BackgroundTasks):
-    record = registry.get(agent_id)
-    if not record:
-        raise HTTPException(404, "Agent not found")
-    if record.status == AgentStatus.RUNNING:
-        raise HTTPException(409, "Agent is busy")
-    record.agent = Agent(llm=browser_mod.llm, task=body.message, browser_session=browser_mod.instance)
-    record.task = body.message
-    record.result = None
-    record.error = None
-    background_tasks.add_task(run_agent, record)
-    return {"agent_id": agent_id, "task": body.message, "cdp_url": getattr(browser_mod.instance, "cdp_url", None)}
 
 
 @router.get("/{agent_id}/stream")
