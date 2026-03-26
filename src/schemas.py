@@ -157,6 +157,7 @@ class GoalRequest(BaseModel):
     goal: str
     profile: AgentProfile
     interface: InterfaceMap
+    vuln_report: Optional[VulnerabilityReport] = None
     max_iterations: int = 20
 
 
@@ -268,9 +269,14 @@ class LogEntry(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-# ── (Placeholders for future probes) ───────────────────────────
 
-# excessive_agency
-# data_exfiltration
-# tool_abuse
-# rag_poisoning
+class VulnerabilityReport(BaseModel):
+    attack_surface: list[str]
+    data_flow_paths: list[str]
+    agent_constraints: list[str]
+    vulnerabilities: list[Vulnerability]
+    recommended_probe_order: list[AttackType]
+
+class AnalyseRequest(BaseModel):
+    profile: AgentProfile
+    interface: InterfaceMap
