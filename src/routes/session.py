@@ -1,6 +1,6 @@
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import identify_usecase, discover_tools
-from schemas import AgentProfile, InterfaceMap, GoalRequest
+from schemas import AgentProfile, InterfaceMap, GoalRequest,  AnalyseRequest
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
 from probes.execute import run_all, run_one
@@ -60,7 +60,7 @@ async def find_chat():
     agent = Agent(
         task=f"Go to {browser.target_url}. Does this app have an AI chat interface? If yes describe it. If no, say NO_CHAT_INTERFACE.",
         llm=browser.llm,
-        browser=browser.instance,
+        browser_session=browser.instance,
         max_steps=8,
     )
     history = await agent.run()
@@ -87,8 +87,8 @@ async def run_usecase_identification():
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
-    # if not browser.ready:
-    #     raise HTTPException(400, "Not authenticated")
+    if not browser.ready:
+        raise HTTPException(400, "Not authenticated")
     return safe_return(await discover_tools())
 
 
@@ -124,22 +124,24 @@ async def run_single(action: str):
 
 
 @router.post("/analyse")
-async def analyse(profile: AgentProfile, interface: InterfaceMap):
+async def analyse(body: AnalyseRequest):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    return safe_return(await find_potential_vulnerabilities(profile, interface))
+    return safe_return(await find_potential_vulnerabilities(body.profile, body.interface))
 
 
 @router.post("/run-goal")
 async def run_goal_endpoint(body: GoalRequest):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    augmented_goal = (
-        f"Goal:\n{body.goal}\n\n"
-        f"Agent Profile:\n{body.profile.model_dump_json(indent=2)}\n\n"
-        f"Interface:\n{body.interface.model_dump_json(indent=2)}"
+
+    return await run_goal(
+        goal=body.goal,
+        profile=body.profile,
+        interface=body.interface,
+        vuln_report=body.vuln_report,
+        max_iterations=body.max_iterations,
     )
-    return await run_goal(goal=augmented_goal, max_iterations=body.max_iterations)
 
 
 @router.get("/results")
