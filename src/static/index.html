@@ -1262,47 +1262,8 @@
             </div>
           </div>
 
-          <div class="scans-grid">
-            <div class="scan-card fade-up-1" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #10b981, #34d399)"></div>
-              <div class="scan-title">Customer Support Chatbot</div>
-              <div class="scan-desc">Prompt injection vulnerabilities and API leakage.</div>
-            </div>
-            <div class="scan-card fade-up-2" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #64748b, #94a3b8)"></div>
-              <div class="scan-title">Sales Assistant GPT</div>
-              <div class="scan-desc">Jailbreak resistance and unauthorized data access.</div>
-            </div>
-            <div class="scan-card fade-up-3" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #eab308, #fde047)"></div>
-              <div class="scan-title">Internal Knowledge Base</div>
-              <div class="scan-desc">Document exfiltration and permission bypass.</div>
-            </div>
-            <div class="scan-card fade-up-3" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #ec4899, #f472b6)"></div>
-              <div class="scan-title">HR Resume Screener</div>
-              <div class="scan-desc">Bias evaluation and adversarial prompt robustness.</div>
-            </div>
-            <div class="scan-card fade-up-4" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #0d9488, #2dd4bf)"></div>
-              <div class="scan-title">Code Generation Copilot</div>
-              <div class="scan-desc">Malicious code execution and unsafe library imports.</div>
-            </div>
-            <div class="scan-card fade-up-4" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #ef4444, #f87171)"></div>
-              <div class="scan-title">Financial Advisor AI</div>
-              <div class="scan-desc">Hallucination induction and prompt leaking.</div>
-            </div>
-            <div class="scan-card fade-up-4" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #f97316, #fdba74)"></div>
-              <div class="scan-title">E-commerce Recommendation</div>
-              <div class="scan-desc">PII extraction and preference manipulation tests.</div>
-            </div>
-            <div class="scan-card fade-up-4" onclick="window.location.href='dashboard.html'">
-              <div class="scan-thumb" style="background: linear-gradient(135deg, #3b82f6, #93c5fd)"></div>
-              <div class="scan-title">Marketing Copy Generator</div>
-              <div class="scan-desc">Brand safety and competitor mention bypass.</div>
-            </div>
+          <div class="scans-grid" id="past-scans-grid">
+            <div style="padding: 20px; color: var(--muted); text-align: center; grid-column: 1/-1;">Loading past scans...</div>
           </div>
         </section>
       </div>
@@ -1788,7 +1749,50 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadLatestScan);
+    async function loadPastScans() {
+      const container = document.getElementById('past-scans-grid');
+      try {
+        const resp = await fetch(`${API}/session/logs`);
+        if (!resp.ok) throw new Error('Failed to fetch logs');
+        const { sessions } = await resp.json();
+        
+        if (!sessions || sessions.length === 0) {
+          container.innerHTML = '<div style="padding: 20px; color: var(--muted); text-align: center; grid-column: 1/-1;">No past scans found.</div>';
+          return;
+        }
+
+        const colors = [
+          ['#10b981', '#34d399'],
+          ['#64748b', '#94a3b8'],
+          ['#eab308', '#fde047'],
+          ['#ec4899', '#f472b6'],
+          ['#0d9488', '#2dd4bf'],
+          ['#ef4444', '#f87171'],
+          ['#f97316', '#fdba74'],
+          ['#3b82f6', '#93c5fd']
+        ];
+
+        container.innerHTML = sessions.map((s, i) => {
+          const colorPair = colors[i % colors.length];
+          const date = s.timestamp ? new Date(s.timestamp).toLocaleString() : 'Recently';
+          return `
+            <div class="scan-card fade-up-${(i % 4) + 1}" onclick="window.location.href='dashboard.html?session=${s.session_id}'">
+              <div class="scan-thumb" style="background: linear-gradient(135deg, ${colorPair[0]}, ${colorPair[1]})"></div>
+              <div class="scan-title">${s.target_name}</div>
+              <div class="scan-desc">${s.target_url}<br><small>${date}</small></div>
+            </div>`;
+        }).join('');
+
+      } catch (e) {
+        console.warn('Could not load past scans:', e);
+        container.innerHTML = '<div style="padding: 20px; color: #ef4444; text-align: center; grid-column: 1/-1;">Error loading past scans.</div>';
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadLatestScan();
+      loadPastScans();
+    });
   </script>
 </body>
 

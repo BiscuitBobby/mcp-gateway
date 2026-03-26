@@ -1135,9 +1135,9 @@
           <svg class="semi-gauge-svg" viewBox="0 0 160 160">
             <path class="semi-gauge-bg" d="M 10 150 A 70 70 0 0 1 150 150"></path>
             <path class="semi-gauge-value" stroke="url(#redGradient)" stroke-dasharray="219.9" stroke-dashoffset="219.9"
-              data-value="92" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
+              data-value="0" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
           </svg>
-          <div class="semi-gauge-center" style="color:var(--red-600);">92</div>
+          <div class="semi-gauge-center" style="color:var(--red-600);">0</div>
         </div>
         <h4 class="vuln-title">Jailbreak</h4>
         <a href="#" class="details-link">See details &rarr;</a>
@@ -1148,9 +1148,9 @@
           <svg class="semi-gauge-svg" viewBox="0 0 160 160">
             <path class="semi-gauge-bg" d="M 10 150 A 70 70 0 0 1 150 150"></path>
             <path class="semi-gauge-value" stroke="url(#orangeGradient)" stroke-dasharray="219.9"
-              stroke-dashoffset="219.9" data-value="60" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
+              stroke-dashoffset="219.9" data-value="0" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
           </svg>
-          <div class="semi-gauge-center" style="color:var(--orange-600);">60</div>
+          <div class="semi-gauge-center" style="color:var(--orange-600);">0</div>
         </div>
         <h4 class="vuln-title">Hallucinations</h4>
         <a href="#" class="details-link">See details &rarr;</a>
@@ -1161,9 +1161,9 @@
           <svg class="semi-gauge-svg" viewBox="0 0 160 160">
             <path class="semi-gauge-bg" d="M 10 150 A 70 70 0 0 1 150 150"></path>
             <path class="semi-gauge-value" stroke="url(#redGradient)" stroke-dasharray="219.9" stroke-dashoffset="219.9"
-              data-value="87" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
+              data-value="0" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
           </svg>
-          <div class="semi-gauge-center">87</div>
+          <div class="semi-gauge-center">0</div>
         </div>
         <h4 class="vuln-title">Bias (Unfairness)</h4>
         <a href="#" class="details-link">See details &rarr;</a>
@@ -1189,46 +1189,46 @@
           <div class="bar-row">
             <div class="bar-label"><span>LLM01</span>Prompt Injection</div>
             <div class="bar-track">
-              <div class="bar-fill-total" data-pct="100"></div>
-              <div class="bar-fill-success" data-pct="88"></div>
+              <div class="bar-fill-total" data-pct="0"></div>
+              <div class="bar-fill-success" data-pct="0"></div>
             </div>
-            <div class="bar-values"><span class="highlight">176</span> / 200</div>
+            <div class="bar-values"><span class="highlight">0</span> / <span class="total">0</span></div>
           </div>
 
           <div class="bar-row">
             <div class="bar-label"><span>LLM02</span>Insecure Output</div>
             <div class="bar-track">
-              <div class="bar-fill-total" data-pct="70"></div>
-              <div class="bar-fill-success" data-pct="56"></div>
+              <div class="bar-fill-total" data-pct="0"></div>
+              <div class="bar-fill-success" data-pct="0"></div>
             </div>
-            <div class="bar-values"><span class="highlight">112</span> / 140</div>
+            <div class="bar-values"><span class="highlight">0</span> / <span class="total">0</span></div>
           </div>
 
           <div class="bar-row">
             <div class="bar-label"><span>LLM06</span>Sensitive Data</div>
             <div class="bar-track">
-              <div class="bar-fill-total" data-pct="90"></div>
-              <div class="bar-fill-success" data-pct="85"></div>
+              <div class="bar-fill-total" data-pct="0"></div>
+              <div class="bar-fill-success" data-pct="0"></div>
             </div>
-            <div class="bar-values"><span class="highlight">153</span> / 180</div>
+            <div class="bar-values"><span class="highlight">0</span> / <span class="total">0</span></div>
           </div>
 
           <div class="bar-row">
             <div class="bar-label"><span>LLM07</span>Insecure Plugin</div>
             <div class="bar-track">
-              <div class="bar-fill-total" data-pct="40"></div>
-              <div class="bar-fill-success" data-pct="8"></div>
+              <div class="bar-fill-total" data-pct="0"></div>
+              <div class="bar-fill-success" data-pct="0"></div>
             </div>
-            <div class="bar-values"><span class="highlight">16</span> / 80</div>
+            <div class="bar-values"><span class="highlight">0</span> / <span class="total">0</span></div>
           </div>
 
           <div class="bar-row">
             <div class="bar-label"><span>LLM09</span>Over-reliance</div>
             <div class="bar-track">
-              <div class="bar-fill-total" data-pct="80"></div>
-              <div class="bar-fill-success" data-pct="72"></div>
+              <div class="bar-fill-total" data-pct="0"></div>
+              <div class="bar-fill-success" data-pct="0"></div>
             </div>
-            <div class="bar-values"><span class="highlight">115</span> / 160</div>
+            <div class="bar-values"><span class="highlight">0</span> / <span class="total">0</span></div>
           </div>
 
         </div>
@@ -1355,19 +1355,24 @@
 
     // ── Load real results from server ──
     async function loadResults() {
-      try {
-        const resp = await fetch(`${API}/session/results`);
-        if (!resp.ok) return; // no results yet — keep static placeholders
-        const { rows } = await resp.json();
-        if (!rows || rows.length === 0) return;
+      const urlParams = new URLSearchParams(window.location.search);
+      const sessionId = urlParams.get('session');
+      let url = `${API}/session/results`;
+      if (sessionId) {
+        url += `?session_id=${sessionId}`;
+      }
 
-        applyResults(rows);
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) return; // no results yet — keep static placeholders
+        const { rows, totals } = await resp.json();
+        applyResults(rows || [], totals || {});
       } catch(e) {
         console.warn('Could not load results:', e);
       }
     }
 
-    function applyResults(rows) {
+    function applyResults(rows, totals = {}) {
       const total = rows.length;
       const detected = rows.filter(r => r.detected === 'True' || r.detected === true).length;
       const riskScore = total > 0 ? Math.round((detected / total) * 100) : 0;
@@ -1413,15 +1418,25 @@
 
       const probeNames = Object.keys(probeCounts);
       const vulnCards = document.querySelectorAll('.vuln-card');
-      probeNames.slice(0, vulnCards.length).forEach((probe, i) => {
-        const card = vulnCards[i];
-        const pct = Math.round(((probeDetected[probe] || 0) / probeCounts[probe]) * 100);
+      vulnCards.forEach(card => {
+        const title = card.querySelector('.vuln-title').textContent.toLowerCase();
+        let probe = 'unknown';
+
+        if (title.includes('jailbreak')) probe = 'prompt_injection';
+        else if (title.includes('hallucination')) probe = 'misinformation';
+        else if (title.includes('bias')) probe = 'bias';
+
+        const count = probeCounts[probe] || 0;
+        const detected = probeDetected[probe] || 0;
+        const pct = count > 0 ? Math.round((detected / count) * 100) : 0;
+
         const gauge = card.querySelector('.semi-gauge-value');
         const center = card.querySelector('.semi-gauge-center');
-        const title = card.querySelector('.vuln-title');
         if (gauge) gauge.setAttribute('data-value', pct);
         if (center) center.textContent = pct;
-        if (title) title.textContent = probeLabel(probe);
+        // Keep hardcoded titles if desired, or update:
+        // const titleEl = card.querySelector('.vuln-title');
+        // if (titleEl) titleEl.textContent = probeLabel(probe);
       });
 
       // ── OWASP bar chart — map probes to LLM categories ──
@@ -1449,18 +1464,27 @@
       barRows.forEach(row => {
         const lbl = row.querySelector('.bar-label span');
         if (!lbl) return;
-        const cat = lbl.textContent.trim(); // e.g. "LLM01"
-        const t = owaspTotals[cat] || 0;
-        const h = owaspHits[cat] || 0;
-        if (t === 0) return;
-        const totalPct = Math.min(100, Math.round((t / total) * 200));
-        const hitPct   = Math.min(totalPct, Math.round((h / total) * 200));
-        const fillTotal   = row.querySelector('.bar-fill-total');
-        const fillSuccess = row.querySelector('.bar-fill-success');
-        const valEl = row.querySelector('.bar-values .highlight');
-        if (fillTotal)   fillTotal.setAttribute('data-pct', totalPct);
-        if (fillSuccess) fillSuccess.setAttribute('data-pct', hitPct);
-        if (valEl)       valEl.textContent = h;
+        const cat = lbl.textContent.trim();          // e.g. "LLM01"
+        const h = owaspHits[cat]   || 0;             // detected hits for this category
+        const t = owaspTotals[cat] || 0;             // attacks actually run for this category
+
+        const totalEl    = row.querySelector('.bar-values .total');
+        const valEl      = row.querySelector('.bar-values .highlight');
+        const fillTotal  = row.querySelector('.bar-fill-total');
+        const fillSuccess= row.querySelector('.bar-fill-success');
+
+        if (totalEl) totalEl.textContent = t;
+        if (valEl)   valEl.textContent   = h;
+
+        if (t > 0) {
+          const totalPct = Math.min(100, Math.round((t / 30) * 100));
+          const hitPct   = Math.min(totalPct, Math.round((h / t) * totalPct));
+          if (fillTotal)    fillTotal.setAttribute('data-pct', totalPct);
+          if (fillSuccess)  fillSuccess.setAttribute('data-pct', hitPct);
+        } else {
+          if (fillTotal)    fillTotal.setAttribute('data-pct', 0);
+          if (fillSuccess)  fillSuccess.setAttribute('data-pct', 0);
+        }
       });
 
       // ── Recommendations from highest-risk failing probes ──

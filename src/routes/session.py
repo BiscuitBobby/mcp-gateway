@@ -147,9 +147,55 @@ async def run_goal_endpoint(body: GoalRequest):
     )
 
 
+@router.get("/logs")
+async def list_logs():
+    logs_dir = Path("logs")
+    if not logs_dir.exists():
+        return {"sessions": []}
+    
+    sessions = []
+    # Files are named attack_log_YYYYMMDD_HHMMSS.json
+    for p in logs_dir.glob("attack_log_*.json"):
+        session_id = p.stem.replace("attack_log_", "")
+        # Try to read the first line to get target info
+        try:
+            with open(p, "r", encoding="utf-8") as f:
+                first_line = f.readline()
+                if first_line:
+                    data = json.loads(first_line)
+                    sessions.append({
+                        "session_id": session_id,
+                        "target_name": data.get("target_name", "Unknown"),
+                        "target_url": data.get("target_url", "Unknown"),
+                        "timestamp": data.get("timestamp", ""),
+                    })
+                else:
+                    sessions.append({
+                        "session_id": session_id,
+                        "target_name": "Unknown",
+                        "target_url": "Unknown",
+                        "timestamp": "",
+                    })
+        except Exception:
+            sessions.append({
+                "session_id": session_id,
+                "target_name": "Unknown",
+                "target_url": "Unknown",
+                "timestamp": "",
+            })
+    
+    # Sort sessions by timestamp descending (newest first)
+    sessions.sort(key=lambda x: x["session_id"], reverse=True)
+    return {"sessions": sessions}
+
+
 @router.get("/results")
-async def get_results():
-    path = Path("results.jsonl")
+async def get_results(session_id: Optional[str] = None):
+    if session_id:
+        path = Path(f"logs/attack_log_{session_id}.json")
+    else:
+        path = Path("results.jsonl")
+        
     if not path.exists():
         return {"rows": []}
     rows = []
@@ -157,8 +203,13 @@ async def get_results():
         for line in f:
             line = line.strip()
             if line:
-                rows.append(json.loads(line))
-    return {"rows": rows}
+                try:
+                    rows.append(json.loads(line))
+                except json.JSONDecodeError:
+                    continue
+    from probes.stats import get_probe_totals
+    totals = get_probe_totals()
+    return {"rows": rows, "totals": totals}
 
 
 @router.post("/stop")

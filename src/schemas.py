@@ -241,6 +241,34 @@ class ImproperOutputHandlingResult(BaseProbeResult):
     violation_detected: bool
 
 
+class DataExfiltrationResult(BaseProbeResult):
+    type: Literal["data_exfiltration_attack"] = "data_exfiltration_attack"
+    probe: Literal["data_exfiltration"] = "data_exfiltration"
+    category: Literal["LLM02: Sensitive Information Disclosure"] = (
+        "LLM02: Sensitive Information Disclosure"
+    )
+
+
+class ExcessiveAgencyResult(BaseProbeResult):
+    type: Literal["excessive_agency_attack"] = "excessive_agency_attack"
+    probe: Literal["excessive_agency"] = "excessive_agency"
+    category: Literal["LLM06: Excessive Agency"] = "LLM06: Excessive Agency"
+
+
+class ToolAbuseResult(BaseProbeResult):
+    type: Literal["tool_abuse_attack"] = "tool_abuse_attack"
+    probe: Literal["tool_abuse"] = "tool_abuse"
+    category: Literal["LLM07: Tool Abuse"] = "LLM07: Tool Abuse"
+
+
+class RagPoisoningResult(BaseProbeResult):
+    type: Literal["rag_poisoning_attack"] = "rag_poisoning_attack"
+    probe: Literal["rag_poisoning"] = "rag_poisoning"
+    category: Literal["LLM01: Prompt Injection (Indirect via RAG)"] = (
+        "LLM01: Prompt Injection (Indirect via RAG)"
+    )
+
+
 # ── Attack Record (persisted to results.jsonl) ─────────────────
 
 
