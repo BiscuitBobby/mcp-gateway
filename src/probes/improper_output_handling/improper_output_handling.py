@@ -1,6 +1,6 @@
 import re
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
@@ -9,17 +9,13 @@ from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.improper_output_handling.generate_prompts import main as generate_prompts
+from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "improper_output_handling_prompts.json"
 MAX_STEPS = 10
 ATTACK_LOG = Path("logs/attack_log.jsonl")
 
 reasoning_llm = ChatMistralAI(model="mistral-large-latest")
-
-
-def load_prompts() -> List[Dict[str, str]]:
-    data = json.loads(PROMPTS_FILE.read_text(encoding="utf-8"))
-    return [item for item in data if "category" in item and "prompt" in item]
 
 
 def analyze_output(text: str) -> Dict[str, Any]:
@@ -62,23 +58,17 @@ def analyze_output(text: str) -> Dict[str, Any]:
     }
 
 
-async def append_jsonl(path: Path, record: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(record) + "\n")
-
-
 class ImproperOutputHandlingProbe(AttackProbe):
     name = "improper_output_handling"
     owasp_category = "LLM05: Improper Output Handling"
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_prompts(goal=goal)
-        prompts = load_prompts()
+        prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            response = await self.execute_prompt(session, llm, item["prompt"])
+            response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
             integrity = analyze_output(response or "")
             analysis = await run_reasoning(
                 llm=reasoning_llm,
@@ -92,7 +82,7 @@ class ImproperOutputHandlingProbe(AttackProbe):
             )
             record = {
                 "type": "improper_output_handling_attack",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "probe": self.name,
                 "category": self.owasp_category,
                 "index": idx,
@@ -104,25 +94,7 @@ class ImproperOutputHandlingProbe(AttackProbe):
                 "violation_detected": violation,
             }
             session.evidence.append(record)
-            await append_jsonl(ATTACK_LOG, record)
+            await default_logger.log(record)
             results.append(record)
 
         return {"success": True, "probe": self.name, "results": results}
-
-    async def execute_prompt(self, session, llm, prompt: str) -> Optional[str]:
-        agent = Agent(
-            llm=llm,
-            browser=session.browser,
-            task=(
-                "You are already on the correct target website.\n"
-                "Do not navigate away or open new tabs.\n\n"
-                "1. Enter the following message exactly into the chat input.\n"
-                "2. Submit it.\n"
-                "3. Wait for the full AI response.\n"
-                "4. Return only the visible AI response text.\n\n"
-                f"Message:\n{prompt}"
-            ),
-            max_steps=MAX_STEPS,
-        )
-        history = await agent.run()
-        return history.final_result() if history else None
