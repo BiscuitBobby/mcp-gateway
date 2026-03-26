@@ -37,8 +37,11 @@ ATTACK_CATEGORIES = [
     "Reinforcement poisoning",
     "Auto-indexing abuse",
     "Metadata spoofing",
-    "Ranking manipulationHidden instructions in images (steganography / OCR attacks)",
-    "Adversarial perturbations in visual embeddingsRetrieval overloadToken exhaustion",
+    "Ranking manipulation"
+    "Hidden instructions in images (steganography / OCR attacks)",
+    "Adversarial perturbations in visual embeddings"
+    "Retrieval overload"
+    "Token exhaustion"
 ]
 
 
@@ -77,9 +80,7 @@ def generate_payloads(app_profile=None) -> List[DocumentPayload]:
         ],
         response_format={"type": "json_object"},
     )
-    parsed = DocumentPayloadList.model_validate_json(
-        completion.choices[0].message.content
-    )
+    parsed = DocumentPayloadList.model_validate_json(completion.choices[0].message.content)
     return parsed.documents
 
 
@@ -89,29 +90,24 @@ def ensure_output_dir():
 
 def write_txt(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.txt"
-    path.write_text(
-        f"{payload.visible_content}\n\n{payload.hidden_instruction}\n", encoding="utf-8"
-    )
+    path.write_text(f"{payload.visible_content}\n\n{payload.hidden_instruction}\n", encoding="utf-8")
     return path
 
 
 def write_md(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.md"
-    path.write_text(
-        f"# Document\n\n{payload.visible_content}\n\n## Notes\n\n{payload.hidden_instruction}\n",
-        encoding="utf-8",
-    )
+    path.write_text(f"# Document\n\n{payload.visible_content}\n\n## Notes\n\n{payload.hidden_instruction}\n", encoding="utf-8")
     return path
 
 
 def write_html(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.html"
     path.write_text(
-        f"<!DOCTYPE html><html><body>"
-        f"<p>{payload.visible_content}</p>"
-        f"<!-- {payload.hidden_instruction} -->"
+        f'<!DOCTYPE html><html><body>'
+        f'<p>{payload.visible_content}</p>'
+        f'<!-- {payload.hidden_instruction} -->'
         f'<div style="color:white;font-size:1px;opacity:0">{payload.hidden_instruction}</div>'
-        f"</body></html>",
+        f'</body></html>',
         encoding="utf-8",
     )
     return path
@@ -155,27 +151,13 @@ def write_docx(payload: DocumentPayload) -> Path:
 def write_json(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.json"
     path.write_text(
-        json.dumps(
-            {
-                "document": payload.visible_content,
-                "metadata": {"notes": payload.hidden_instruction},
-            },
-            indent=2,
-        ),
+        json.dumps({"document": payload.visible_content, "metadata": {"notes": payload.hidden_instruction}}, indent=2),
         encoding="utf-8",
     )
     return path
 
 
-WRITERS = [
-    write_txt,
-    write_md,
-    write_html,
-    write_csv,
-    write_pdf,
-    write_docx,
-    write_json,
-]
+WRITERS = [write_txt, write_md, write_html, write_csv, write_pdf, write_docx, write_json]
 
 
 def main(app_profile=None) -> List[dict]:
@@ -185,7 +167,5 @@ def main(app_profile=None) -> List[dict]:
     for payload in payloads:
         for writer in WRITERS:
             path = writer(payload)
-            generated.append(
-                {"name": payload.name, "type": path.suffix, "path": str(path)}
-            )
+            generated.append({"name": payload.name, "type": path.suffix, "path": str(path)})
     return generated

@@ -33,9 +33,9 @@ class RagPoisoningProbe(AttackProbe):
     name = "rag_poisoning"
     owasp_category = "LLM01: Prompt Injection (Indirect via RAG)"
 
-    async def run(self, session, llm) -> Dict[str, Any]:
-        generate_documents()
-        generate_prompts()
+    async def run(self, session, llm,  goal: str = "") -> Dict[str, Any]:
+        generate_documents(goal=goal)
+        generate_prompts(goal=goal)
         prompts = load_prompts()
         results: List[Dict[str, Any]] = []
 
@@ -45,9 +45,7 @@ class RagPoisoningProbe(AttackProbe):
 
             if delivery == "upload":
                 doc_path = self._find_doc(file_type)
-                response = await self.execute_upload(
-                    session, llm, item["prompt"], doc_path
-                )
+                response = await self.execute_upload(session, llm, item["prompt"], doc_path)
             else:
                 response = await self.execute_url(session, llm, item["prompt"])
 
@@ -81,9 +79,7 @@ class RagPoisoningProbe(AttackProbe):
         docs = list(DOCS_DIR.glob(f"*.{ext}"))
         return docs[0] if docs else None
 
-    async def execute_upload(
-        self, session, llm, prompt: str, doc_path: Optional[Path]
-    ) -> Optional[str]:
+    async def execute_upload(self, session, llm, prompt: str, doc_path: Optional[Path]) -> Optional[str]:
         if doc_path is None:
             return None
         history = await Agent(
