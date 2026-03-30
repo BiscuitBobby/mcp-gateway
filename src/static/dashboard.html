@@ -1039,7 +1039,7 @@
       <div class="breadcrumbs">
         <a href="index.html">Scans</a>
         <span class="slash">/</span>
-        <span style="color: var(--text); font-weight: 600;">Customer Support Chatbot</span>
+        <span id="targetNameDisplay" style="color: var(--text); font-weight: 600;">Customer Support Chatbot</span>
       </div>
       <div class="header-actions">
         <div class="scan-time">
@@ -1376,6 +1376,14 @@
       const total = rows.length;
       const detected = rows.filter(r => r.detected === 'True' || r.detected === true).length;
       const riskScore = total > 0 ? Math.round((detected / total) * 100) : 0;
+
+      // ── Target name ──
+      if (rows.length > 0) {
+        const targetName = rows[0].target_name || rows[0].name || 'Target';
+        const nameDisplay = document.getElementById('targetNameDisplay');
+        if (nameDisplay) nameDisplay.textContent = targetName;
+        document.title = `${targetName} - Scan Dashboard`;
+      }
 
       // ── Risk score card ──
       const riskBig = document.querySelector('.risk-score-large');

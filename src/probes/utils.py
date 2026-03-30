@@ -75,4 +75,55 @@ class AttackLogger:
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
 
+
+def get_probe_totals() -> Dict[str, int]:
+    """
+    Dynamically calculate the total number of probes for each OWASP category
+    based on the registered probes and their prompt files.
+    """
+    from probes.registry import get_probes
+    probes = get_probes()
+    
+    # Map from probe action name to OWASP short code (matching dashboard.html)
+    owasp_map = {
+        "prompt_injection": "LLM01",
+        "sensitive_information_disclosure": "LLM02",
+        "improper_output_handling": "LLM02",
+        "data_exfiltration": "LLM06",
+        "excessive_agency": "LLM08",
+        "rag_poisoning": "LLM09",
+        "misinformation": "LLM04",
+        "tool_abuse": "LLM07",
+    }
+    
+    totals = {}
+    base_path = Path(__file__).parent
+    
+    for key, info in probes.items():
+        cat = owasp_map.get(key)
+        if not cat:
+            continue
+            
+        filename = info.get("prompts_file")
+        if not filename:
+            continue
+            
+        # The prompts file is relative to the probe's directory
+        prompts_path = base_path / key / filename
+        
+        count = 0
+        if prompts_path.exists():
+            try:
+                data = json.loads(prompts_path.read_text(encoding="utf-8"))
+                if isinstance(data, list):
+                    count = len(data)
+            except Exception:
+                # If file exists but is invalid JSON or not a list, count is 0
+                pass
+        
+        totals[cat] = totals.get(cat, 0) + count
+        
+    return totals
+        
+
 default_logger = AttackLogger()

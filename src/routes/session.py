@@ -9,6 +9,7 @@ from probes.execute import run_all, run_one
 from probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
 from probes.registry import get_probes
+from probes.utils import get_probe_totals
 from recon.agent import run_goal
 from browser_use import Agent
 from pathlib import Path
@@ -90,8 +91,8 @@ async def run_usecase_identification():
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
-    if not browser.ready:
-        raise HTTPException(400, "Not authenticated")
+    # if not browser.ready:
+        # raise HTTPException(400, "Not authenticated")
     return safe_return(await discover_tools())
 
 
@@ -195,6 +196,13 @@ async def get_results(session_id: Optional[str] = None):
         path = Path(f"logs/attack_log_{session_id}.json")
     else:
         path = Path("results.jsonl")
+        if not path.exists():
+            # Fallback: find the latest session log in logs/
+            logs_dir = Path("logs")
+            if logs_dir.exists():
+                log_files = sorted(logs_dir.glob("attack_log_*.json"), reverse=True)
+                if log_files:
+                    path = log_files[0]
         
     if not path.exists():
         return {"rows": []}
@@ -207,7 +215,6 @@ async def get_results(session_id: Optional[str] = None):
                     rows.append(json.loads(line))
                 except json.JSONDecodeError:
                     continue
-    from probes.stats import get_probe_totals
     totals = get_probe_totals()
     return {"rows": rows, "totals": totals}
 

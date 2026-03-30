@@ -1502,6 +1502,7 @@
     const targetName = urlParams.get('name') || 'Target';
     const policies = urlParams.get('policies') || '';
     const topoKey = `topo_${targetName}_${targetUrl}`;
+    let currentSessionId = null;
 
     window.addEventListener('DOMContentLoaded', () => {
       const saved = localStorage.getItem(topoKey);
@@ -1826,6 +1827,7 @@
       const sse = new EventSource(`${API}/agents/${agId}/stream`);
       sse.onmessage = function (event) {
         const data = JSON.parse(event.data);
+        if (data.session_id) currentSessionId = data.session_id;
         if (data.cdp_url && data.cdp_url !== bpConnectedUrl) { bpConnectedUrl = data.cdp_url; bpConnect(data.cdp_url); }
         if (data.status !== lastStatus) {
           const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸' };
@@ -1948,7 +1950,9 @@
       if (agId) { try { await fetch(`${API}/agents/${agId}`, { method: 'DELETE' }); } catch (e) { } }
       try { await fetch(`${API}/session/stop`, { method: 'POST' }); } catch (e) { }
       bpDisconnect();
-      window.location.href = 'dashboard.html';
+      let url = 'dashboard.html';
+      if (currentSessionId) url += `?session=${currentSessionId}`;
+      window.location.href = url;
     }
 
     window.addEventListener('resize', () => {

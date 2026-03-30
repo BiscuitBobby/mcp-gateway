@@ -3,7 +3,7 @@ from fastapi.responses import StreamingResponse
 from probes.execute import run_one
 from pydantic import BaseModel
 import browser as browser_mod
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
 import asyncio
@@ -20,9 +20,10 @@ class AgentStatus(str, Enum):
 
 
 class AgentRecord:
-    def __init__(self, agent_id, policies):
+    def __init__(self, agent_id, policies, session_id: Optional[str] = None):
         self.agent_id = agent_id
         self.policies = policies
+        self.session_id = session_id
         self.status = AgentStatus.IDLE
         self.result: Optional[str] = None
         self.error: Optional[str] = None
@@ -31,6 +32,7 @@ class AgentRecord:
     def to_dict(self):
         return {
             "agent_id": self.agent_id,
+            "session_id": self.session_id,
             "policies": self.policies,
             "cdp_url": getattr(browser_mod.instance, "cdp_url", None),
             "status": self.status,
@@ -48,7 +50,7 @@ async def run_probes(record: AgentRecord):
     all_results = []
     try:
         for action in record.policies:
-            result = await run_one(action)
+            result = await run_one(action, session_id=record.session_id)
             all_results.append(result)
         record.result = json.dumps(all_results)
         record.status = AgentStatus.DONE
@@ -79,9 +81,11 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
     if not browser_mod.ready:
         raise HTTPException(400, "Browser not ready. Call /session/start and /session/confirm first.")
     agent_id = str(uuid.uuid4())
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     record = AgentRecord(
         agent_id=agent_id,
         policies=body.policies,
+        session_id=session_id
     )
     registry[agent_id] = record
     background_tasks.add_task(run_probes, record)
