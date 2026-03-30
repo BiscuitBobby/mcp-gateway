@@ -191,6 +191,91 @@
       border-color: #fca5a5;
     }
 
+    /* Split Button Styles */
+    .split-btn {
+      display: inline-flex;
+      background: #2563eb;
+      border-radius: 8px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      position: relative;
+    }
+
+    .split-btn:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+
+    .split-btn-main {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 12px 18px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+      border-right: 1px solid rgba(255, 255, 255, 0.15);
+      flex: 1;
+    }
+
+    .split-btn-drop {
+      background: none;
+      border: none;
+      color: #fff;
+      padding: 0 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .split-btn-drop:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .dropdown-content {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      right: 0;
+      background-color: #fff;
+      min-width: 220px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      border-radius: 12px;
+      z-index: 9999;
+      overflow: hidden;
+      border: 1px solid var(--surface-border);
+      animation: fadeSlideUp 0.15s ease-out;
+    }
+
+    .dropdown-content.show {
+      display: block;
+    }
+
+    .dropdown-item {
+      color: var(--text);
+      padding: 12px 16px;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .dropdown-item:hover {
+      background-color: #f1f5f9;
+      color: var(--blue-600);
+    }
+
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
     .split-view {
       display: flex;
       gap: 24px;
@@ -199,13 +284,21 @@
       padding-bottom: 24px;
     }
 
-    .browser-panel,
-    .chat-panel {
+    .browser-panel {
       border-radius: var(--radius);
       display: flex;
       flex-direction: column;
       overflow: hidden;
       box-shadow: var(--shadow-md);
+    }
+
+    .chat-panel {
+      border-radius: var(--radius);
+      display: flex;
+      flex-direction: column;
+      /* overflow: hidden; Removed to allow dropdowns to pop up */
+      box-shadow: var(--shadow-md);
+      position: relative;
     }
 
     .browser-panel {
@@ -1444,7 +1537,7 @@
               </div>
             </div>
             <div class="chat-input-area"
-              style="padding:16px;border-top:1px solid var(--surface-border);background:#fff;display:flex;gap:8px;">
+              style="padding:16px;border-top:1px solid var(--surface-border);background:#fff;display:flex;gap:8px;position:relative;z-index:99999;">
               <input type="text" id="chatInput" placeholder="Send a message to the agent..."
                 style="flex:1;padding:10px 14px;border:1px solid var(--surface-border);border-radius:8px;font-family:inherit;font-size:14px;outline:none;"
                 onkeypress="if(event.key==='Enter') sendMessage()">
@@ -1789,7 +1882,19 @@
     async function setupMode(url, name, pols) {
       document.querySelector('.scan-status').innerHTML = '<div class="spinner"></div> Browser launched — log in if needed';
       addMessage(`<strong>Browser open</strong> for <code>${url}</code>.<br>If the target requires a login, complete it now in the browser window, then click <strong>Confirm &amp; Start Scan</strong>.`);
-      document.querySelector('.chat-input-area').innerHTML = `<button id="confirmBtn" onclick="confirmAndLaunch()" style="flex:1;background:#2563eb;color:#fff;border:none;padding:12px 20px;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">✓ Confirm Auth &amp; Start Scan</button>`;
+      document.querySelector('.chat-input-area').innerHTML = `
+        <div class="split-btn" style="flex:1;">
+          <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
+          <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <div id="scanDropdown" class="dropdown-content">
+            <div class="dropdown-item" onclick="confirmAndLaunch(true)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+              Start Scan without Profiling
+            </div>
+          </div>
+        </div>`;
       let _cdpTimer = null;
       async function pollCdp() {
         try { const r = await fetch(`${API}/session/cdp-url`); const d = await r.json(); if (d.cdp_url && d.cdp_url !== bpConnectedUrl) { bpConnectedUrl = d.cdp_url; bpConnect(d.cdp_url); return; } } catch (e) { }
@@ -1799,23 +1904,55 @@
       window._stopCdpPoll = () => clearTimeout(_cdpTimer);
     }
 
-    window.confirmAndLaunch = async function () {
+    window.toggleScanDropdown = function(e) {
+      e.stopPropagation();
+      document.getElementById('scanDropdown').classList.toggle('show');
+    };
+
+    window.onclick = function(event) {
+      if (!event.target.matches('.split-btn-drop') && !event.target.closest('.split-btn-drop')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+          const openDropdown = dropdowns[i];
+          if (openDropdown.classList.contains('show')) {
+            openDropdown.classList.remove('show');
+          }
+        }
+      }
+    };
+
+    window.confirmAndLaunch = async function (skipProfiling = false) {
       const btn = document.getElementById('confirmBtn');
       btn.textContent = 'Saving session…'; btn.disabled = true;
       try {
         const cr = await fetch(`${API}/session/confirm`, { method: 'POST' });
         if (!cr.ok) throw new Error('confirm: ' + await cr.text());
-        addMessage('<strong>Auth saved.</strong> Launching selected probes…');
+        
+        if (!skipProfiling) {
+          addMessage('<strong>Auth saved.</strong> Profiling target application…');
+          btn.textContent = 'Profiling target…';
+          const pr = await fetch(`${API}/session/profile`, { method: 'POST' });
+          if (!pr.ok) throw new Error('profile: ' + await pr.text());
+          addMessage('<strong>Profiling complete.</strong> Launching selected probes…');
+        } else {
+          addMessage('<strong>Auth saved.</strong> Launching selected probes (skipping profiling)…');
+        }
+
         const policyKeys = policies.split(',').map(s => s.trim()).filter(Boolean);
         const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
         if (!ar.ok) throw new Error('scan: ' + await ar.text());
         const agent = await ar.json();
         window._stopCdpPoll?.();
-        addMessage('<strong>Probes started.</strong> Switching to live stream…');
-        setTimeout(() => { const p = new URLSearchParams({ agent_id: agent.agent_id, url: targetUrl, name: targetName }); window.location.href = `active-scan.html?${p}`; }, 700);
+        addMessage('<strong>Profiling & Scan Initialized.</strong> Switching to live stream…', 'success');
+        
+        const p = new URLSearchParams({ agent_id: agent.agent_id, url: targetUrl, name: targetName });
+        const newUrl = `${window.location.pathname}?${p.toString()}`;
+        window.history.pushState({ agent_id: agent.agent_id }, '', newUrl);
+        
+        runningMode(agent.agent_id);
       } catch (err) {
         addMessage(`<strong>Error:</strong> ${err.message}`, 'critical');
-        btn.textContent = '✓ Confirm Auth & Start Scan'; btn.disabled = false;
+        btn.textContent = '✓ Begin Scan'; btn.disabled = false;
       }
     };
 
