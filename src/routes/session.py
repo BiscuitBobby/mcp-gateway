@@ -1,5 +1,6 @@
 from typing import Optional, Any
 from datetime import datetime
+import logging
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import identify_usecase, discover_tools
 from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest
@@ -16,6 +17,8 @@ from pathlib import Path
 import browser
 import json
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/session")
 
 
@@ -25,8 +28,10 @@ class StartRequest(BaseModel):
 
 
 class GenerateRequest(BaseModel):
-    profile: AgentProfile
-    interface: InterfaceMap
+    profile: Optional[AgentProfile] = None
+    interface: Optional[InterfaceMap] = None
+    goal: Optional[str] = None
+    vulnerabilities: Optional[Any] = None
 
 
 def safe_return(result):
@@ -129,10 +134,39 @@ async def run_tool_discovery():
 
 
 @router.post("/generate-payloads")
-async def generate_payloads(body: GenerateRequest):
+async def generate_payloads(body: Optional[GenerateRequest] = None):
+    recon_info = {}
+    if browser.session_id:
+        recon_path = Path("logs") / f"recon_{browser.session_id}.json"
+        if recon_path.exists():
+            try:
+                recon_info = json.loads(recon_path.read_text(encoding="utf-8"))
+            except Exception as e:
+                logger.warning(f"Failed to load recon data: {e}")
+
+    # Prioritize body if provided, otherwise fallback to recon_info
+    app_profile = (
+        body.profile.model_dump()
+        if body and body.profile
+        else recon_info.get("profile")
+    )
+    model_profile = (
+        body.interface.model_dump()
+        if body and body.interface
+        else recon_info.get("interface")
+    )
+    goal = body.goal if body and body.goal else recon_info.get("goal")
+    vulnerabilities = (
+        body.vulnerabilities
+        if body and body.vulnerabilities
+        else recon_info.get("vulnerabilities")
+    )
+
     summary = generate_all(
-        app_profile=body.profile.model_dump(),
-        model_profile=body.interface.model_dump(),
+        app_profile=app_profile,
+        model_profile=model_profile,
+        goal=goal,
+        vulnerabilities=vulnerabilities,
     )
     return {"status": "done", "summary": summary}
 

@@ -22,13 +22,18 @@ GENERATORS = [
 ]
 
 
-def generate_all(app_profile=None, model_profile=None):
+def generate_all(app_profile=None, model_profile=None, goal=None, vulnerabilities=None):
     summary = {}
 
     for name, main in GENERATORS:
         logger.info("[generate_all] Generating payloads for: %s", name)
         try:
-            result = main(app_profile=app_profile, model_profile=model_profile)
+            result = main(
+                app_profile=app_profile,
+                model_profile=model_profile,
+                goal=goal,
+                vulnerabilities=vulnerabilities,
+            )
             summary[name] = {"status": "ok", "count": len(result) if result else 0}
         except Exception as exc:
             logger.exception("[generate_all] %s failed: %s", name, exc)
