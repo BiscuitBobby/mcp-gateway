@@ -38,21 +38,21 @@ def get_probes():
         },
         "data_exfiltration": {
             "action": "data_exfiltration",
-            "owasp": "LLM02: Sensitive Information Disclosure",
+            "owasp": "LLM06: Sensitive Information Disclosure",
             "description": "Tests whether the model can be tricked into exfiltrating PII, conversation history, RAG contents, or API keys.",
             "prompts_file": "data_exfiltration_prompts.json",
             "instance": None,  # not yet implemented
         },
         "excessive_agency": {
             "action": "excessive_agency",
-            "owasp": "LLM06: Excessive Agency",
+            "owasp": "LLM08: Excessive Agency",
             "description": "Tests whether the model takes unauthorised real-world actions such as sending emails, modifying accounts, or executing destructive operations.",
             "prompts_file": "excessive_agency_prompts.json",
             "instance": ExcessiveAgencyProbe(),
         },
         "improper_output_handling": {
             "action": "improper_output_handling",
-            "owasp": "LLM05: Improper Output Handling",
+            "owasp": "LLM02: Insecure Output Handling",
             "description": "Tests whether the model produces dangerous structured output — injected HTML, forged tool calls, malformed JSON with privilege fields.",
             "prompts_file": "improper_output_handling_prompts.json",
             "instance": ImproperOutputHandlingProbe(),
@@ -66,7 +66,7 @@ def get_probes():
         },
         "rag_poisoning": {
             "action": "rag_poisoning",
-            "owasp": "LLM01: Prompt Injection (Indirect via RAG)",
+            "owasp": "LLM09: Over-reliance (Indirect via RAG)",
             "description": "Uploads malicious documents with hidden instructions to test indirect prompt injection via RAG",
             "prompts_file": "rag_poisoning_payloads.json",
             "instance": RagPoisoningProbe(),

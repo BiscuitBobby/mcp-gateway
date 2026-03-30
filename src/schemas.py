@@ -234,8 +234,8 @@ class OutputIntegrityAnalysis(BaseModel):
 class ImproperOutputHandlingResult(BaseProbeResult):
     type: Literal["improper_output_handling_attack"] = "improper_output_handling_attack"
     probe: Literal["improper_output_handling"] = "improper_output_handling"
-    category: Literal["LLM05: Improper Output Handling"] = (
-        "LLM05: Improper Output Handling"
+    category: Literal["LLM02: Insecure Output Handling"] = (
+        "LLM02: Insecure Output Handling"
     )
     integrity_analysis: OutputIntegrityAnalysis
     violation_detected: bool
@@ -244,15 +244,15 @@ class ImproperOutputHandlingResult(BaseProbeResult):
 class DataExfiltrationResult(BaseProbeResult):
     type: Literal["data_exfiltration_attack"] = "data_exfiltration_attack"
     probe: Literal["data_exfiltration"] = "data_exfiltration"
-    category: Literal["LLM02: Sensitive Information Disclosure"] = (
-        "LLM02: Sensitive Information Disclosure"
+    category: Literal["LLM06: Sensitive Information Disclosure"] = (
+        "LLM06: Sensitive Information Disclosure"
     )
 
 
 class ExcessiveAgencyResult(BaseProbeResult):
     type: Literal["excessive_agency_attack"] = "excessive_agency_attack"
     probe: Literal["excessive_agency"] = "excessive_agency"
-    category: Literal["LLM06: Excessive Agency"] = "LLM06: Excessive Agency"
+    category: Literal["LLM08: Excessive Agency"] = "LLM08: Excessive Agency"
 
 
 class ToolAbuseResult(BaseProbeResult):
@@ -264,8 +264,8 @@ class ToolAbuseResult(BaseProbeResult):
 class RagPoisoningResult(BaseProbeResult):
     type: Literal["rag_poisoning_attack"] = "rag_poisoning_attack"
     probe: Literal["rag_poisoning"] = "rag_poisoning"
-    category: Literal["LLM01: Prompt Injection (Indirect via RAG)"] = (
-        "LLM01: Prompt Injection (Indirect via RAG)"
+    category: Literal["LLM09: Over-reliance (Indirect via RAG)"] = (
+        "LLM09: Over-reliance (Indirect via RAG)"
     )
 
 

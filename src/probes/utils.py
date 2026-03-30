@@ -89,11 +89,11 @@ def get_probe_totals() -> Dict[str, int]:
         "prompt_injection": "LLM01",
         "sensitive_information_disclosure": "LLM02",
         "improper_output_handling": "LLM02",
+        "misinformation": "LLM04",
         "data_exfiltration": "LLM06",
+        "tool_abuse": "LLM07",
         "excessive_agency": "LLM08",
         "rag_poisoning": "LLM09",
-        "misinformation": "LLM04",
-        "tool_abuse": "LLM07",
     }
     
     totals = {}
