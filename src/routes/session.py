@@ -1,8 +1,8 @@
-from typing import Optional, List, Any
+from typing import Optional, Any
 from datetime import datetime
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import identify_usecase, discover_tools
-from schemas import AgentProfile, InterfaceMap, GoalRequest,  AnalyseRequest
+from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
 from probes.execute import run_all, run_one
@@ -122,7 +122,7 @@ async def run_usecase_identification():
 @router.post("/discover-tools")
 async def run_tool_discovery():
     # if not browser.ready:
-        # raise HTTPException(400, "Not authenticated")
+    # raise HTTPException(400, "Not authenticated")
     result = await discover_tools()
     save_recon_data("tools", result)
     return safe_return(result)
@@ -187,7 +187,7 @@ async def list_logs():
     logs_dir = Path("logs")
     if not logs_dir.exists():
         return {"sessions": []}
-    
+
     sessions = []
     # Files are named attack_log_YYYYMMDD_HHMMSS.json
     for p in logs_dir.glob("attack_log_*.json"):
@@ -198,27 +198,33 @@ async def list_logs():
                 first_line = f.readline()
                 if first_line:
                     data = json.loads(first_line)
-                    sessions.append({
-                        "session_id": session_id,
-                        "target_name": data.get("target_name", "Unknown"),
-                        "target_url": data.get("target_url", "Unknown"),
-                        "timestamp": data.get("timestamp", ""),
-                    })
+                    sessions.append(
+                        {
+                            "session_id": session_id,
+                            "target_name": data.get("target_name", "Unknown"),
+                            "target_url": data.get("target_url", "Unknown"),
+                            "timestamp": data.get("timestamp", ""),
+                        }
+                    )
                 else:
-                    sessions.append({
-                        "session_id": session_id,
-                        "target_name": "Unknown",
-                        "target_url": "Unknown",
-                        "timestamp": "",
-                    })
+                    sessions.append(
+                        {
+                            "session_id": session_id,
+                            "target_name": "Unknown",
+                            "target_url": "Unknown",
+                            "timestamp": "",
+                        }
+                    )
         except Exception:
-            sessions.append({
-                "session_id": session_id,
-                "target_name": "Unknown",
-                "target_url": "Unknown",
-                "timestamp": "",
-            })
-    
+            sessions.append(
+                {
+                    "session_id": session_id,
+                    "target_name": "Unknown",
+                    "target_url": "Unknown",
+                    "timestamp": "",
+                }
+            )
+
     # Sort sessions by timestamp descending (newest first)
     sessions.sort(key=lambda x: x["session_id"], reverse=True)
     return {"sessions": sessions}
@@ -237,7 +243,7 @@ async def get_results(session_id: Optional[str] = None):
                 log_files = sorted(logs_dir.glob("attack_log_*.json"), reverse=True)
                 if log_files:
                     path = log_files[0]
-        
+
     if not path.exists():
         return {"rows": []}
     rows = []

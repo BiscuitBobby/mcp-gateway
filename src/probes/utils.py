@@ -1,12 +1,12 @@
 import json
 import logging
 import asyncio
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from browser_use import Agent
 
 logger = logging.getLogger(__name__)
+
 
 def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
     """Load prompts from a JSON file, ensuring they have required fields."""
@@ -20,7 +20,10 @@ def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
         logger.error(f"Error loading prompts from {prompts_file}: {e}")
         return []
 
-async def execute_prompt(session, llm, prompt: str, max_steps: int = 10) -> Optional[str]:
+
+async def execute_prompt(
+    session, llm, prompt: str, max_steps: int = 10
+) -> Optional[str]:
     """Execute a single prompt using the browser-use Agent."""
     agent = Agent(
         llm=llm,
@@ -39,9 +42,10 @@ async def execute_prompt(session, llm, prompt: str, max_steps: int = 10) -> Opti
     history = await agent.run()
     return history.final_result() if history else None
 
+
 class AttackLogger:
     """Centralized logger for attack probe results with deduplication."""
-    
+
     _lock = asyncio.Lock()
     _seen_hashes = set()
 
@@ -53,7 +57,9 @@ class AttackLogger:
         content = f"{record.get('probe')}|{record.get('technique')}|{record.get('prompt')}|{record.get('response')}"
         return str(hash(content))
 
-    async def log(self, record: dict, session: Optional[Any] = None, deduplicate: bool = True) -> None:
+    async def log(
+        self, record: dict, session: Optional[Any] = None, deduplicate: bool = True
+    ) -> None:
         """Centralized JSONL logging with optional session context and deduplication."""
         if session:
             record["session_id"] = getattr(session, "session_id", "N/A")
@@ -66,7 +72,9 @@ class AttackLogger:
             record_hash = self._get_hash(record)
             async with self._lock:
                 if record_hash in self._seen_hashes:
-                    logger.debug(f"Skipping duplicate log entry for {record.get('probe')}")
+                    logger.debug(
+                        f"Skipping duplicate log entry for {record.get('probe')}"
+                    )
                     return
                 self._seen_hashes.add(record_hash)
 
@@ -82,8 +90,9 @@ def get_probe_totals() -> Dict[str, int]:
     based on the registered probes and their prompt files.
     """
     from probes.registry import get_probes
+
     probes = get_probes()
-    
+
     # Map from probe action name to OWASP short code (matching dashboard.html)
     owasp_map = {
         "prompt_injection": "LLM01",
@@ -95,22 +104,22 @@ def get_probe_totals() -> Dict[str, int]:
         "excessive_agency": "LLM08",
         "rag_poisoning": "LLM09",
     }
-    
+
     totals = {}
     base_path = Path(__file__).parent
-    
+
     for key, info in probes.items():
         cat = owasp_map.get(key)
         if not cat:
             continue
-            
+
         filename = info.get("prompts_file")
         if not filename:
             continue
-            
+
         # The prompts file is relative to the probe's directory
         prompts_path = base_path / key / filename
-        
+
         count = 0
         if prompts_path.exists():
             try:
@@ -120,10 +129,10 @@ def get_probe_totals() -> Dict[str, int]:
             except Exception:
                 # If file exists but is invalid JSON or not a list, count is 0
                 pass
-        
+
         totals[cat] = totals.get(cat, 0) + count
-        
+
     return totals
-        
+
 
 default_logger = AttackLogger()

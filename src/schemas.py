@@ -297,13 +297,13 @@ class LogEntry(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
-
 class VulnerabilityReport(BaseModel):
     attack_surface: list[str]
     data_flow_paths: list[str]
     agent_constraints: list[str]
     vulnerabilities: list[Vulnerability]
     recommended_probe_order: list[AttackType]
+
 
 class AnalyseRequest(BaseModel):
     profile: AgentProfile

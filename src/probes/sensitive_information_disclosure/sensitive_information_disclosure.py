@@ -1,9 +1,7 @@
-import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
-from browser_use import Agent
 from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
@@ -29,7 +27,9 @@ class SensitiveInformationDisclosureProbe(AttackProbe):
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
+            response = await execute_prompt(
+                session, llm, item["prompt"], max_steps=MAX_STEPS
+            )
             analysis = await run_reasoning(
                 llm=reasoning_llm,
                 task_description=TASKS[self.name],

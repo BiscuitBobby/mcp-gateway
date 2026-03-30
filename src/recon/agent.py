@@ -3,7 +3,6 @@ from recon.vulnerability_analysis import VulnerabilityReport
 from langchain_mistralai import ChatMistralAI
 from probes.registry import get_probes
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 import asyncio
 import browser
@@ -51,7 +50,9 @@ async def save_result(record: dict) -> None:
             f.flush()
 
 
-async def select_attack(goal: str, available: dict, history: list, probe_order: list[str] | None = None) -> tuple[str, dict]:
+async def select_attack(
+    goal: str, available: dict, history: list, probe_order: list[str] | None = None
+) -> tuple[str, dict]:
     prompt = PLANNER_USER.format(
         goal=goal,
         available=json.dumps(available, indent=2),
@@ -145,7 +146,9 @@ async def run_goal(
     for i in range(max_iterations):
         print(f"\nITERATION {i + 1}")
 
-        probe_name, decision = await select_attack(goal, available, history, probe_order)
+        probe_name, decision = await select_attack(
+            goal, available, history, probe_order
+        )
         if probe_name not in registry:
             print(f"[!] No probe for: {probe_name}")
             continue

@@ -12,6 +12,7 @@ import json
 
 router = APIRouter(prefix="/agents")
 
+
 class AgentStatus(str, Enum):
     IDLE = "idle"
     RUNNING = "running"
@@ -79,13 +80,13 @@ async def get_agent(agent_id: str):
 @router.post("/scan", status_code=201)
 async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
     if not browser_mod.ready:
-        raise HTTPException(400, "Browser not ready. Call /session/start and /session/confirm first.")
+        raise HTTPException(
+            400, "Browser not ready. Call /session/start and /session/confirm first."
+        )
     agent_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     record = AgentRecord(
-        agent_id=agent_id,
-        policies=body.policies,
-        session_id=session_id
+        agent_id=agent_id, policies=body.policies, session_id=session_id
     )
     registry[agent_id] = record
     background_tasks.add_task(run_probes, record)

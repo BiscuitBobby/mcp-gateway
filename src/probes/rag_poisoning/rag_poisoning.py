@@ -1,4 +1,3 @@
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
@@ -9,7 +8,7 @@ from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.rag_poisoning.generate_prompts import main as generate_prompts
 from probes.rag_poisoning.generate_documents import main as generate_documents
-from probes.utils import load_prompts, execute_prompt, default_logger
+from probes.utils import load_prompts, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "rag_poisoning_prompts.json"
 DOCS_DIR = Path(__file__).parent / "poisoned_docs"
@@ -35,7 +34,9 @@ class RagPoisoningProbe(AttackProbe):
 
             if delivery == "upload":
                 doc_path = self._find_doc(file_type)
-                response = await self.execute_upload(session, llm, item["prompt"], doc_path)
+                response = await self.execute_upload(
+                    session, llm, item["prompt"], doc_path
+                )
             else:
                 response = await self.execute_url(session, llm, item["prompt"])
 
@@ -69,7 +70,9 @@ class RagPoisoningProbe(AttackProbe):
         docs = list(DOCS_DIR.glob(f"*.{ext}"))
         return docs[0] if docs else None
 
-    async def execute_upload(self, session, llm, prompt: str, doc_path: Optional[Path]) -> Optional[str]:
+    async def execute_upload(
+        self, session, llm, prompt: str, doc_path: Optional[Path]
+    ) -> Optional[str]:
         if doc_path is None:
             return None
         history = await Agent(
