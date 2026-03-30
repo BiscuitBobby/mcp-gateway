@@ -3,7 +3,7 @@ from probes.sensitive_information_disclosure.generate_prompts import (
     main as gen_sensitive,
 )
 
-# from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
+from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
 from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
 from probes.improper_output_handling.generate_prompts import main as gen_improper_output
 from probes.misinformation.generate_prompts import main as gen_misinformation
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 GENERATORS = [
     ("prompt_injection", gen_prompt_injection),
     ("sensitive_information_disclosure", gen_sensitive),
-    # ("data_exfiltration", gen_data_exfil),
+    ("data_exfiltration", gen_data_exfil),
     ("excessive_agency", gen_excessive_agency),
     ("improper_output_handling", gen_improper_output),
     ("misinformation", gen_misinformation),
