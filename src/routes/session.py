@@ -35,6 +35,32 @@ def safe_return(result):
     return result
 
 
+def save_recon_data(key: str, data: Any):
+    """Aggregate recon data into a single session-specific JSON file."""
+    if not browser.session_id:
+        return
+
+    logs_dir = Path("logs")
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    recon_path = logs_dir / f"recon_{browser.session_id}.json"
+
+    recon_info: dict[str, Any] = {}
+
+    if recon_path.exists():
+        try:
+            recon_info = json.loads(recon_path.read_text(encoding="utf-8"))
+        except Exception:
+            pass
+
+    recon_info["session_id"] = browser.session_id
+    recon_info["target_name"] = browser.target_name
+    recon_info["target_url"] = browser.target_url
+    recon_info["timestamp"] = datetime.now().isoformat()
+    recon_info[key] = safe_return(data)
+
+    recon_path.write_text(json.dumps(recon_info, indent=2), encoding="utf-8")
+
+
 @router.post("/start")
 async def start(body: StartRequest):
     await browser.start(str(body.url), name=body.name)
@@ -79,21 +105,27 @@ async def find_chat():
 async def run_interface_mapping():
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    return safe_return(await map_interface())
+    result = await map_interface()
+    save_recon_data("interface", result)
+    return safe_return(result)
 
 
 @router.post("/profile")
 async def run_usecase_identification():
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    return safe_return(await identify_usecase())
+    result = await identify_usecase()
+    save_recon_data("profile", result)
+    return safe_return(result)
 
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
     # if not browser.ready:
         # raise HTTPException(400, "Not authenticated")
-    return safe_return(await discover_tools())
+    result = await discover_tools()
+    save_recon_data("tools", result)
+    return safe_return(result)
 
 
 @router.post("/generate-payloads")
@@ -131,7 +163,9 @@ async def run_single(action: str):
 async def analyse(body: AnalyseRequest):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    return safe_return(await find_potential_vulnerabilities(body.profile, body.interface))
+    result = await find_potential_vulnerabilities(body.profile, body.interface)
+    save_recon_data("vulnerabilities", result)
+    return safe_return(result)
 
 
 @router.post("/run-goal")

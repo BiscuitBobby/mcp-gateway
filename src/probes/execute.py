@@ -17,7 +17,7 @@ class ProbeSession:
         self.browser = browser.instance
         self.target_url = browser.target_url
         self.target_name = getattr(browser, "target_name", "Target")
-        self.session_id = session_id or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        self.session_id = session_id or browser.session_id or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
         self.chat_detected = True
         self.evidence: list[dict] = []
 

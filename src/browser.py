@@ -6,12 +6,15 @@ ready = False
 target_url = ""
 target_name = ""
 instance = None
+session_id = None
 
 
 async def start(url: str, name: str = ""):
-    global target_url, target_name, instance
+    global target_url, target_name, instance, session_id
+    from datetime import datetime, timezone
     target_url = url
     target_name = name or "Target"
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
     instance = BrowserSession(
         storage_state=STORAGE_STATE, keep_alive=True, args=["--remote-allow-origins=*"]
