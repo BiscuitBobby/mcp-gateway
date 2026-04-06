@@ -112,13 +112,41 @@ class InterfaceMap(BaseModel):
 
 # ── Agent Profile ──────────────────────────────────────────────
 
-
 class AgentProfile(BaseModel):
     agent_type: str
-    has_rag: bool
+    agent_description: str
+    capabilities: list[str] = []
+
     has_tools: bool
-    processes_files: bool
+    tools: list[str] = []
+
+    has_restrictions: bool
+    restrictions: list[str] = []
+
+    has_internet_access: bool
+    external_data_sources: list[str] = []
+
+    system_prompt_revealed: bool
     system_prompt_style: str
+    system_prompt_excerpt: Optional[str] = None
+
+    knowledge_cutoff: Optional[str] = None
+    training_data_sources: list[str] = []
+
+    use_case: str
+    target_users: str
+    value_proposition: str
+
+    has_rag: bool
+    data_stores: list[str] = []
+    rag_description: Optional[str] = None
+
+    can_execute_code: bool
+    code_environments: list[str] = []
+
+    processes_files: bool
+    file_operations: list[str] = []
+
     notes: Optional[str] = None
 
 
