@@ -41,29 +41,22 @@ def safe_return(result):
 
 
 def save_recon_data(key: str, data: Any):
-    """Aggregate recon data into a single session-specific JSON file."""
     if not browser.session_id:
         return
 
     logs_dir = Path("logs")
     logs_dir.mkdir(parents=True, exist_ok=True)
-    recon_path = logs_dir / f"recon_{browser.session_id}.json"
+    file_path = logs_dir / f"{key}_{browser.session_id}.json"
 
-    recon_info: dict[str, Any] = {}
+    output = {
+        "session_id": browser.session_id,
+        "target_name": browser.target_name,
+        "target_url": browser.target_url,
+        "timestamp": datetime.now().isoformat(),
+        "data": safe_return(data),
+    }
 
-    if recon_path.exists():
-        try:
-            recon_info = json.loads(recon_path.read_text(encoding="utf-8"))
-        except Exception:
-            pass
-
-    recon_info["session_id"] = browser.session_id
-    recon_info["target_name"] = browser.target_name
-    recon_info["target_url"] = browser.target_url
-    recon_info["timestamp"] = datetime.now().isoformat()
-    recon_info[key] = safe_return(data)
-
-    recon_path.write_text(json.dumps(recon_info, indent=2), encoding="utf-8")
+    file_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
 
 
 @router.post("/start")
@@ -135,32 +128,22 @@ async def run_tool_discovery():
 
 @router.post("/generate-payloads")
 async def generate_payloads(body: Optional[GenerateRequest] = None):
-    recon_info = {}
-    if browser.session_id:
-        recon_path = Path("logs") / f"recon_{browser.session_id}.json"
-        if recon_path.exists():
-            try:
-                recon_info = json.loads(recon_path.read_text(encoding="utf-8"))
-            except Exception as e:
-                logger.warning(f"Failed to load recon data: {e}")
+    def load_log(key: str):
+        if not browser.session_id:
+            return {}
+        p = Path("logs") / f"{key}_{browser.session_id}.json"
+        if not p.exists():
+            return {}
+        try:
+            return json.loads(p.read_text(encoding="utf-8")).get("data", {})
+        except Exception as e:
+            logger.warning(f"Failed to load {key} log: {e}")
+            return {}
 
-    # Prioritize body if provided, otherwise fallback to recon_info
-    app_profile = (
-        body.profile.model_dump()
-        if body and body.profile
-        else recon_info.get("profile")
-    )
-    model_profile = (
-        body.interface.model_dump()
-        if body and body.interface
-        else recon_info.get("interface")
-    )
-    goal = body.goal if body and body.goal else recon_info.get("goal")
-    vulnerabilities = (
-        body.vulnerabilities
-        if body and body.vulnerabilities
-        else recon_info.get("vulnerabilities")
-    )
+    app_profile = body.profile.model_dump() if body and body.profile else load_log("profile")
+    model_profile = body.interface.model_dump() if body and body.interface else load_log("interface")
+    goal = body.goal if body and body.goal else None
+    vulnerabilities = body.vulnerabilities if body and body.vulnerabilities else load_log("vulnerabilities")
 
     summary = generate_all(
         app_profile=app_profile,
@@ -194,13 +177,28 @@ async def run_single(action: str):
 
 
 @router.post("/analyse")
-async def analyse(body: AnalyseRequest):
+async def analyse(body: Optional[AnalyseRequest] = None):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    result = await find_potential_vulnerabilities(body.profile, body.interface)
+
+    def load_log(key: str):
+        if not browser.session_id:
+            return None
+        p = Path("logs") / f"{key}_{browser.session_id}.json"
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text(encoding="utf-8")).get("data")
+        except Exception as e:
+            logger.warning(f"Failed to load {key} log: {e}")
+            return None
+
+    profile = body.profile if body and body.profile else load_log("profile")
+    interface = body.interface if body and body.interface else load_log("interface")
+
+    result = await find_potential_vulnerabilities(profile, interface)
     save_recon_data("vulnerabilities", result)
     return safe_return(result)
-
 
 @router.post("/run-goal")
 async def run_goal_endpoint(body: GoalRequest):
