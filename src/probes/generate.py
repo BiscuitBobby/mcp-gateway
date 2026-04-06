@@ -1,12 +1,11 @@
 from probes.prompt_injection.generate_prompts import main as gen_prompt_injection
-from probes.sensitive_information_disclosure.generate_prompts import (
-    main as gen_sensitive,
-)
-
+from probes.sensitive_information_disclosure.generate_prompts import main as gen_sensitive
 from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
 from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
 from probes.improper_output_handling.generate_prompts import main as gen_improper_output
 from probes.misinformation.generate_prompts import main as gen_misinformation
+from probes.rag_poisoning.generate_prompts import main as gen_rag_poisoning
+from probes.rag_poisoning.generate_documents import main as gen_rag_docs
 
 import logging
 
@@ -19,6 +18,8 @@ GENERATORS = [
     ("excessive_agency", gen_excessive_agency),
     ("improper_output_handling", gen_improper_output),
     ("misinformation", gen_misinformation),
+    ("rag_poisoning", gen_rag_poisoning),
+    ("rag_poisoning_docs", gen_rag_docs),
 ]
 
 
