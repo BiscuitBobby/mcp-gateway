@@ -334,5 +334,5 @@ class VulnerabilityReport(BaseModel):
 
 
 class AnalyseRequest(BaseModel):
-    profile: AgentProfile
-    interface: InterfaceMap
+    profile: Optional[AgentProfile] = None
+    interface: Optional[InterfaceMap] = None
