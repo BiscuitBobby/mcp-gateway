@@ -183,11 +183,10 @@ class ToolDiscoveryProfile(BaseModel):
 
 class GoalRequest(BaseModel):
     goal: str
-    profile: AgentProfile
-    interface: InterfaceMap
+    profile: Optional[AgentProfile] = None
+    interface: Optional[InterfaceMap] = None
     vuln_report: Optional[VulnerabilityReport] = None
     max_iterations: int = 20
-
 
 # ── Reasoning ──────────────────────────────────────────────────
 
@@ -325,12 +324,19 @@ class LogEntry(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
+class PotentialVulnerability(BaseModel):
+    probe: str
+    finding: str
+    severity: str
+    evidence: str
+    attack_surface: str
+    trust_boundary_violation: str
+
+
 class VulnerabilityReport(BaseModel):
-    attack_surface: list[str]
-    data_flow_paths: list[str]
-    agent_constraints: list[str]
-    vulnerabilities: list[Vulnerability]
-    recommended_probe_order: list[AttackType]
+    potential_vulnerabilities: list[PotentialVulnerability]
+    severity_summary: dict[str, int]
+    recommended_probe_order: list[str]
 
 
 class AnalyseRequest(BaseModel):
