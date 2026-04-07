@@ -3,7 +3,7 @@ from datetime import datetime
 import logging
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import identify_usecase, discover_tools
-from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest
+from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest, VulnerabilityReport
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
 from probes.execute import run_all, run_one
@@ -57,6 +57,19 @@ def save_recon_data(key: str, data: Any):
     }
 
     file_path.write_text(json.dumps(output, indent=2), encoding="utf-8")
+
+
+def load_log(key: str):
+    if not browser.session_id:
+        return None
+    p = Path("logs") / f"{key}_{browser.session_id}.json"
+    if not p.exists():
+        return None
+    try:
+        return json.loads(p.read_text(encoding="utf-8")).get("data")
+    except Exception as e:
+        logger.warning(f"Failed to load {key} log: {e}")
+        return None
 
 
 @router.post("/start")
@@ -119,8 +132,6 @@ async def run_usecase_identification():
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
-    # if not browser.ready:
-    # raise HTTPException(400, "Not authenticated")
     result = await discover_tools()
     save_recon_data("tools", result)
     return safe_return(result)
@@ -128,18 +139,6 @@ async def run_tool_discovery():
 
 @router.post("/generate-payloads")
 async def generate_payloads(body: Optional[GenerateRequest] = None):
-    def load_log(key: str):
-        if not browser.session_id:
-            return {}
-        p = Path("logs") / f"{key}_{browser.session_id}.json"
-        if not p.exists():
-            return {}
-        try:
-            return json.loads(p.read_text(encoding="utf-8")).get("data", {})
-        except Exception as e:
-            logger.warning(f"Failed to load {key} log: {e}")
-            return {}
-
     app_profile = body.profile.model_dump() if body and body.profile else load_log("profile")
     model_profile = body.interface.model_dump() if body and body.interface else load_log("interface")
     goal = body.goal if body and body.goal else None
@@ -181,35 +180,35 @@ async def analyse(body: Optional[AnalyseRequest] = None):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
 
-    def load_log(key: str):
-        if not browser.session_id:
-            return None
-        p = Path("logs") / f"{key}_{browser.session_id}.json"
-        if not p.exists():
-            return None
-        try:
-            return json.loads(p.read_text(encoding="utf-8")).get("data")
-        except Exception as e:
-            logger.warning(f"Failed to load {key} log: {e}")
-            return None
+    profile_raw = body.profile if body and body.profile else load_log("profile")
+    interface_raw = body.interface if body and body.interface else load_log("interface")
 
-    profile = body.profile if body and body.profile else load_log("profile")
-    interface = body.interface if body and body.interface else load_log("interface")
+    profile = AgentProfile.model_validate(profile_raw) if isinstance(profile_raw, dict) else profile_raw
+    interface = InterfaceMap.model_validate(interface_raw) if isinstance(interface_raw, dict) else interface_raw
 
     result = await find_potential_vulnerabilities(profile, interface)
     save_recon_data("vulnerabilities", result)
     return safe_return(result)
+
 
 @router.post("/run-goal")
 async def run_goal_endpoint(body: GoalRequest):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
 
+    profile_raw = body.profile if body.profile else load_log("profile")
+    interface_raw = body.interface if body.interface else load_log("interface")
+    vuln_raw = body.vuln_report if body.vuln_report else load_log("vulnerabilities")
+
+    profile = AgentProfile.model_validate(profile_raw) if isinstance(profile_raw, dict) else profile_raw
+    interface = InterfaceMap.model_validate(interface_raw) if isinstance(interface_raw, dict) else interface_raw
+    vuln_report = VulnerabilityReport.model_validate(vuln_raw) if isinstance(vuln_raw, dict) else vuln_raw
+
     return await run_goal(
         goal=body.goal,
-        profile=body.profile,
-        interface=body.interface,
-        vuln_report=body.vuln_report,
+        profile=profile,
+        interface=interface,
+        vuln_report=vuln_report,
         max_iterations=body.max_iterations,
     )
 
@@ -221,10 +220,8 @@ async def list_logs():
         return {"sessions": []}
 
     sessions = []
-    # Files are named attack_log_YYYYMMDD_HHMMSS.json
     for p in logs_dir.glob("attack_log_*.json"):
         session_id = p.stem.replace("attack_log_", "")
-        # Try to read the first line to get target info
         try:
             with open(p, "r", encoding="utf-8") as f:
                 first_line = f.readline()
@@ -257,7 +254,6 @@ async def list_logs():
                 }
             )
 
-    # Sort sessions by timestamp descending (newest first)
     sessions.sort(key=lambda x: x["session_id"], reverse=True)
     return {"sessions": sessions}
 
@@ -269,7 +265,6 @@ async def get_results(session_id: Optional[str] = None):
     else:
         path = Path("results.jsonl")
         if not path.exists():
-            # Fallback: find the latest session log in logs/
             logs_dir = Path("logs")
             if logs_dir.exists():
                 log_files = sorted(logs_dir.glob("attack_log_*.json"), reverse=True)
