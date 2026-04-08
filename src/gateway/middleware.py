@@ -1,5 +1,5 @@
 from fastmcp.server.middleware import Middleware, MiddlewareContext
-from analyzer.filters import ScanFailure, dynamic_scan
+from src.analyzer.filters import ScanFailure, dynamic_scan
 from fastmcp.telemetry import inject_trace_context
 import logging
 

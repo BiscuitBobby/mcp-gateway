@@ -1,7 +1,7 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from dataclasses import dataclass
 from typing import Literal
-from analyzer.models import (
+from src.analyzer.models import (
     store,
     Report,
     get_scan_id,
@@ -10,7 +10,7 @@ from typing import Union
 import getpass
 import os
 
-from policies.views import GLOBAL_POLICIES, get_policies, load_json
+from src.policies.views import GLOBAL_POLICIES, get_policies, load_json
 
 if "GOOGLE_API_KEY" not in os.environ:
     os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google AI API key: ")

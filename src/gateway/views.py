@@ -1,13 +1,13 @@
 from fastapi.responses import RedirectResponse
 from fastapi import APIRouter, HTTPException
-from sub_proxy.test import refresh
+from src.sub_proxy.test import refresh
 from pydantic import BaseModel
 from config import settings
 import asyncio
 import json
 import re
 
-from gateway.models import (
+from src.gateway.models import (
     gateway_info,
     load_config,
     mount_proxy,

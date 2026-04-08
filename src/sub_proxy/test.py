@@ -1,5 +1,5 @@
 from config import settings  # always import first for telemetry
-from gateway.models import load_config, mount_proxy
+from src.gateway.models import load_config, mount_proxy
 from fastapi import FastAPI
 from fastmcp import FastMCP
 from pathlib import Path

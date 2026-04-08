@@ -2,7 +2,7 @@ from sqlalchemy import select, and_, or_
 from sqlalchemy.orm import Session
 from fastapi import Depends, Query
 from datetime import datetime
-from analyzer.models import (
+from src.analyzer.models import (
     SessionLocal,
     Scan,
     get_db,

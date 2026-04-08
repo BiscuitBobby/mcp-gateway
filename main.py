@@ -1,15 +1,15 @@
 from config import settings  # always import first for telemetry
 from fastapi.responses import Response, StreamingResponse
 from fastmcp.utilities.lifespan import combine_lifespans
-from analyzer.urls import router as analyzer_router
+from src.analyzer.urls import router as analyzer_router
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from gateway.urls import router as gateway_router
-from policies.urls import router as policy_router
-from sub_proxy.test import ServerRoutes, run_all
-from oauth.urls import router as oauth_router
+from src.gateway.urls import router as gateway_router
+from src.policies.urls import router as policy_router
+from src.sub_proxy.test import ServerRoutes, run_all
+from src.oauth.urls import router as oauth_router
 from contextlib import asynccontextmanager
-from gateway.views import mcp
+from src.gateway.views import mcp
 import uvicorn
 import asyncio
 import httpx

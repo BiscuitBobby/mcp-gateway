@@ -1,6 +1,6 @@
-from analyzer.graphs import init_graph_state, build_graph_payload, finalize_graph
-from analyzer.models import Scan, get_db, normalize_scans
-from analyzer.views import list_scans, status
+from src.analyzer.graphs import init_graph_state, build_graph_payload, finalize_graph
+from src.analyzer.models import Scan, get_db, normalize_scans
+from src.analyzer.views import list_scans, status
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import select

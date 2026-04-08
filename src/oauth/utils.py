@@ -1,5 +1,5 @@
 from urllib.parse import urlparse, urlencode, parse_qs
-from oauth.models import load_oauth_state
+from src.oauth.models import load_oauth_state
 import requests
 import secrets
 import hashlib

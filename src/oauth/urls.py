@@ -1,4 +1,4 @@
-from oauth.views import resolve_oauth, oauth_callback
+from src.oauth.views import resolve_oauth, oauth_callback
 from fastapi import APIRouter
 
 router = APIRouter(tags=["oauth"])

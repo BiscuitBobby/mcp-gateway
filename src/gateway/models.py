@@ -1,4 +1,4 @@
-from gateway.middleware import LoggingMiddleware, logger
+from src.gateway.middleware import LoggingMiddleware, logger
 from fastmcp.server import create_proxy
 from async_lru import alru_cache
 from fastmcp import FastMCP

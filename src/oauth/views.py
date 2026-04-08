@@ -1,9 +1,9 @@
-from gateway.models import gateway_info, load_config, mount_proxy, save_config
-from oauth.utils import decode_token_endpoint, exchange_token, run_oauth_flow
+from src.gateway.models import gateway_info, load_config, mount_proxy, save_config
+from src.oauth.utils import decode_token_endpoint, exchange_token, run_oauth_flow
 from fastapi import Request, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from sub_proxy.test import refresh
-from gateway.views import mcp
+from src.sub_proxy.test import refresh
+from src.gateway.views import mcp
 from config import settings
 from pathlib import Path
 import requests
