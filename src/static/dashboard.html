@@ -430,7 +430,7 @@
     /* MIDDLE SECTION */
     .vulnerable-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 24px;
       margin-bottom: 48px;
     }
@@ -1246,6 +1246,19 @@
             <a href="#" class="details-link">See details &rarr;</a>
           </div>
 
+          <div class="card vuln-card animate-up" style="animation-delay: 0.55s;">
+            <div class="semi-gauge-container">
+              <svg class="semi-gauge-svg" viewBox="0 0 160 160">
+                <path class="semi-gauge-bg" d="M 10 150 A 70 70 0 0 1 150 150"></path>
+                <path class="semi-gauge-value" stroke="url(#orangeGradient)" stroke-dasharray="219.9" stroke-dashoffset="219.9"
+                  data-value="0" data-semi="true" d="M 10 150 A 70 70 0 0 1 150 150"></path>
+              </svg>
+              <div class="semi-gauge-center">0</div>
+            </div>
+            <h4 class="vuln-title">Tool Misuse</h4>
+            <a href="#" class="details-link">See details &rarr;</a>
+          </div>
+
         </div>
 
         <div class="charts-grid animate-up" style="animation-delay: 0.6s;">
@@ -1528,6 +1541,7 @@
             if (title.includes('jailbreak')) probe = 'prompt_injection';
             else if (title.includes('hallucination')) probe = 'misinformation';
             else if (title.includes('bias')) probe = 'bias';
+            else if (title.includes('tool misuse')) probe = 'tool_misuse';
 
             const count = probeCounts[probe] || 0;
             const detected = probeDetected[probe] || 0;
@@ -1549,6 +1563,7 @@
             tool_abuse:                        'LLM07',
             excessivity:                       'LLM08',
             excessive_agency:                  'LLM08',
+            tool_misuse:                       'LLM08',
             rag_poisoning:                     'LLM09',
           };
           const owaspTotals = {}, owaspHits = {};
@@ -1645,6 +1660,7 @@
             excessive_agency: 'Excessive Agency',
             rag_poisoning: 'RAG Poisoning',
             tool_abuse: 'Tool Abuse',
+            tool_misuse: 'Tool Misuse',
           };
           return labels[probe] || probe.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
         }
