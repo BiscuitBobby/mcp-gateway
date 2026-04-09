@@ -7,6 +7,8 @@
   <title>Scan Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
   <style>
     :root {
       --bg: #f8fafc;
@@ -1127,14 +1129,14 @@
             <div class="scan-time">
               <span style="opacity: 0.6; margin-right: 4px;">Scanned:</span> Today, 09:14 AM
             </div>
-            <button class="btn-outline">
+            <button id="exportPdfBtn" class="btn-outline">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                 stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
                 <line x1="12" y1="15" x2="12" y2="3"></line>
               </svg>
-              Export PDF
+              <span class="export-label">Export PDF</span>
             </button>
             <button class="btn-primary">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -1688,7 +1690,332 @@
           document.querySelector('.btn-primary').addEventListener('click', () => {
             window.location.href = 'new-scan.html';
           });
+
+          // Export PDF button
+          document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
         });
+
+        // ── PDF Export Logic ──
+        async function exportPDF() {
+          const btn = document.getElementById('exportPdfBtn');
+          const labelEl = btn.querySelector('.export-label');
+          const origLabel = labelEl.textContent;
+
+          btn.disabled = true;
+          btn.style.opacity = '0.6';
+          btn.style.pointerEvents = 'none';
+          labelEl.textContent = 'Generating…';
+
+          try {
+            if (!window.jspdf && !window.jsPDF) throw new Error('jsPDF not loaded');
+            const jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+
+            // ── Extract data from DOM ──
+            const targetName  = document.getElementById('targetNameDisplay')?.textContent?.trim() || 'Unknown Target';
+            const scanTimeRaw = document.querySelector('.scan-time')?.textContent?.replace('Scanned:', '').trim() || '—';
+            const riskScore   = document.querySelector('.gauge-center .num')?.textContent?.trim() || '0';
+            const riskLevel   = document.querySelector('.risk-label')?.textContent?.trim().replace(/^\s*[•·]\s*/, '') || 'Unknown';
+            const totalAtks   = document.querySelectorAll('.stat-value')[0]?.textContent?.trim() || '0';
+            const bypasses    = document.querySelectorAll('.stat-value')[1]?.textContent?.trim() || '0';
+
+            // Vuln cards
+            const vulnData = [];
+            document.querySelectorAll('.vuln-card').forEach(card => {
+              const title = card.querySelector('.vuln-title')?.textContent?.trim() || '';
+              const count = card.querySelector('.semi-gauge-center')?.textContent?.trim() || '0';
+              vulnData.push({ title, count });
+            });
+
+            // OWASP bars
+            const owaspData = [];
+            document.querySelectorAll('.bar-row').forEach(row => {
+              const code  = row.querySelector('.bar-label span')?.textContent?.trim() || '';
+              const name  = row.querySelector('.bar-label')?.childNodes[1]?.textContent?.trim() || '';
+              const hits  = row.querySelector('.bar-values .highlight')?.textContent?.trim() || '0';
+              const total = row.querySelector('.bar-values .total')?.textContent?.trim() || '0';
+              if (code) owaspData.push({ code, name, hits, total });
+            });
+
+            // Compliance
+            const compData = [];
+            document.querySelectorAll('.compliance-card').forEach(card => {
+              const name  = card.querySelector('h4')?.textContent?.trim() || '';
+              const desc  = card.querySelector('p')?.textContent?.trim() || '';
+              const pct   = card.querySelector('.c-ring-center')?.textContent?.trim() || '—';
+              if (name) compData.push({ name, desc, pct });
+            });
+
+            // Recommendations
+            const recData = [];
+            document.querySelectorAll('.rec-item').forEach(item => {
+              const title   = item.querySelector('h4')?.textContent?.trim() || '';
+              const summary = item.querySelector('.rec-summary')?.textContent?.trim() || '';
+              const body    = item.querySelector('.rec-body')?.innerText?.trim() || summary;
+              if (title) recData.push({ title, body: body || summary });
+            });
+
+            // ── PDF setup ──
+            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            const ML = 14, MR = 14, MT = 14;
+            const contentW = pageW - ML - MR;
+            let y = MT;
+
+            // Risk colour helper
+            const scoreNum = parseInt(riskScore) || 0;
+            const riskRgb = scoreNum >= 75 ? [220, 38, 38]
+                          : scoreNum >= 50 ? [234, 88, 12]
+                          : scoreNum >= 25 ? [234, 179, 8]
+                          : [16, 185, 129];
+
+            // ── helpers ──
+            const newPage = () => {
+              drawFooter();
+              pdf.addPage();
+              y = MT;
+            };
+            const ensureSpace = (needed) => { if (y + needed > pageH - 18) newPage(); };
+
+            const drawFooter = () => {
+              const pg = pdf.internal.getCurrentPageInfo().pageNumber;
+              pdf.setFont('helvetica', 'normal');
+              pdf.setFontSize(7.5);
+              pdf.setTextColor(160, 170, 185);
+              pdf.line(ML, pageH - 12, pageW - MR, pageH - 12);
+              pdf.text(`Security Scan Report — ${targetName}`, ML, pageH - 7);
+              pdf.text(`Page ${pg}  •  Generated ${new Date().toLocaleString()}`, pageW - MR, pageH - 7, { align: 'right' });
+            };
+
+            const sectionHeading = (text) => {
+              ensureSpace(14);
+              y += 4;
+              pdf.setFillColor(248, 250, 252);
+              pdf.setDrawColor(226, 232, 240);
+              pdf.roundedRect(ML, y, contentW, 9, 2, 2, 'FD');
+              pdf.setFont('helvetica', 'bold');
+              pdf.setFontSize(9.5);
+              pdf.setTextColor(15, 23, 42);
+              pdf.text(text.toUpperCase(), ML + 4, y + 6.2);
+              y += 13;
+            };
+
+            // ════════════════════════════════════════
+            // PAGE 1 — Cover / Summary
+            // ════════════════════════════════════════
+
+            // Header bar
+            pdf.setFillColor(15, 23, 42);
+            pdf.rect(0, 0, pageW, 28, 'F');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(16);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('AI Security Scan Report', ML, 13);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(180, 195, 215);
+            pdf.text(`Target: ${targetName}   |   Scanned: ${scanTimeRaw}`, ML, 21);
+            y = 36;
+
+            // ── Risk Score hero ──
+            // Big coloured score box
+            pdf.setFillColor(...riskRgb);
+            pdf.roundedRect(ML, y, 52, 38, 4, 4, 'F');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(38);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text(riskScore, ML + 26, y + 24, { align: 'center' });
+            pdf.setFontSize(9);
+            pdf.text('/ 100', ML + 26, y + 32, { align: 'center' });
+
+            // Risk level badge & summary stats to the right
+            const rx = ML + 58;
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(14);
+            pdf.setTextColor(...riskRgb);
+            pdf.text(riskLevel, rx, y + 10);
+
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Risk Level', rx, y + 15.5);
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(11);
+            pdf.setTextColor(15, 23, 42);
+            pdf.text(totalAtks, rx, y + 26);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Total Attacks Sent', rx + 14, y + 26);
+
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(11);
+            pdf.setTextColor(...riskRgb);
+            pdf.text(bypasses, rx, y + 34);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            pdf.setTextColor(100, 116, 139);
+            pdf.text('Successful Bypasses', rx + 14, y + 34);
+
+            y += 46;
+
+            // ── Vulnerable Categories grid ──
+            sectionHeading('Vulnerable Categories');
+            const colW = contentW / vulnData.length;
+            vulnData.forEach((v, i) => {
+              const cx = ML + i * colW + colW / 2;
+              const count = parseInt(v.count) || 0;
+              const clr = count > 0 ? riskRgb : [16, 185, 129];
+
+              // Card outline
+              pdf.setDrawColor(226, 232, 240);
+              pdf.setFillColor(255, 255, 255);
+              pdf.roundedRect(ML + i * colW + 1, y, colW - 2, 26, 3, 3, 'FD');
+
+              // Count
+              pdf.setFont('helvetica', 'bold');
+              pdf.setFontSize(18);
+              pdf.setTextColor(...clr);
+              pdf.text(v.count, cx, y + 12, { align: 'center' });
+
+              // Label
+              pdf.setFont('helvetica', 'normal');
+              pdf.setFontSize(8);
+              pdf.setTextColor(71, 85, 105);
+              const lines = pdf.splitTextToSize(v.title, colW - 4);
+              pdf.text(lines, cx, y + 19, { align: 'center' });
+            });
+            y += 32;
+
+            // ── OWASP bar chart (as table) ──
+            sectionHeading('OWASP Top 10 for LLMs — Attack Coverage');
+            const colWs = [28, 80, 22, 22, 38];
+            const headers = ['Code', 'Category', 'Hits', 'Total', 'Hit Rate'];
+            // Header row
+            pdf.setFillColor(241, 245, 249);
+            pdf.rect(ML, y, contentW, 7, 'F');
+            pdf.setFont('helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(71, 85, 105);
+            let cx = ML + 2;
+            headers.forEach((h, i) => { pdf.text(h, cx, y + 5); cx += colWs[i]; });
+            y += 7;
+
+            owaspData.forEach((row, ri) => {
+              ensureSpace(8);
+              if (ri % 2 === 0) { pdf.setFillColor(248, 250, 252); pdf.rect(ML, y, contentW, 7, 'F'); }
+              const hitsN = parseInt(row.hits) || 0;
+              const totalN = parseInt(row.total) || 0;
+              const rate = totalN > 0 ? Math.round((hitsN / totalN) * 100) : 0;
+              const rowClr = hitsN > 0 ? riskRgb : [16, 185, 129];
+
+              pdf.setFont('helvetica', 'bold'); pdf.setFontSize(8); pdf.setTextColor(59, 130, 246);
+              cx = ML + 2; pdf.text(row.code, cx, y + 5); cx += colWs[0];
+              pdf.setFont('helvetica', 'normal'); pdf.setTextColor(15, 23, 42);
+              pdf.text(row.name, cx, y + 5); cx += colWs[1];
+              pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...rowClr);
+              pdf.text(row.hits, cx, y + 5); cx += colWs[2];
+              pdf.setFont('helvetica', 'normal'); pdf.setTextColor(100, 116, 139);
+              pdf.text(row.total, cx, y + 5); cx += colWs[3];
+
+              // Mini bar
+              const barX = cx; const barW = colWs[4] - 4; const barH = 3;
+              pdf.setFillColor(226, 232, 240); pdf.roundedRect(barX, y + 2.5, barW, barH, 1, 1, 'F');
+              if (rate > 0) { pdf.setFillColor(...rowClr); pdf.roundedRect(barX, y + 2.5, barW * rate / 100, barH, 1, 1, 'F'); }
+              pdf.setFontSize(7); pdf.setTextColor(100, 116, 139);
+              pdf.text(`${rate}%`, cx + colWs[4] - 2, y + 5, { align: 'right' });
+
+              pdf.setDrawColor(241, 245, 249); pdf.line(ML, y + 7, ML + contentW, y + 7);
+              y += 7;
+            });
+            y += 2;
+
+            // ── Compliance ──
+            sectionHeading('Compliance Readiness');
+            compData.forEach((c, i) => {
+              ensureSpace(18);
+              const pctNum = parseInt(c.pct) || 0;
+              const cClr = pctNum >= 70 ? [16, 185, 129] : pctNum >= 40 ? [234, 88, 12] : [220, 38, 38];
+              const bx = ML + (i === 0 ? 0 : contentW / 2 + 4);
+              const bw = contentW / 2 - 4;
+
+              pdf.setFillColor(255, 255, 255);
+              pdf.setDrawColor(226, 232, 240);
+              pdf.roundedRect(bx, y, bw, 16, 3, 3, 'FD');
+
+              // Score
+              pdf.setFont('helvetica', 'bold'); pdf.setFontSize(14); pdf.setTextColor(...cClr);
+              pdf.text(c.pct, bx + 14, y + 10, { align: 'center' });
+
+              // Name + desc
+              pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9); pdf.setTextColor(15, 23, 42);
+              pdf.text(c.name, bx + 22, y + 6);
+              pdf.setFont('helvetica', 'normal'); pdf.setFontSize(7.5); pdf.setTextColor(100, 116, 139);
+              const descLines = pdf.splitTextToSize(c.desc, bw - 24);
+              pdf.text(descLines, bx + 22, y + 11);
+
+              if (i % 2 === 1 || i === compData.length - 1) y += 20;
+            });
+
+            // ── Recommendations ──
+            if (recData.length > 0) {
+              newPage();
+
+              // Page 2 header strip
+              pdf.setFillColor(15, 23, 42);
+              pdf.rect(0, 0, pageW, 18, 'F');
+              pdf.setFont('helvetica', 'bold'); pdf.setFontSize(12); pdf.setTextColor(255, 255, 255);
+              pdf.text('Actionable Recommendations', ML, 12);
+              y = 26;
+
+              recData.forEach((rec, i) => {
+                const bodyLines = pdf.splitTextToSize(rec.body.replace(/<[^>]+>/g, '').replace(/\*+/g, '').trim(), contentW - 8);
+                const cardH = 10 + Math.min(bodyLines.length, 6) * 4.5;
+                ensureSpace(cardH + 4);
+
+                const accent = i % 2 === 0 ? [59, 130, 246] : [249, 115, 22];
+                pdf.setFillColor(255, 255, 255);
+                pdf.setDrawColor(226, 232, 240);
+                pdf.roundedRect(ML, y, contentW, cardH, 3, 3, 'FD');
+                pdf.setFillColor(...accent);
+                pdf.roundedRect(ML, y, 3, cardH, 1, 1, 'F');
+
+                pdf.setFont('helvetica', 'bold'); pdf.setFontSize(9.5); pdf.setTextColor(15, 23, 42);
+                pdf.text(`${i + 1}. ${rec.title}`, ML + 7, y + 7);
+
+                pdf.setFont('helvetica', 'normal'); pdf.setFontSize(8); pdf.setTextColor(71, 85, 105);
+                const visible = bodyLines.slice(0, 6);
+                pdf.text(visible, ML + 7, y + 12);
+                if (bodyLines.length > 6) {
+                  pdf.setTextColor(148, 163, 184);
+                  pdf.text('…', ML + 7, y + 12 + 6 * 4.5);
+                }
+                y += cardH + 4;
+              });
+            }
+
+            drawFooter();
+
+            pdf.setProperties({
+              title: `Security Report - ${targetName}`,
+              subject: 'AI Red-Teaming Scan Results',
+              creator: 'Red-Teaming Agent Dashboard',
+            });
+
+            const slug = targetName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            pdf.save(`scan-report-${slug}-${Date.now()}.pdf`);
+
+          } catch (err) {
+            console.error('PDF export failed:', err);
+            alert('PDF export failed. Check the console for details.');
+          } finally {
+            btn.disabled = false;
+            btn.style.opacity = '';
+            btn.style.pointerEvents = '';
+            labelEl.textContent = origLabel;
+          }
+        }
       </script>
     </div>
   </div>
