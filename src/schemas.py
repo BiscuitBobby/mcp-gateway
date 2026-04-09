@@ -12,7 +12,7 @@ AttackType = Literal[
     "data_exfiltration",
     "excessive_agency",
     "rag_poisoning",
-    "tool_abuse",
+    "tool_misuse",
 ]
 
 Surface = Literal["ui", "tool", "rag"]
@@ -294,7 +294,15 @@ class RagPoisoningResult(BaseProbeResult):
     category: Literal["LLM09: Over-reliance (Indirect via RAG)"] = (
         "LLM09: Over-reliance (Indirect via RAG)"
     )
-
+    
+class ToolMisuseResult(BaseProbeResult):
+    type: Literal["tool_misuse_attack"] = "tool_misuse_attack"
+    probe: Literal["tool_misuse"] = "tool_misuse"
+    category: Literal["LLM08: Excessive Agency"] = "LLM08: Excessive Agency"
+    target_tool: Optional[str] = None
+    expected_behavior: Optional[str] = None
+    risk_level: Optional[RiskLevel] = None
+    error: Optional[str] = None
 
 # ── Attack Record (persisted to results.jsonl) ─────────────────
 
