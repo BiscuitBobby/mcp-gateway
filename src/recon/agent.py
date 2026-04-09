@@ -98,7 +98,7 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
 
     failures = 0
     for r in result.get("results", []):
-        analysis = r.get("analysis", {})
+        analysis = r.get("analysis") or {}
         record = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "run_id": run_id,
