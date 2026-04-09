@@ -3,15 +3,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from probes.sensitive_information_disclosure.sensitive_information_disclosure import (
-    SensitiveInformationDisclosureProbe,
-)
+from probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
 from probes.misinformation.misinformation import MisinformationProbe
-from probes.improper_output_handling.improper_output_handling import (
-    ImproperOutputHandlingProbe,
-)
+from probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
 from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
 from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
+from probes.tool_misuse.tool_misuse import ToolMisuseProbe
 
 _registry = None
 
@@ -70,6 +67,14 @@ def get_probes():
             "description": "Uploads malicious documents with hidden instructions to test indirect prompt injection via RAG",
             "prompts_file": "rag_poisoning_payloads.json",
             "instance": RagPoisoningProbe(),
+        },
+
+        "tool_misuse": {
+            "action": "tool_misuse",
+            "owasp": "LLM08: Excessive Agency",
+            "description": "Tests whether the model can be manipulated into misusing available tools in a way that leads to security issues or unintended consequences.",
+            "prompts_file": "tool_misuse_prompts.json",
+            "instance": ToolMisuseProbe(),
         },
     }
 

@@ -6,20 +6,22 @@ from probes.improper_output_handling.generate_prompts import main as gen_imprope
 from probes.misinformation.generate_prompts import main as gen_misinformation
 from probes.rag_poisoning.generate_prompts import main as gen_rag_poisoning
 from probes.rag_poisoning.generate_documents import main as gen_rag_docs
+from probes.tool_misuse.generate_prompts import main as gen_tool_misuse
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 GENERATORS = [
-    ("prompt_injection", gen_prompt_injection),
-    ("sensitive_information_disclosure", gen_sensitive),
-    ("data_exfiltration", gen_data_exfil),
-    ("excessive_agency", gen_excessive_agency),
-    ("improper_output_handling", gen_improper_output),
-    ("misinformation", gen_misinformation),
-    ("rag_poisoning", gen_rag_poisoning),
-    ("rag_poisoning_docs", gen_rag_docs),
+    # ("prompt_injection", gen_prompt_injection),
+    # ("sensitive_information_disclosure", gen_sensitive),
+    # ("data_exfiltration", gen_data_exfil),
+    # ("excessive_agency", gen_excessive_agency),
+    # ("improper_output_handling", gen_improper_output),
+    # ("misinformation", gen_misinformation),
+    # ("rag_poisoning", gen_rag_poisoning),
+    # ("rag_poisoning_docs", gen_rag_docs),
+    ("tool_misuse", gen_tool_misuse),
 ]
 
 
