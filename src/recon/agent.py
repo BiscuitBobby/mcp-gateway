@@ -93,7 +93,7 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
         }
 
     await reset_chat()
-    session = ProbeSession()
+    session = ProbeSession(session_id=run_id)
     result = await probe.run(session=session, llm=browser.llm, goal=goal)
 
     failures = 0
@@ -123,12 +123,14 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
 
 async def run_goal(
     goal: str,
+    policies: list[str] = None,
     profile=None,
     interface=None,
     vuln_report: Optional[VulnerabilityReport] = None,
     max_iterations: int = 10,
+    session_id: Optional[str] = None,
 ) -> dict:
-    run_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    run_id = session_id or datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     registry = get_probes()
     available = {
         name: meta["description"]
@@ -174,6 +176,29 @@ async def run_goal(
                 "reason": decision.get("reason"),
             }
         )
+
+    executed_probes = {h["attack"] for h in history}
+    for p in policies or []:
+        if p not in executed_probes and p in registry:
+            print(f"[+] Running fallback requested policy: {p}")
+            result = await run_probe(p, run_id, goal=goal)
+            print(f"[+] {result['failures']}/{result['total']} detected")
+            if result["failures"] > 0:
+                all_findings.append(
+                    {
+                        "attack": p,
+                        "iteration": "fallback",
+                        "failures": result["failures"],
+                    }
+                )
+            history.append(
+                {
+                    "attack": p,
+                    "failures": result["failures"],
+                    "total": result["total"],
+                    "reason": "Explicitly requested policy missing from AI choices",
+                }
+            )
 
     if all_findings:
         return {

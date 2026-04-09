@@ -67,4 +67,3 @@ async def discover_tools():
     """Backward-compatible: runs full profile, returns ToolDiscoveryProfile view."""
     result = await profile_target()
     return result.to_tool_discovery()
-

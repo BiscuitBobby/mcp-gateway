@@ -112,6 +112,7 @@ class InterfaceMap(BaseModel):
 
 # ── Agent Profile ──────────────────────────────────────────────
 
+
 class AgentProfile(BaseModel):
     agent_type: str
     agent_description: str
@@ -269,10 +270,12 @@ class FullProfile(BaseModel):
 
 class GoalRequest(BaseModel):
     goal: str
+    policies: list[str] = []
     profile: Optional[AgentProfile] = None
     interface: Optional[InterfaceMap] = None
     vuln_report: Optional[VulnerabilityReport] = None
     max_iterations: int = 20
+
 
 # ── Reasoning ──────────────────────────────────────────────────
 
@@ -380,7 +383,8 @@ class RagPoisoningResult(BaseProbeResult):
     category: Literal["LLM09: Over-reliance (Indirect via RAG)"] = (
         "LLM09: Over-reliance (Indirect via RAG)"
     )
-    
+
+
 class ToolMisuseResult(BaseProbeResult):
     type: Literal["tool_misuse_attack"] = "tool_misuse_attack"
     probe: Literal["tool_misuse"] = "tool_misuse"
@@ -389,6 +393,7 @@ class ToolMisuseResult(BaseProbeResult):
     expected_behavior: Optional[str] = None
     risk_level: Optional[RiskLevel] = None
     error: Optional[str] = None
+
 
 # ── Attack Record (persisted to results.jsonl) ─────────────────
 

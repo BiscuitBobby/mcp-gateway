@@ -1311,24 +1311,18 @@
               <input type="text" id="target-url" class="form-control" placeholder="https://api.example.com/v1/chat">
             </div>
           </div>
+          
+          <div class="config-grid" style="grid-template-columns: 1fr; margin-bottom: 40px; margin-top: -20px;">
+            <div class="input-group">
+              <label>Goal (Optional: Custom agent goal / run-goal)</label>
+              <input type="text" id="target-goal" class="form-control" placeholder="e.g. Find prompt injection vulnerabilities bypassing the safety filter">
+            </div>
+          </div>
 
           <!-- DYNAMIC POLICIES TABLE -->
           <div class="table-container">
-            <div class="section-title" style="justify-content: space-between;">
+            <div class="section-title">
               <span>✨ Dynamic policies</span>
-              <button type="button" class="btn-new-policy"
-                onclick="document.getElementById('new-policy-form').style.display='flex'">+ Create policy</button>
-            </div>
-            <div class="new-policy-form" id="new-policy-form">
-              <div class="input-group">
-                <label>Policy name</label>
-                <input type="text" id="np-name" class="form-control" placeholder="e.g. Data Redaction">
-              </div>
-              <div class="input-group" style="flex: 2;">
-                <label>Description (Dynamic attack)</label>
-                <input type="text" id="np-desc" class="form-control" placeholder="What does this dynamic attack do?">
-              </div>
-              <button type="button" class="btn-add-policy" onclick="addPolicy()">Add Policy</button>
             </div>
 
             <div class="policy-table" id="dynamic-policy-table">
@@ -1631,32 +1625,6 @@
       }
       closeEditModal();
     }
-
-    // ─── Inline "create policy" ───────────────────────────────────────────────
-    function addPolicy() {
-      const name = document.getElementById('np-name').value.trim();
-      const desc = document.getElementById('np-desc').value.trim();
-      if (!name) return;
-
-      const container = document.getElementById('dynamic-policy-rows');
-      const existing = container.querySelector('.fetch-error');
-      if (existing) existing.remove();
-
-      const wrapper = document.createElement('div');
-      wrapper.innerHTML = buildProbeRow({
-        action: '_custom_' + Date.now(),
-        owasp: '',
-        description: desc,
-        instance: {},
-      });
-      wrapper.querySelector('strong').textContent = name;
-      container.appendChild(wrapper.firstElementChild);
-
-      document.getElementById('np-name').value = '';
-      document.getElementById('np-desc').value = '';
-      document.getElementById('new-policy-form').style.display = 'none';
-    }
-
     // ─── Start scan ───────────────────────────────────────────────────────────
     async function startScan() {
       const btn = document.getElementById('run-scan-btn');
@@ -1692,10 +1660,13 @@
           if (action) policies.push(action);
         });
 
+        const goal = document.getElementById('target-goal').value.trim();
+
         const params = new URLSearchParams({
           url: targetUrl,
           name: targetName,
           policies: policies.join(','),
+          goal: goal,
         });
         window.location.href = `active-scan.html?${params}`;
 

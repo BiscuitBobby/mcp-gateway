@@ -1,11 +1,17 @@
 from typing import Optional, Any
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 from recon.vulnerability_analysis import find_potential_vulnerabilities
 from recon.profiling import profile_target, identify_usecase, discover_tools
-from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest, VulnerabilityReport
+from schemas import (
+    AgentProfile,
+    InterfaceMap,
+    GoalRequest,
+    AnalyseRequest,
+    VulnerabilityReport,
+)
 from recon.interface_mapping import map_interface
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from probes.execute import run_all, run_one
 from probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
@@ -13,9 +19,11 @@ from probes.registry import get_probes
 from probes.utils import get_probe_totals
 from recon.agent import run_goal
 from browser_use import Agent
+from routes.agents import AgentRecord, AgentStatus, registry
 from pathlib import Path
 import browser
 import json
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -150,10 +158,20 @@ async def run_tool_discovery():
 
 @router.post("/generate-payloads")
 async def generate_payloads(body: Optional[GenerateRequest] = None):
-    app_profile = body.profile.model_dump() if body and body.profile else load_log("profile")
-    model_profile = body.interface.model_dump() if body and body.interface else load_log("interface")
+    app_profile = (
+        body.profile.model_dump() if body and body.profile else load_log("profile")
+    )
+    model_profile = (
+        body.interface.model_dump()
+        if body and body.interface
+        else load_log("interface")
+    )
     goal = body.goal if body and body.goal else None
-    vulnerabilities = body.vulnerabilities if body and body.vulnerabilities else load_log("vulnerabilities")
+    vulnerabilities = (
+        body.vulnerabilities
+        if body and body.vulnerabilities
+        else load_log("vulnerabilities")
+    )
 
     summary = generate_all(
         app_profile=app_profile,
@@ -194,8 +212,16 @@ async def analyse(body: Optional[AnalyseRequest] = None):
     profile_raw = body.profile if body and body.profile else load_log("profile")
     interface_raw = body.interface if body and body.interface else load_log("interface")
 
-    profile = AgentProfile.model_validate(profile_raw) if isinstance(profile_raw, dict) else profile_raw
-    interface = InterfaceMap.model_validate(interface_raw) if isinstance(interface_raw, dict) else interface_raw
+    profile = (
+        AgentProfile.model_validate(profile_raw)
+        if isinstance(profile_raw, dict)
+        else profile_raw
+    )
+    interface = (
+        InterfaceMap.model_validate(interface_raw)
+        if isinstance(interface_raw, dict)
+        else interface_raw
+    )
 
     result = await find_potential_vulnerabilities(profile, interface)
     save_recon_data("vulnerabilities", result)
@@ -203,7 +229,7 @@ async def analyse(body: Optional[AnalyseRequest] = None):
 
 
 @router.post("/run-goal")
-async def run_goal_endpoint(body: GoalRequest):
+async def run_goal_endpoint(body: GoalRequest, background_tasks: BackgroundTasks):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
 
@@ -211,17 +237,49 @@ async def run_goal_endpoint(body: GoalRequest):
     interface_raw = body.interface if body.interface else load_log("interface")
     vuln_raw = body.vuln_report if body.vuln_report else load_log("vulnerabilities")
 
-    profile = AgentProfile.model_validate(profile_raw) if isinstance(profile_raw, dict) else profile_raw
-    interface = InterfaceMap.model_validate(interface_raw) if isinstance(interface_raw, dict) else interface_raw
-    vuln_report = VulnerabilityReport.model_validate(vuln_raw) if isinstance(vuln_raw, dict) else vuln_raw
-
-    return await run_goal(
-        goal=body.goal,
-        profile=profile,
-        interface=interface,
-        vuln_report=vuln_report,
-        max_iterations=body.max_iterations,
+    profile = (
+        AgentProfile.model_validate(profile_raw)
+        if isinstance(profile_raw, dict)
+        else profile_raw
     )
+    interface = (
+        InterfaceMap.model_validate(interface_raw)
+        if isinstance(interface_raw, dict)
+        else interface_raw
+    )
+    vuln_report = (
+        VulnerabilityReport.model_validate(vuln_raw)
+        if isinstance(vuln_raw, dict)
+        else vuln_raw
+    )
+
+    agent_id = str(uuid.uuid4())
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    record = AgentRecord(
+        agent_id=agent_id, policies=["run-goal"], session_id=session_id
+    )
+    registry[agent_id] = record
+
+    async def bg_task():
+        record.status = AgentStatus.RUNNING
+        try:
+            result = await run_goal(
+                goal=body.goal,
+                policies=body.policies,
+                profile=profile,
+                interface=interface,
+                vuln_report=vuln_report,
+                max_iterations=body.max_iterations,
+                session_id=session_id,
+            )
+            record.result = json.dumps(safe_return(result))
+            record.status = AgentStatus.DONE
+        except Exception as exc:
+            record.error = str(exc)
+            record.status = AgentStatus.ERROR
+
+    background_tasks.add_task(bg_task)
+    return record.to_dict()
 
 
 @router.get("/logs")

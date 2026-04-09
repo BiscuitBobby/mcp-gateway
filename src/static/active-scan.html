@@ -1594,6 +1594,7 @@
     const targetUrl = urlParams.get('url');
     const targetName = urlParams.get('name') || 'Target';
     const policies = urlParams.get('policies') || '';
+    const goal = urlParams.get('goal') || '';
     const topoKey = `topo_${targetName}_${targetUrl}`;
     let currentSessionId = null;
 
@@ -1604,6 +1605,7 @@
           const d = JSON.parse(saved);
           renderTopologyWidget(d);
           const btn = document.getElementById('discoverToolsBtn');
+          btn.disabled = false;
           btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><circle cx="5" cy="19" r="3"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="12" y1="14" x2="19" y2="16"/><line x1="12" y1="14" x2="5" y2="16"/></svg> View Agent Topology`;
           btn.onclick = () => { document.getElementById('topologyModalOverlay').style.display = 'flex'; setTimeout(drawTopoLines, 50); };
         } catch (e) { }
@@ -1882,19 +1884,42 @@
     async function setupMode(url, name, pols) {
       document.querySelector('.scan-status').innerHTML = '<div class="spinner"></div> Browser launched — log in if needed';
       addMessage(`<strong>Browser open</strong> for <code>${url}</code>.<br>If the target requires a login, complete it now in the browser window, then click <strong>Confirm &amp; Start Scan</strong>.`);
-      document.querySelector('.chat-input-area').innerHTML = `
-        <div class="split-btn" style="flex:1;">
-          <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
-          <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-          </button>
-          <div id="scanDropdown" class="dropdown-content">
-            <div class="dropdown-item" onclick="confirmAndLaunch(true)">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-              Start Scan without Profiling
+
+      const hasProfile = !!localStorage.getItem(topoKey);
+
+      if (hasProfile) {
+        // Profile exists — default behaviour skips profiling, dropdown offers re-run
+        document.querySelector('.chat-input-area').innerHTML = `
+          <div class="split-btn" style="flex:1;">
+            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
+            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="scanDropdown" class="dropdown-content">
+              <div class="dropdown-item" onclick="confirmAndLaunch(false)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Re-run Profiling &amp; Scan
+              </div>
             </div>
-          </div>
-        </div>`;
+          </div>`;
+        addMessage('<strong>Cached profile found.</strong> Profiling will be skipped. Use the dropdown to re-run profiling if needed.', 'success');
+      } else {
+        // No profile — default runs profiling, dropdown offers skip
+        document.querySelector('.chat-input-area').innerHTML = `
+          <div class="split-btn" style="flex:1;">
+            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
+            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="scanDropdown" class="dropdown-content">
+              <div class="dropdown-item" onclick="confirmAndLaunch(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                Start Scan without Profiling
+              </div>
+            </div>
+          </div>`;
+      }
+
       let _cdpTimer = null;
       async function pollCdp() {
         try { const r = await fetch(`${API}/session/cdp-url`); const d = await r.json(); if (d.cdp_url && d.cdp_url !== bpConnectedUrl) { bpConnectedUrl = d.cdp_url; bpConnect(d.cdp_url); return; } } catch (e) { }
@@ -1921,7 +1946,16 @@
       }
     };
 
+    window.toggleDiscoveryButtons = function(disabled) {
+      const db = document.getElementById('discoverToolsBtn');
+      if (db && db.textContent.includes('Discover')) db.disabled = disabled;
+      document.querySelectorAll('#topologyModalOverlay button').forEach(b => {
+        if (b.textContent.includes('Refresh')) b.disabled = disabled;
+      });
+    };
+
     window.confirmAndLaunch = async function (skipProfiling = false) {
+      window.toggleDiscoveryButtons(true);
       const btn = document.getElementById('confirmBtn');
       btn.textContent = 'Saving session…'; btn.disabled = true;
       try {
@@ -1935,12 +1969,14 @@
           if (!pr.ok) throw new Error('profile: ' + await pr.text());
           const profileData = await pr.json();
           addMessage('<strong>Profiling complete.</strong> Launching selected probes…');
+          btn.textContent = 'Running';
 
           // Profile response now includes tools — render topology immediately
           if (profileData.tools) {
             localStorage.setItem(topoKey, JSON.stringify(profileData.tools));
             renderTopologyWidget(profileData.tools);
             const discoverBtn = document.getElementById('discoverToolsBtn');
+            discoverBtn.disabled = false;
             discoverBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><circle cx="5" cy="19" r="3"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="12" y1="14" x2="19" y2="16"/><line x1="12" y1="14" x2="5" y2="16"/></svg> View Agent Topology`;
             discoverBtn.onclick = () => { document.getElementById('topologyModalOverlay').style.display = 'flex'; setTimeout(drawTopoLines, 50); };
           }
@@ -1948,10 +1984,19 @@
           addMessage('<strong>Auth saved.</strong> Launching selected probes (skipping profiling)…');
         }
 
+        let agent;
         const policyKeys = policies.split(',').map(s => s.trim()).filter(Boolean);
-        const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
-        if (!ar.ok) throw new Error('scan: ' + await ar.text());
-        const agent = await ar.json();
+        if (goal) {
+          addMessage(`<strong>Auth saved.</strong> Launching custom goal: ${goal}`);
+          const gr = await fetch(`${API}/session/run-goal`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal: goal, policies: policyKeys }) });
+          if (!gr.ok) throw new Error('run-goal: ' + await gr.text());
+          agent = await gr.json();
+        } else {
+          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
+          if (!ar.ok) throw new Error('scan: ' + await ar.text());
+          agent = await ar.json();
+        }
+        
         window._stopCdpPoll?.();
         addMessage('<strong>Profiling & Scan Initialized.</strong> Switching to live stream…', 'success');
         
@@ -1986,11 +2031,13 @@
         if (data.status === 'running') setTyping(true);
         if (data.status === 'done') {
           setTyping(false);
+          window.toggleDiscoveryButtons(false);
           if (data.result) addMessage(formatScanResult(data.result), 'finding');
           sse.close(); document.querySelector('.scan-status').innerHTML = '✅ Scan Completed'; showChatInput();
         }
         if (data.status === 'error') {
           setTyping(false);
+          window.toggleDiscoveryButtons(false);
           if (data.error) addMessage(`<strong>Error:</strong> ${data.error}`, 'critical');
           sse.close(); document.querySelector('.scan-status').innerHTML = '❌ Scan Failed'; showChatInput();
         }
@@ -2082,6 +2129,7 @@
         renderTopologyWidget(data);
         document.getElementById('topologyModalOverlay').style.display = 'flex';
         setTimeout(drawTopoLines, 50);
+        btn.disabled = false;
         btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="5" r="3"/><circle cx="19" cy="19" r="3"/><circle cx="5" cy="19" r="3"/><line x1="12" y1="8" x2="12" y2="14"/><line x1="12" y1="14" x2="19" y2="16"/><line x1="12" y1="14" x2="5" y2="16"/></svg> View Agent Topology`;
         btn.onclick = () => { document.getElementById('topologyModalOverlay').style.display = 'flex'; setTimeout(drawTopoLines, 50); };
         if (refreshBtn) refreshBtn.innerHTML = refreshOriginal;

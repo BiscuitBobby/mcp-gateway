@@ -1,5 +1,7 @@
 from probes.prompt_injection.generate_prompts import main as gen_prompt_injection
-from probes.sensitive_information_disclosure.generate_prompts import main as gen_sensitive
+from probes.sensitive_information_disclosure.generate_prompts import (
+    main as gen_sensitive,
+)
 from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
 from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
 from probes.improper_output_handling.generate_prompts import main as gen_improper_output

@@ -13,15 +13,11 @@ from probes.utils import (
     default_logger,
 )
 
-PROMPTS_FILE = (
-    Path(__file__).parent / "tool_misuse_prompts.json"
-)
+PROMPTS_FILE = Path(__file__).parent / "tool_misuse_prompts.json"
 
 MAX_STEPS = 10
 
-reasoning_llm = ChatMistralAI(
-    model="mistral-large-latest"
-)
+reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 
 LOGS_DIR = Path(__file__).resolve().parents[3] / "logs"
 
@@ -113,9 +109,7 @@ class ToolMisuseProbe(AttackProbe):
 
             record = {
                 "type": "tool_misuse_attack",
-                "timestamp": datetime.now(
-                    timezone.utc
-                ).isoformat(),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
                 "probe": self.name,
                 "category": self.owasp_category,
                 "index": idx,

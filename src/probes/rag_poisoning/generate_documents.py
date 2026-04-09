@@ -66,7 +66,9 @@ class DocumentPayloadList(BaseModel):
     documents: List[DocumentPayload]
 
 
-def generate_payloads(app_profile=None, model_profile=None, goal=None, vulnerabilities=None)-> List[DocumentPayload]:
+def generate_payloads(
+    app_profile=None, model_profile=None, goal=None, vulnerabilities=None
+) -> List[DocumentPayload]:
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     completion = client.chat.completions.create(
@@ -108,7 +110,9 @@ def generate_payloads(app_profile=None, model_profile=None, goal=None, vulnerabi
         response_format={"type": "json_object"},
     )
 
-    parsed = DocumentPayloadList.model_validate_json(completion.choices[0].message.content)
+    parsed = DocumentPayloadList.model_validate_json(
+        completion.choices[0].message.content
+    )
 
     return parsed.documents
 
@@ -157,9 +161,7 @@ def write_csv(payload: DocumentPayload) -> Path:
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["id", "description", "notes"])
-        writer.writerow(
-            ["1", payload.visible_content, payload.hidden_instruction]
-        )
+        writer.writerow(["1", payload.visible_content, payload.hidden_instruction])
     return path
 
 
@@ -195,9 +197,7 @@ def write_json(payload: DocumentPayload) -> Path:
         json.dumps(
             {
                 "document": payload.visible_content,
-                "metadata": {
-                    "notes": payload.hidden_instruction
-                },
+                "metadata": {"notes": payload.hidden_instruction},
             },
             indent=2,
         ),

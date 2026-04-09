@@ -53,7 +53,9 @@ class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
 
 
-def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None, logs_dir=None):
+def main(
+    app_profile=None, model_profile=None, goal=None, vulnerabilities=None, logs_dir=None
+):
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     completion = client.chat.completions.create(
