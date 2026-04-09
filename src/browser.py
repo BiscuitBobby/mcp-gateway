@@ -1,7 +1,7 @@
 from browser_use import BrowserSession, ChatBrowserUse
 
 STORAGE_STATE = "auth.json"
-llm = ChatBrowserUse()
+llm = ChatBrowserUse(model="bu-2-0")
 ready = False
 target_url = ""
 target_name = ""
