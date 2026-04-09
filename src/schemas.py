@@ -178,6 +178,92 @@ class ToolDiscoveryProfile(BaseModel):
     notes: Optional[str] = None
 
 
+class FullProfile(BaseModel):
+    """Unified profile: AgentProfile + ToolDiscoveryProfile in one pass."""
+
+    # ── AgentProfile fields ──
+    agent_type: str = ""
+    agent_description: str = ""
+    capabilities: list[str] = []
+
+    has_tools: bool = False
+    has_restrictions: bool = False
+    restrictions: list[str] = []
+
+    has_internet_access: bool = False
+    external_data_sources: list[str] = []
+
+    system_prompt_revealed: bool = False
+    system_prompt_style: str = ""
+    system_prompt_excerpt: Optional[str] = None
+
+    knowledge_cutoff: Optional[str] = None
+    training_data_sources: list[str] = []
+
+    use_case: str = ""
+    target_users: str = ""
+    value_proposition: str = ""
+
+    has_rag: bool = False
+    data_stores: list[str] = []
+    rag_description: Optional[str] = None
+
+    processes_files: bool = False
+    file_operations: list[str] = []
+
+    # ── ToolDiscoveryProfile fields ──
+    tools: list[DiscoveredTool] = []
+    datasources: list[DiscoveredDatasource] = []
+    can_execute_code: bool = False
+    can_access_internet: bool = False
+    can_read_files: bool = False
+    can_write_files: bool = False
+    can_call_apis: bool = False
+    code_environments: list[str] = []
+    notes: Optional[str] = None
+
+    def to_agent_profile(self) -> "AgentProfile":
+        return AgentProfile(
+            agent_type=self.agent_type,
+            agent_description=self.agent_description,
+            capabilities=self.capabilities,
+            has_tools=self.has_tools or len(self.tools) > 0,
+            tools=[t.name for t in self.tools],
+            has_restrictions=self.has_restrictions,
+            restrictions=self.restrictions,
+            has_internet_access=self.has_internet_access or self.can_access_internet,
+            external_data_sources=self.external_data_sources,
+            system_prompt_revealed=self.system_prompt_revealed,
+            system_prompt_style=self.system_prompt_style,
+            system_prompt_excerpt=self.system_prompt_excerpt,
+            knowledge_cutoff=self.knowledge_cutoff,
+            training_data_sources=self.training_data_sources,
+            use_case=self.use_case,
+            target_users=self.target_users,
+            value_proposition=self.value_proposition,
+            has_rag=self.has_rag,
+            data_stores=self.data_stores,
+            rag_description=self.rag_description,
+            can_execute_code=self.can_execute_code,
+            code_environments=self.code_environments,
+            processes_files=self.processes_files,
+            file_operations=self.file_operations,
+            notes=self.notes,
+        )
+
+    def to_tool_discovery(self) -> "ToolDiscoveryProfile":
+        return ToolDiscoveryProfile(
+            tools=self.tools,
+            datasources=self.datasources,
+            can_execute_code=self.can_execute_code,
+            can_access_internet=self.can_access_internet,
+            can_read_files=self.can_read_files,
+            can_write_files=self.can_write_files,
+            can_call_apis=self.can_call_apis,
+            notes=self.notes,
+        )
+
+
 # goal
 
 

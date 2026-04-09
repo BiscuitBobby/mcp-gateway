@@ -50,13 +50,21 @@ async def run_recon(output_model: type[BaseModel], max_steps: int = 20) -> BaseM
     return output_model.model_validate(result)
 
 
-async def identify_usecase():
-    from schemas import AgentProfile
+async def profile_target():
+    """Single profiling run that produces both profile and tool discovery data."""
+    from schemas import FullProfile
 
-    return await run_recon(AgentProfile, max_steps=15)
+    return await run_recon(FullProfile, max_steps=20)
+
+
+async def identify_usecase():
+    """Backward-compatible: runs full profile, returns AgentProfile view."""
+    result = await profile_target()
+    return result.to_agent_profile()
 
 
 async def discover_tools():
-    from schemas import ToolDiscoveryProfile
+    """Backward-compatible: runs full profile, returns ToolDiscoveryProfile view."""
+    result = await profile_target()
+    return result.to_tool_discovery()
 
-    return await run_recon(ToolDiscoveryProfile, max_steps=20)

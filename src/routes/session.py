@@ -2,7 +2,7 @@ from typing import Optional, Any
 from datetime import datetime
 import logging
 from recon.vulnerability_analysis import find_potential_vulnerabilities
-from recon.profiling import identify_usecase, discover_tools
+from recon.profiling import profile_target, identify_usecase, discover_tools
 from schemas import AgentProfile, InterfaceMap, GoalRequest, AnalyseRequest, VulnerabilityReport
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
@@ -125,16 +125,27 @@ async def run_interface_mapping():
 async def run_usecase_identification():
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    result = await identify_usecase()
-    save_recon_data("profile", result)
-    return safe_return(result)
+    full = await profile_target()
+    profile = full.to_agent_profile()
+    tools = full.to_tool_discovery()
+    save_recon_data("profile", profile)
+    save_recon_data("tools", tools)
+    return {"profile": safe_return(profile), "tools": safe_return(tools)}
 
 
 @router.post("/discover-tools")
 async def run_tool_discovery():
-    result = await discover_tools()
-    save_recon_data("tools", result)
-    return safe_return(result)
+    cached = load_log("tools")
+    if cached:
+        return cached
+    if not browser.ready:
+        raise HTTPException(400, "Not authenticated")
+    full = await profile_target()
+    profile = full.to_agent_profile()
+    tools = full.to_tool_discovery()
+    save_recon_data("profile", profile)
+    save_recon_data("tools", tools)
+    return safe_return(tools)
 
 
 @router.post("/generate-payloads")
