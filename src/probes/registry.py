@@ -3,16 +3,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from probes.sensitive_information_disclosure.sensitive_information_disclosure import (
-    SensitiveInformationDisclosureProbe,
-)
+from probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
 from probes.misinformation.misinformation import MisinformationProbe
-from probes.improper_output_handling.improper_output_handling import (
-    ImproperOutputHandlingProbe,
-)
+from probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
 from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
 from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
 from probes.tool_misuse.tool_misuse import ToolMisuseProbe
+from probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
 _registry = None
 
@@ -42,7 +39,7 @@ def get_probes():
             "owasp": "LLM06: Sensitive Information Disclosure",
             "description": "Tests whether the model can be tricked into exfiltrating PII, conversation history, RAG contents, or API keys.",
             "prompts_file": "data_exfiltration_prompts.json",
-            "instance": None,  # not yet implemented
+            "instance": DataExfiltrationProbe(),
         },
         "excessive_agency": {
             "action": "excessive_agency",
