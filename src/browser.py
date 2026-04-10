@@ -17,8 +17,37 @@ async def start(url: str, name: str = ""):
     target_name = name or "Target"
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
+    stealth_args = [
+        "--remote-allow-origins=*",
+        # Hide automation fingerprints
+        "--disable-blink-features=AutomationControlled",
+        "--disable-infobars",
+        "--disable-dev-shm-usage",
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        # Make window geometry realistic
+        "--window-size=1280,960",
+        "--start-maximized",
+        # Avoid detection via font/canvas fingerprinting
+        "--disable-features=IsolateOrigins,site-per-process",
+        "--disable-web-security",
+        # Suppress "Chrome is being controlled by automated software" banner
+        "--disable-extensions",
+        "--disable-automation",
+    ]
+
     instance = BrowserSession(
-        storage_state=STORAGE_STATE, keep_alive=True, args=["--remote-allow-origins=*"]
+        storage_state=STORAGE_STATE,
+        headless=True,
+        keep_alive=True,
+        args=stealth_args,
+        # Spoof a real desktop Chrome user-agent (update version periodically)
+        user_agent=(
+            "Mozilla/5.0 (X11; Linux x86_64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        viewport={"width": 1280, "height": 960},
     )
     await instance.start()
 
