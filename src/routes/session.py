@@ -11,7 +11,7 @@ from schemas import (
     VulnerabilityReport,
 )
 from recon.interface_mapping import map_interface
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import APIRouter, HTTPException
 from probes.execute import run_all, run_one
 from probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
@@ -22,6 +22,7 @@ from browser_use import Agent
 from routes.agents import AgentRecord, AgentStatus, registry
 from pathlib import Path
 import browser
+import asyncio
 import json
 import uuid
 
@@ -229,7 +230,7 @@ async def analyse(body: Optional[AnalyseRequest] = None):
 
 
 @router.post("/run-goal")
-async def run_goal_endpoint(body: GoalRequest, background_tasks: BackgroundTasks):
+async def run_goal_endpoint(body: GoalRequest):
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
 
@@ -274,11 +275,15 @@ async def run_goal_endpoint(body: GoalRequest, background_tasks: BackgroundTasks
             )
             record.result = json.dumps(safe_return(result))
             record.status = AgentStatus.DONE
+        except asyncio.CancelledError:
+            record.status = AgentStatus.STOPPED
+            logger.info("Agent %s cancelled", agent_id)
         except Exception as exc:
             record.error = str(exc)
             record.status = AgentStatus.ERROR
 
-    background_tasks.add_task(bg_task)
+    task = asyncio.ensure_future(bg_task())
+    record.task_handle = task
     return record.to_dict()
 
 
@@ -353,9 +358,3 @@ async def get_results(session_id: Optional[str] = None):
                     continue
     totals = get_probe_totals()
     return {"rows": rows, "totals": totals}
-
-
-@router.post("/stop")
-async def stop():
-    await browser.stop()
-    return {"status": "stopped"}

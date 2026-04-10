@@ -9,6 +9,9 @@ from enum import Enum
 import asyncio
 import uuid
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/agents")
 
@@ -18,6 +21,7 @@ class AgentStatus(str, Enum):
     RUNNING = "running"
     DONE = "done"
     ERROR = "error"
+    STOPPED = "stopped"
 
 
 class AgentRecord:
@@ -29,6 +33,8 @@ class AgentRecord:
         self.result: Optional[str] = None
         self.error: Optional[str] = None
         self.created_at = datetime.utcnow().isoformat()
+        # asyncio.Task handle — set after the task is scheduled so it can be cancelled
+        self.task_handle: Optional[asyncio.Task] = None
 
     def to_dict(self):
         return {
@@ -89,7 +95,29 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
         agent_id=agent_id, policies=body.policies, session_id=session_id
     )
     registry[agent_id] = record
-    background_tasks.add_task(run_probes, record)
+    # Schedule as a real asyncio Task so it can be cancelled via /stop
+    task = asyncio.ensure_future(run_probes(record))
+    record.task_handle = task
+    return record.to_dict()
+
+
+@router.post("/{agent_id}/stop")
+async def stop_agent(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Agent not found")
+    if record.status not in (AgentStatus.IDLE, AgentStatus.RUNNING):
+        return record.to_dict()
+
+    if record.task_handle and not record.task_handle.done():
+        record.task_handle.cancel()
+        try:
+            await record.task_handle
+        except (asyncio.CancelledError, Exception):
+            pass
+
+    record.status = AgentStatus.STOPPED
+    logger.info("Agent %s stopped by request", agent_id)
     return record.to_dict()
 
 

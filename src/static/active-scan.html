@@ -2022,13 +2022,21 @@
         if (data.session_id) currentSessionId = data.session_id;
         if (data.cdp_url && data.cdp_url !== bpConnectedUrl) { bpConnectedUrl = data.cdp_url; bpConnect(data.cdp_url); }
         if (data.status !== lastStatus) {
-          const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸' };
+          const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸', stopped: '⏹' };
           addMessage(`<strong>Status:</strong> ${icons[data.status] || ''} ${data.status}`);
           lastStatus = data.status;
           const spin = data.status === 'running' ? '<div class="spinner"></div> ' : '';
           document.querySelector('.scan-status').innerHTML = `${spin}${data.status}`;
         }
         if (data.status === 'running') setTyping(true);
+        if (data.status === 'stopped') {
+          setTyping(false);
+          window.toggleDiscoveryButtons(false);
+          sse.close();
+          document.querySelector('.scan-status').innerHTML = '⏹ Scan Stopped';
+          addMessage('<strong>Scan stopped.</strong> Redirecting to dashboard…', 'success');
+          setTimeout(() => { let url = 'dashboard.html'; if (currentSessionId) url += `?session=${currentSessionId}`; window.location.href = url; }, 1200);
+        }
         if (data.status === 'done') {
           setTyping(false);
           window.toggleDiscoveryButtons(false);
@@ -2141,9 +2149,10 @@
     }
 
     async function stopScan() {
-      const agId = agentId || '';
-      if (agId) { try { await fetch(`${API}/agents/${agId}`, { method: 'DELETE' }); } catch (e) { } }
-      try { await fetch(`${API}/session/stop`, { method: 'POST' }); } catch (e) { }
+      const agId = agentId || (new URLSearchParams(window.location.search)).get('agent_id') || '';
+      if (agId) {
+        try { await fetch(`${API}/agents/${agId}/stop`, { method: 'POST' }); } catch (e) { }
+      }
       bpDisconnect();
       let url = 'dashboard.html';
       if (currentSessionId) url += `?session=${currentSessionId}`;
