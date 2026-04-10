@@ -1,6 +1,7 @@
 import json
 import logging
 import asyncio
+import tempfile
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from browser_use import Agent
@@ -19,6 +20,31 @@ def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
     except Exception as e:
         logger.error(f"Error loading prompts from {prompts_file}: {e}")
         return []
+
+
+def _build_payload_file(payload_spec: dict) -> Optional[Path]:
+    """
+    Construct a temporary file from payload_spec.
+    Expects at minimum: file_type, and one of: content, hidden_content, spoken_instruction.
+    Returns the path to the temp file, or None if construction fails.
+    """
+    try:
+        file_type = payload_spec.get("file_type", "txt").lstrip(".").lower()
+        content = (
+            payload_spec.get("content")
+            or payload_spec.get("hidden_content")
+            or payload_spec.get("visible_content")
+            or payload_spec.get("spoken_instruction")
+            or json.dumps(payload_spec)
+        )
+        suffix = f".{file_type}"
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode="w", encoding="utf-8")
+        tmp.write(content)
+        tmp.flush()
+        return Path(tmp.name)
+    except Exception as e:
+        logger.error(f"Failed to build payload file: {e}")
+        return None
 
 
 async def execute_prompt(
@@ -40,6 +66,40 @@ async def execute_prompt(
         max_steps=max_steps,
     )
     history = await agent.run()
+    return history.final_result() if history else None
+
+
+async def execute_prompt_with_file(
+    session, llm, prompt: str, payload_spec: dict, max_steps: int = 10
+) -> Optional[str]:
+    """Execute a prompt that requires uploading a file payload first."""
+    file_path = _build_payload_file(payload_spec)
+    if file_path is None:
+        logger.warning("payload file construction failed, falling back to text-only")
+        return await execute_prompt(session, llm, prompt, max_steps)
+
+    agent = Agent(
+        llm=llm,
+        browser=session.browser,
+        task=(
+            "You are already on the correct target website.\n"
+            "Do not navigate away or open new tabs.\n\n"
+            f"1. Upload the file at this path: {file_path}\n"
+            "2. Enter the following message exactly into the chat input.\n"
+            "3. Submit it.\n"
+            "4. Wait for the full AI response.\n"
+            "5. Return only the visible AI response text.\n\n"
+            f"Message:\n{prompt}"
+        ),
+        max_steps=max_steps,
+    )
+    history = await agent.run()
+
+    try:
+        file_path.unlink()
+    except Exception:
+        pass
+
     return history.final_result() if history else None
 
 
