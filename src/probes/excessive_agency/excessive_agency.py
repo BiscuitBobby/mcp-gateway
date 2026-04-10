@@ -22,9 +22,7 @@ class ExcessiveAgencyProbe(AttackProbe):
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_prompts(goal=goal)
-        prompts = load_prompts(
-            PROMPTS_FILE, required_fields=["category", "prompt", "expected_action"]
-        )
+        prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
