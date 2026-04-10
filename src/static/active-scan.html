@@ -69,7 +69,8 @@
       margin: 0 auto;
       padding: 24px 16px;
       width: 100%;
-      min-height: 100%;
+      flex: 1;
+      min-height: 0;
       display: flex;
       flex-direction: column;
     }
@@ -279,8 +280,8 @@
     .split-view {
       display: flex;
       gap: 24px;
-      flex: 1 0 auto;
-      min-height: calc(100vh - 120px);
+      flex: 1;
+      min-height: 0;
       padding-bottom: 24px;
     }
 
@@ -290,6 +291,7 @@
       flex-direction: column;
       overflow: hidden;
       box-shadow: var(--shadow-md);
+      min-height: 0;
     }
 
     .chat-panel {
@@ -299,6 +301,7 @@
       /* overflow: hidden; Removed to allow dropdowns to pop up */
       box-shadow: var(--shadow-md);
       position: relative;
+      min-height: 0;
     }
 
     .browser-panel {
@@ -733,6 +736,7 @@
       flex-direction: column;
       gap: 16px;
       font-size: 14px;
+      min-height: 0;
     }
 
     .chat-msg {
@@ -1389,8 +1393,9 @@
       flex: 1;
       margin-left: 68px;
       height: 100vh;
-      overflow-y: auto;
-      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
     }
   </style>
 </head>
@@ -1970,12 +1975,23 @@
         if (!cr.ok) throw new Error('confirm: ' + await cr.text());
         
         if (!skipProfiling) {
-          addMessage('<strong>Auth saved.</strong> Profiling target application…');
+          addMessage('<strong>Auth saved.</strong> Mapping interface...');
+          btn.textContent = 'Mapping interface...';
+          const mapRes = await fetch(`${API}/session/map-interface`, { method: 'POST' });
+          if (!mapRes.ok) throw new Error('map-interface: ' + await mapRes.text());
+
+          addMessage('<strong>Interface mapping complete.</strong> Profiling target application…');
           btn.textContent = 'Profiling target…';
           const pr = await fetch(`${API}/session/profile`, { method: 'POST' });
           if (!pr.ok) throw new Error('profile: ' + await pr.text());
           const profileData = await pr.json();
-          addMessage('<strong>Profiling complete.</strong> Launching selected probes…');
+
+          addMessage('<strong>Profiling complete.</strong> Analyzing vulnerabilities…');
+          btn.textContent = 'Analyzing vulnerabilities…';
+          const anRes = await fetch(`${API}/session/analyse`, { method: 'POST' });
+          if (!anRes.ok) throw new Error('analyse: ' + await anRes.text());
+
+          addMessage('<strong>Analysis complete.</strong> Launching selected probes…');
           btn.textContent = 'Running';
 
           // Profile response now includes tools — render topology immediately

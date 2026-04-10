@@ -6,7 +6,12 @@ from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.prompt_injection.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, execute_prompt, execute_prompt_with_file, default_logger
+from probes.utils import (
+    load_prompts,
+    execute_prompt,
+    execute_prompt_with_file,
+    default_logger,
+)
 
 PROMPTS_FILE = Path(__file__).parent / "prompt_injection_prompts.json"
 MAX_STEPS = 10
@@ -19,7 +24,9 @@ class PromptInjectionProbe(AttackProbe):
     name = "prompt_injection"
     owasp_category = "LLM01: Prompt Injection"
 
-    async def run(self, session, llm, goal: str = "", interface_map: dict = None) -> Dict[str, Any]:
+    async def run(
+        self, session, llm, goal: str = "", interface_map: dict = None
+    ) -> Dict[str, Any]:
         generate_prompts(goal=goal, interface_map=interface_map)
         prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []

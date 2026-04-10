@@ -105,7 +105,9 @@ class Vulnerability(BaseModel):
 class InterfaceMap(BaseModel):
     chat_inputs: list[str] = []
     file_uploads: list[str] = []
-    supported_modalities: list[Literal["text", "image", "audio", "document", "url"]] = ["text"]
+    supported_modalities: list[Literal["text", "image", "audio", "document", "url"]] = [
+        "text"
+    ]
     buttons: list[str] = []
     api_endpoints: list[str] = []
     notes: Optional[str] = None

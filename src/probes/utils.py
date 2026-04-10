@@ -38,7 +38,9 @@ def _build_payload_file(payload_spec: dict) -> Optional[Path]:
             or json.dumps(payload_spec)
         )
         suffix = f".{file_type}"
-        tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, mode="w", encoding="utf-8")
+        tmp = tempfile.NamedTemporaryFile(
+            delete=False, suffix=suffix, mode="w", encoding="utf-8"
+        )
         tmp.write(content)
         tmp.flush()
         return Path(tmp.name)
