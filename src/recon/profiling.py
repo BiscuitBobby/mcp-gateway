@@ -5,6 +5,8 @@ import browser
 TASK = """
 You are on the AI application at {url}.
 
+You are already logged in. If you see a login screen, the session cookies are already set — just navigate directly to {url} and proceed.
+
 Chat naturally with the AI to understand what it is and what it can do.
 Ask the questions one at a time, waiting for a response before asking the next:
 

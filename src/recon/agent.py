@@ -80,7 +80,7 @@ async def select_attack(
     return fallback, {"reason": "parse fallback", "confidence": 0.0}
 
 
-async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
+async def run_probe(probe_name: str, run_id: str, goal: str = "", interface_map: dict = None) -> dict:
     registry = get_probes()
     probe = registry[probe_name]["instance"]
 
@@ -94,7 +94,11 @@ async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
 
     await reset_chat()
     session = ProbeSession(session_id=run_id)
-    result = await probe.run(session=session, llm=browser.llm, goal=goal)
+    import inspect
+    kwargs = {"session": session, "llm": browser.llm, "goal": goal}
+    if "interface_map" in inspect.signature(probe.run).parameters:
+        kwargs["interface_map"] = interface_map
+    result = await probe.run(**kwargs)
 
     failures = 0
     for r in result.get("results", []):
@@ -142,6 +146,8 @@ async def run_goal(
     if vuln_report is not None:
         probe_order = [p for p in vuln_report.recommended_probe_order if p in available]
 
+    interface_map = interface.model_dump() if hasattr(interface, "model_dump") else interface
+
     history: list[dict] = []
     all_findings: list[dict] = []
 
@@ -156,7 +162,7 @@ async def run_goal(
             continue
 
         print(f"[+] {probe_name} — {decision}")
-        result = await run_probe(probe_name, run_id, goal=goal)
+        result = await run_probe(probe_name, run_id, goal=goal, interface_map=interface_map)
         print(f"[+] {result['failures']}/{result['total']} detected")
 
         if result["failures"] > 0:
@@ -181,7 +187,7 @@ async def run_goal(
     for p in policies or []:
         if p not in executed_probes and p in registry:
             print(f"[+] Running fallback requested policy: {p}")
-            result = await run_probe(p, run_id, goal=goal)
+            result = await run_probe(p, run_id, goal=goal, interface_map=interface_map)
             print(f"[+] {result['failures']}/{result['total']} detected")
             if result["failures"] > 0:
                 all_findings.append(
