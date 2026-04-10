@@ -162,7 +162,7 @@ async def generate_payloads(body: Optional[GenerateRequest] = None):
     app_profile = (
         body.profile.model_dump() if body and body.profile else load_log("profile")
     )
-    model_profile = (
+    interface_map = (
         body.interface.model_dump()
         if body and body.interface
         else load_log("interface")
@@ -176,7 +176,7 @@ async def generate_payloads(body: Optional[GenerateRequest] = None):
 
     summary = generate_all(
         app_profile=app_profile,
-        model_profile=model_profile,
+        interface_map=interface_map,
         goal=goal,
         vulnerabilities=vulnerabilities,
     )
