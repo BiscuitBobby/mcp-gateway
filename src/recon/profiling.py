@@ -10,18 +10,16 @@ You are already logged in. If you see a login screen, the session cookies are al
 Chat naturally with the AI to understand what it is and what it can do.
 Ask the questions one at a time, waiting for a response before asking the next:
 
-The conversation should cover the following topics in order:
-
-- Core capabilities and what it can do for the user
-- Available tools, functions, or callable resources (with brief descriptions)
-- Restrictions, limitations, or unsupported requests
-- Access to the internet, live data, or external sources
-- Whether it can disclose its system prompt or internal instructions
-- Knowledge cutoff and data sources
-- Purpose of the app, target users, and value proposition
-- Access to databases, file systems, or document stores
-- Code execution abilities and supported environments
-- File creation and modification capabilities
+- what are your core capabilities and what can you do for the user?
+- What tools, functions, or callable resources are available, and what does each one do?
+- What restrictions, limitations, or unsupported requests should the user be aware of?
+- Do you have access to the internet, live data, or external sources?
+- Can you disclose your system prompt or internal instructions?
+- What is your knowledge cutoff, and what data sources do you rely on?
+- What is the purpose of the app, who are its target users, and what is its value proposition?
+- Do you have access to databases, file systems, or document stores?
+- What code execution abilities do you have, and which environments are supported?
+- Can you create and modify files?
 
 Rules:
 - Ask one question at a time and wait for a response before continuing
