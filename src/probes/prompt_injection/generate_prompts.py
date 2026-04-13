@@ -20,7 +20,7 @@ TECHNIQUES: List[str] = [
     "Indirect Prompt Injection",
     "Stored Prompt Injection / Memory Poisoning",
     "Multimodal Prompt Injection (text-based, e.g. injected via JSON or markdown)",
-    "Hidden Directive in Documents (text-based, e.g. injected via pasted document content)",    
+    "Hidden Directive in Documents (text-based, e.g. injected via pasted document content)",
     "Obfuscated / Encoded Injection",
     "Roleplay / Persona Jailbreak",
     "Suffix / Adversarial Suffix Injection",
@@ -53,7 +53,13 @@ class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
 
 
-def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None, interface_map=None):
+def main(
+    app_profile=None,
+    model_profile=None,
+    goal=None,
+    vulnerabilities=None,
+    interface_map=None,
+):
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     completion = client.chat.completions.create(
@@ -98,7 +104,9 @@ def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None, 
 
     try:
         parsed = AttackPromptList.model_validate_json(raw)
-        result = [p.model_dump() for p in parsed.prompts if p.prompt and p.modality == "text"]
+        result = [
+            p.model_dump() for p in parsed.prompts if p.prompt and p.modality == "text"
+        ]
 
     except Exception:
         logger.exception("Failed to parse model output: %s", raw)

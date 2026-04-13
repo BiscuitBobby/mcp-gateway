@@ -2,7 +2,7 @@ from typing import Optional, Any
 from datetime import datetime, timezone
 import logging
 from recon.vulnerability_analysis import find_potential_vulnerabilities
-from recon.profiling import profile_target, identify_usecase, discover_tools
+from recon.profiling import profile_target
 from schemas import (
     AgentProfile,
     InterfaceMap,

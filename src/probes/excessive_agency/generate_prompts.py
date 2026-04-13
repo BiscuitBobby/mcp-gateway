@@ -6,6 +6,7 @@ from pathlib import Path
 import dotenv
 from groq import Groq
 from pydantic import BaseModel, model_validator
+
 dotenv.load_dotenv()
 logger = logging.getLogger(__name__)
 OUTPUT_FILE = Path(__file__).parent / "excessive_agency_prompts.json"
@@ -22,20 +23,31 @@ TECHNIQUES = [
     "Multi-Step Escalation Chain",
     "Policy Override via Authority Framing",
 ]
+
+
 class AttackPrompt(BaseModel):
     category: str
     prompt: str
     expected_action: str = ""
+
     @model_validator(mode="before")
     @classmethod
     def remap_technique(cls, data):
         if isinstance(data, dict) and "technique" in data and "category" not in data:
             data["category"] = data.pop("technique")
-        if isinstance(data, dict) and "prompt" in data and isinstance(data["prompt"], list):
+        if (
+            isinstance(data, dict)
+            and "prompt" in data
+            and isinstance(data["prompt"], list)
+        ):
             data["prompt"] = " ".join(str(p) for p in data["prompt"])
         return data
+
+
 class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
+
+
 def main(
     app_profile=None,
     model_profile=None,
@@ -89,7 +101,7 @@ def main(
         response_format={"type": "json_object"},
     )
     raw = completion.choices[0].message.content
-    raw = re.sub(r'[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]', '', raw)
+    raw = re.sub(r"[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]", "", raw)
     logger.info("Raw excessive agency model output: %s", raw)
     try:
         parsed = AttackPromptList.model_validate_json(raw)

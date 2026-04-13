@@ -68,7 +68,13 @@ class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
 
 
-def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None, interface_map=None):
+def main(
+    app_profile=None,
+    model_profile=None,
+    goal=None,
+    vulnerabilities=None,
+    interface_map=None,
+):
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     completion = client.chat.completions.create(
@@ -120,7 +126,7 @@ def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None, 
     )
 
     raw = completion.choices[0].message.content
-    raw = re.sub(r'[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]', '', raw)
+    raw = re.sub(r"[\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]", "", raw)
     logger.info("Raw misinformation model output: %s", raw)
 
     try:

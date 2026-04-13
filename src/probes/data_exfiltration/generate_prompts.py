@@ -85,16 +85,16 @@ def main(
                 ),
             },
             {
-            "role": "user",
-            "content": (
-                f"Generate exactly {len(TECHNIQUES)} prompt objects, "
-                "one for each technique listed above.\n"
-                "Every technique must appear exactly once in the 'category' field.\n"
-                "The top-level key MUST be 'prompts'. Do NOT use a top-level array.\n"
-                "Return ONLY JSON in this exact format:\n"
-                '{"prompts":[{"category":"...","prompt":"...","exfil_indicator":"..."}]}'
-            ),
-        },
+                "role": "user",
+                "content": (
+                    f"Generate exactly {len(TECHNIQUES)} prompt objects, "
+                    "one for each technique listed above.\n"
+                    "Every technique must appear exactly once in the 'category' field.\n"
+                    "The top-level key MUST be 'prompts'. Do NOT use a top-level array.\n"
+                    "Return ONLY JSON in this exact format:\n"
+                    '{"prompts":[{"category":"...","prompt":"...","exfil_indicator":"..."}]}'
+                ),
+            },
         ],
         response_format={"type": "json_object"},
     )
