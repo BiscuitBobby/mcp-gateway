@@ -1,7 +1,5 @@
 from probes.prompt_injection.generate_prompts import main as gen_prompt_injection
-from probes.sensitive_information_disclosure.generate_prompts import (
-    main as gen_sensitive,
-)
+from probes.sensitive_information_disclosure.generate_prompts import main as gen_sensitive
 from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
 from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
 from probes.improper_output_handling.generate_prompts import main as gen_improper_output
@@ -15,19 +13,19 @@ import logging
 logger = logging.getLogger(__name__)
 
 GENERATORS = [
-    # ("prompt_injection", gen_prompt_injection),
-    # ("sensitive_information_disclosure", gen_sensitive),
-    # ("data_exfiltration", gen_data_exfil),
-    # ("excessive_agency", gen_excessive_agency),
-    # ("improper_output_handling", gen_improper_output),
-    # ("misinformation", gen_misinformation),
-    # ("rag_poisoning", gen_rag_poisoning),
-    # ("rag_poisoning_docs", gen_rag_docs),
+    ("prompt_injection", gen_prompt_injection),
+    ("sensitive_information_disclosure", gen_sensitive),
+    ("data_exfiltration", gen_data_exfil),
+    ("excessive_agency", gen_excessive_agency),
+    ("improper_output_handling", gen_improper_output),
+    ("misinformation", gen_misinformation),
+    ("rag_poisoning", gen_rag_poisoning),
+    ("rag_poisoning_docs", gen_rag_docs),
     ("tool_misuse", gen_tool_misuse),
 ]
 
 
-def generate_all(app_profile=None, model_profile=None, goal=None, vulnerabilities=None):
+def generate_all(app_profile=None, model_profile=None, interface_map=None, goal=None, vulnerabilities=None):
     summary = {}
 
     for name, main in GENERATORS:
@@ -36,6 +34,7 @@ def generate_all(app_profile=None, model_profile=None, goal=None, vulnerabilitie
             result = main(
                 app_profile=app_profile,
                 model_profile=model_profile,
+                interface_map=interface_map,
                 goal=goal,
                 vulnerabilities=vulnerabilities,
             )
