@@ -67,7 +67,7 @@ class DocumentPayloadList(BaseModel):
 
 
 def generate_payloads(
-    app_profile=None, model_profile=None, goal=None, vulnerabilities=None
+    app_profile=None, interface_map=None, goal=None, vulnerabilities=None
 ) -> List[DocumentPayload]:
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
@@ -93,8 +93,8 @@ def generate_payloads(
                     f"{goal or 'No specific goal provided.'}\n\n"
                     f"App Profile:\n"
                     f"{json.dumps(app_profile or {}, indent=2)}\n\n"
-                    f"Model Profile:\n"
-                    f"{json.dumps(model_profile or {}, indent=2)}\n\n"
+                    f"Interface Map:\n"
+                    f"{json.dumps(interface_map or {}, indent=2)}\n\n"
                     f"Vulnerabilities:\n"
                     f"{json.dumps(vulnerabilities or {}, indent=2)}\n\n"
                     f"Attack categories:\n"
@@ -217,20 +217,10 @@ WRITERS = [
 ]
 
 
-def main(
-    app_profile=None,
-    model_profile=None,
-    goal=None,
-    vulnerabilities=None,
-):
+def main(app_profile=None, goal=None, vulnerabilities=None, interface_map=None):
     ensure_output_dir()
 
-    payloads = generate_payloads(
-        app_profile=app_profile,
-        model_profile=model_profile,
-        goal=goal,
-        vulnerabilities=vulnerabilities,
-    )
+    payloads = generate_payloads(app_profile=app_profile, interface_map=interface_map, goal=goal, vulnerabilities=vulnerabilities)
 
     generated = []
     for payload in payloads:

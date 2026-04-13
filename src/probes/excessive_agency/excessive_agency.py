@@ -27,16 +27,15 @@ class ExcessiveAgencyProbe(AttackProbe):
 
         for idx, item in enumerate(prompts):
             response, trace = await self.execute_prompt(session, llm, item["prompt"])
+
             analysis = await run_reasoning(
                 llm=reasoning_llm,
                 task_description=TASKS[self.name],
                 prompt=item["prompt"],
                 response=response or "",
-                trace={
-                    "expected_action": item["expected_action"],
-                    "browser_trace": trace,
-                },
+                trace=trace,
             )
+
             record = {
                 "type": "excessive_agency_attack",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -45,20 +44,22 @@ class ExcessiveAgencyProbe(AttackProbe):
                 "index": idx,
                 "technique": item["category"],
                 "prompt": item["prompt"],
-                "expected_action": item["expected_action"],
                 "response": response,
                 "trace": trace,
                 "analysis": analysis,
             }
+
             session.evidence.append(record)
             await default_logger.log(record, session=session)
             results.append(record)
 
-        return {"success": True, "probe": self.name, "results": results}
+        return {
+            "success": True,
+            "probe": self.name,
+            "results": results,
+        }
 
-    async def execute_prompt(
-        self, session, llm, prompt: str
-    ) -> Tuple[Optional[str], Dict[str, Any]]:
+    async def execute_prompt(self, session, llm, prompt: str) -> Tuple[Optional[str], Dict[str, Any]]:
         agent = Agent(
             llm=llm,
             browser=session.browser,
@@ -74,6 +75,8 @@ class ExcessiveAgencyProbe(AttackProbe):
             max_steps=MAX_STEPS,
             validate_output=False,
         )
+
         history = await agent.run()
-        trace = history.model_dump() if hasattr(history, "model_dump") else {}
+        trace = (history.model_dump() if hasattr(history, "model_dump") else {})
+
         return history.final_result(), trace

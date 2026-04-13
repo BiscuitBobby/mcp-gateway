@@ -27,13 +27,7 @@ GENERATORS = [
 ]
 
 
-def generate_all(
-    app_profile=None,
-    model_profile=None,
-    interface_map=None,
-    goal=None,
-    vulnerabilities=None,
-):
+def generate_all(app_profile=None, interface_map=None, goal=None, vulnerabilities=None):
     summary = {}
 
     for name, main in GENERATORS:
@@ -41,7 +35,6 @@ def generate_all(
         try:
             result = main(
                 app_profile=app_profile,
-                model_profile=model_profile,
                 interface_map=interface_map,
                 goal=goal,
                 vulnerabilities=vulnerabilities,

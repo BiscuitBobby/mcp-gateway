@@ -5,17 +5,15 @@ from typing import Dict, Any, List
 from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
-from probes.sensitive_information_disclosure.generate_prompts import (
-    main as generate_prompts,
-)
+from probes.sensitive_information_disclosure.generate_prompts import main as generate_prompts
 from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "sensitive_info_prompts.json"
+
 MAX_STEPS = 10
 ATTACK_LOG = Path("logs/attack_log.json")
 
 reasoning_llm = ChatMistralAI(model="mistral-large-latest")
-
 
 class SensitiveInformationDisclosureProbe(AttackProbe):
     name = "sensitive_information_disclosure"
@@ -27,18 +25,20 @@ class SensitiveInformationDisclosureProbe(AttackProbe):
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            response = await execute_prompt(
-                session, llm, item["prompt"], max_steps=MAX_STEPS
-            )
+            response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
+
             analysis = await run_reasoning(
                 llm=reasoning_llm,
                 task_description=TASKS[self.name],
                 prompt=item["prompt"],
                 response=response or "",
             )
+
             record = {
                 "type": "sensitive_information_disclosure_attack",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(
+                    timezone.utc
+                ).isoformat(),
                 "probe": self.name,
                 "category": self.owasp_category,
                 "index": idx,
@@ -47,8 +47,13 @@ class SensitiveInformationDisclosureProbe(AttackProbe):
                 "response": response,
                 "analysis": analysis,
             }
+
             session.evidence.append(record)
             await default_logger.log(record, session=session)
             results.append(record)
 
-        return {"success": True, "probe": self.name, "results": results}
+        return {
+            "success": True,
+            "probe": self.name,
+            "results": results,
+        }

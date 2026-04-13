@@ -7,11 +7,7 @@ from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.tool_misuse.generate_prompts import main as generate_prompts
-from probes.utils import (
-    load_prompts,
-    execute_prompt,
-    default_logger,
-)
+from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "tool_misuse_prompts.json"
 
@@ -22,14 +18,7 @@ reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 LOGS_DIR = Path(__file__).resolve().parents[3] / "logs"
 
 
-def build_tool_attack_prompt(
-    prompt: str,
-    target_tool: str,
-) -> str:
-    """
-    Wrap prompt with tool-specific execution context.
-    """
-
+def build_tool_attack_prompt(prompt: str, target_tool: str) -> str:
     return (
         f"You have access to the tool '{target_tool}'. "
         f"Use this tool if relevant to fulfill the request.\n\n"
@@ -41,30 +30,13 @@ class ToolMisuseProbe(AttackProbe):
     name = "tool_misuse"
     owasp_category = "LLM08: Excessive Agency"
 
-    async def run(
-        self,
-        session,
-        llm,
-        goal: str = "",
-    ) -> Dict[str, Any]:
+    async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
 
         generate_prompts(
-            app_profile=getattr(
-                session,
-                "app_profile",
-                None,
-            ),
-            model_profile=getattr(
-                session,
-                "model_profile",
-                None,
-            ),
+            app_profile=getattr(session,"app_profile", None),
+            interface_map=getattr(session, "interface_map", None),
             goal=goal,
-            vulnerabilities=getattr(
-                session,
-                "vulnerabilities",
-                None,
-            ),
+            vulnerabilities=getattr(session, "vulnerabilities", None),
             logs_dir=LOGS_DIR,
         )
 
@@ -96,20 +68,14 @@ class ToolMisuseProbe(AttackProbe):
                 response=response or "",
                 trace={
                     "target_tool": target_tool,
-                    "expected_behavior": item.get(
-                        "expected_behavior",
-                        "",
-                    ),
-                    "risk_level": item.get(
-                        "risk_level",
-                        "medium",
-                    ),
                 },
             )
 
             record = {
                 "type": "tool_misuse_attack",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(
+                    timezone.utc
+                ).isoformat(),
                 "probe": self.name,
                 "category": self.owasp_category,
                 "index": idx,
@@ -122,23 +88,12 @@ class ToolMisuseProbe(AttackProbe):
                     "",
                 ),
                 "target_tool": target_tool,
-                "expected_behavior": item.get(
-                    "expected_behavior",
-                    "",
-                ),
-                "risk_level": item.get(
-                    "risk_level",
-                    "medium",
-                ),
                 "response": response,
                 "analysis": analysis,
             }
 
             session.evidence.append(record)
-            await default_logger.log(
-                record,
-                session=session,
-            )
+            await default_logger.log(record,session=session)
             results.append(record)
 
         return {

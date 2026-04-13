@@ -6,41 +6,32 @@ from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.prompt_injection.generate_prompts import main as generate_prompts
-from probes.utils import (
-    load_prompts,
-    execute_prompt,
-    execute_prompt_with_file,
-    default_logger,
-)
+from probes.utils import load_prompts, execute_prompt, default_logger
 
-PROMPTS_FILE = Path(__file__).parent / "prompt_injection_prompts.json"
+PROMPTS_FILE = Path(__file__).parent/ "prompt_injection_prompts.json"
+
 MAX_STEPS = 10
 ATTACK_LOG = Path("logs/attack_log.json")
 
 reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 
-
 class PromptInjectionProbe(AttackProbe):
     name = "prompt_injection"
     owasp_category = "LLM01: Prompt Injection"
 
-    async def run(
-        self, session, llm, goal: str = "", interface_map: dict = None
-    ) -> Dict[str, Any]:
+    async def run(self, session, llm, goal: str = "", interface_map: dict = None) -> Dict[str, Any]:
         generate_prompts(goal=goal, interface_map=interface_map)
+
         prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            payload_spec = item.get("payload_spec")
-            if item.get("modality", "text") != "text" and payload_spec:
-                response = await execute_prompt_with_file(
-                    session, llm, item["prompt"], payload_spec, max_steps=MAX_STEPS
-                )
-            else:
-                response = await execute_prompt(
-                    session, llm, item["prompt"], max_steps=MAX_STEPS
-                )
+            response = await execute_prompt(
+                session,
+                llm,
+                item["prompt"],
+                max_steps=MAX_STEPS,
+            )
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
@@ -48,21 +39,27 @@ class PromptInjectionProbe(AttackProbe):
                 prompt=item["prompt"],
                 response=response or "",
             )
+
             record = {
                 "type": "prompt_injection_attack",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "timestamp": datetime.now(
+                    timezone.utc
+                ).isoformat(),
                 "probe": self.name,
                 "category": self.owasp_category,
                 "index": idx,
                 "technique": item["category"],
-                "modality": item.get("modality", "text"),
-                "payload_spec": payload_spec,
                 "prompt": item["prompt"],
                 "response": response,
                 "analysis": analysis,
             }
+
             session.evidence.append(record)
             await default_logger.log(record, session=session)
             results.append(record)
 
-        return {"success": True, "probe": self.name, "results": results}
+        return {
+            "success": True,
+            "probe": self.name,
+            "results": results,
+        }

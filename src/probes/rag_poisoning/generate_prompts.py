@@ -44,7 +44,7 @@ class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
 
 
-def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None):
+def main(app_profile=None, interface_map=None, goal=None, vulnerabilities=None):
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
     completion = client.chat.completions.create(
         model=MODEL_NAME,
@@ -61,7 +61,7 @@ def main(app_profile=None, model_profile=None, goal=None, vulnerabilities=None):
                     "Each item must have 'category', 'prompt', 'file_type' (pdf/docx/txt/csv/md/html/json), and 'delivery' (upload/url) fields.\n\n"
                     f"Attacker Goal:\n{goal or 'No specific goal provided.'}\n\n"
                     f"App Profile:\n{json.dumps(app_profile or {}, indent=2)}\n\n"
-                    f"Model Profile:\n{json.dumps(model_profile or {}, indent=2)}\n\n"
+                    f"Interface Map:\n{json.dumps(interface_map or {}, indent=2)}\n\n"
                     f"Vulnerability Analysis:\n{json.dumps(vulnerabilities or {}, indent=2)}\n\n"
                     f"Techniques:\n{json.dumps(TECHNIQUES, indent=2)}"
                 ),
