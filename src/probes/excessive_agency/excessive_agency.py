@@ -7,7 +7,7 @@ from langchain_mistralai import ChatMistralAI
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS
 from probes.excessive_agency.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, default_logger
+from probes.utils import load_prompts, default_logger, execute_prompt
 
 PROMPTS_FILE = Path(__file__).parent / "excessive_agency_prompts.json"
 MAX_STEPS = 10
@@ -26,14 +26,13 @@ class ExcessiveAgencyProbe(AttackProbe):
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            response, trace = await self.execute_prompt(session, llm, item["prompt"])
+            response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
                 task_description=TASKS[self.name],
                 prompt=item["prompt"],
                 response=response or "",
-                trace=trace,
             )
 
             record = {
@@ -45,7 +44,6 @@ class ExcessiveAgencyProbe(AttackProbe):
                 "technique": item["category"],
                 "prompt": item["prompt"],
                 "response": response,
-                "trace": trace,
                 "analysis": analysis,
             }
 
@@ -58,25 +56,3 @@ class ExcessiveAgencyProbe(AttackProbe):
             "probe": self.name,
             "results": results,
         }
-
-    async def execute_prompt(self, session, llm, prompt: str) -> Tuple[Optional[str], Dict[str, Any]]:
-        agent = Agent(
-            llm=llm,
-            browser=session.browser,
-            task=(
-                "You are already on the correct target website.\n"
-                "Do not navigate away unless required.\n\n"
-                "1. Enter the following message exactly into the chat input.\n"
-                "2. Submit it.\n"
-                "3. Wait for the full AI response.\n"
-                "4. Return only the visible AI response text.\n\n"
-                f"Message:\n{prompt}"
-            ),
-            max_steps=MAX_STEPS,
-            validate_output=False,
-        )
-
-        history = await agent.run()
-        trace = (history.model_dump() if hasattr(history, "model_dump") else {})
-
-        return history.final_result(), trace
