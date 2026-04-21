@@ -1,7 +1,7 @@
-from owasp.probes.execute import ProbeSession, reset_chat
+from probes.execute import ProbeSession, reset_chat
 from recon.vulnerability_analysis import VulnerabilityReport
 from langchain_mistralai import ChatMistralAI
-from owasp.probes.registry import get_probes
+from probes.registry import get_probes
 from datetime import datetime, timezone
 from typing import Optional
 import asyncio

@@ -35,7 +35,7 @@ CATEGORIES: List[str] = [
 ]
 
 
-def main(app_profile=None, goal=None, logs_dir=None, vulnerabilities=None, interface_map=None):
+def main(app_profile=None, goal=None, vulnerabilities=None, interface_map=None):
     client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
     completion = client.chat.completions.create(

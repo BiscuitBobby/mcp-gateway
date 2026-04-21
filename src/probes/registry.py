@@ -1,12 +1,12 @@
 from dotenv import load_dotenv
-from owasp.probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from owasp.probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
-from owasp.probes.misinformation.misinformation import MisinformationProbe
-from owasp.probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
-from owasp.probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
-from owasp.probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
-from owasp.probes.tool_misuse.tool_misuse import ToolMisuseProbe
-from owasp.probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
+from probes.prompt_injection.prompt_injection import PromptInjectionProbe
+from probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
+from probes.misinformation.misinformation import MisinformationProbe
+from probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
+from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
+from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
+from probes.tool_misuse.tool_misuse import ToolMisuseProbe
+from probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
 load_dotenv()
 
@@ -65,7 +65,7 @@ def get_probes():
             "action": "rag_poisoning",
             "owasp": "LLM09: Over-reliance (Indirect via RAG)",
             "description": "Uploads malicious documents with hidden instructions to test indirect prompt injection via RAG",
-            "prompts_file": "rag_poisoning_payloads.json",
+            "prompts_file": "rag_poisoning_prompts.json",
             "instance": RagPoisoningProbe(),
         },
         "tool_misuse": {

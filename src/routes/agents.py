@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from owasp.probes.execute import run_one
+from probes.execute import run_one
 from pydantic import BaseModel
 import browser as browser_mod
 from datetime import datetime, timezone

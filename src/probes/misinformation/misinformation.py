@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-from owasp.probes.base import AttackProbe
-from owasp.probes.reasoning import run_reasoning, TASKS
-from owasp.probes.misinformation.generate_prompts import main as generate_prompts
-from owasp.probes.utils import load_prompts, execute_prompt, default_logger, reasoning_llm
+from probes.base import AttackProbe
+from probes.reasoning import run_reasoning, TASKS
+from probes.misinformation.generate_prompts import main as generate_prompts
+from probes.utils import load_prompts, execute_prompt, default_logger, reasoning_llm
 
 PROMPTS_FILE = Path(__file__).parent / "misinformation_prompts.json"
 MAX_STEPS = 10

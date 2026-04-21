@@ -155,7 +155,7 @@ def get_probe_totals() -> Dict[str, int]:
     Dynamically calculate the total number of probes for each OWASP category
     based on the registered probes and their prompt files.
     """
-    from owasp.probes.registry import get_probes
+    from probes.registry import get_probes
 
     probes = get_probes()
 

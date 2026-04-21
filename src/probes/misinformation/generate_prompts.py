@@ -8,7 +8,7 @@ from typing import List
 import dotenv
 from groq import Groq
 from schemas import AttackPromptList
-from owasp.probes.misinformation.tts import generate_audio_for_prompts
+from probes.misinformation.generate_audio_prompts import generate_audio as generate_audio_for_prompts
 
 dotenv.load_dotenv()
 
