@@ -12,11 +12,11 @@ from schemas import (
 )
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException
-from probes.execute import run_all, run_one
-from probes.generate import generate_all
+from owasp.probes.execute import run_all, run_one
+from owasp.probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
-from probes.registry import get_probes
-from probes.utils import get_probe_totals
+from owasp.probes.registry import get_probes
+from owasp.probes.utils import get_probe_totals
 from recon.agent import run_goal
 from browser_use import Agent
 from routes.agents import AgentRecord, AgentStatus, registry

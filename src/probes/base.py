@@ -7,5 +7,5 @@ class AttackProbe(ABC):
     owasp_category: str = "unknown"
 
     @abstractmethod
-    async def run(self, session, llm) -> dict[str, Any]:
+    async def run(self, session, llm, goal: str = "") -> dict[str, Any]:
         pass

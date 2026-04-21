@@ -3,10 +3,14 @@ import logging
 import asyncio
 import tempfile
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any, Dict, List, Optional
+
 from browser_use import Agent
+from langchain_mistralai import ChatMistralAI
 
 logger = logging.getLogger(__name__)
+
+reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 
 
 def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
@@ -151,7 +155,7 @@ def get_probe_totals() -> Dict[str, int]:
     Dynamically calculate the total number of probes for each OWASP category
     based on the registered probes and their prompt files.
     """
-    from probes.registry import get_probes
+    from owasp.probes.registry import get_probes
 
     probes = get_probes()
 
@@ -159,10 +163,9 @@ def get_probe_totals() -> Dict[str, int]:
     owasp_map = {
         "prompt_injection": "LLM01",
         "sensitive_information_disclosure": "LLM02",
-        "improper_output_handling": "LLM02",
+        "improper_output_handling": "LLM05",
         "misinformation": "LLM04",
         "data_exfiltration": "LLM06",
-        "tool_abuse": "LLM07",
         "excessive_agency": "LLM08",
         "tool_misuse": "LLM08",
         "rag_poisoning": "LLM09",

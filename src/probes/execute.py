@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 import browser
-from probes.registry import get_probes
+from owasp.probes.registry import get_probes
 
 logger = logging.getLogger(__name__)
 

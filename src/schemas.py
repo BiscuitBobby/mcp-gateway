@@ -176,8 +176,7 @@ class ToolDiscoveryProfile(BaseModel):
     notes: Optional[str] = None
 
 class FullProfile(BaseModel):
-    """Unified profile: AgentProfile + ToolDiscoveryProfile in one pass."""
-
+    
     # ── AgentProfile fields ──
     agent_type: str = ""
     agent_description: str = ""
@@ -323,6 +322,43 @@ class AttackPromptList(BaseModel):
     prompts: list[AttackPrompt]
 
 
+class RagAttackPrompt(BaseModel):
+    category: str = "unknown"
+    prompt: str
+    file_type: str = ""
+    delivery: str = "upload"
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize(cls, data):
+        if not isinstance(data, dict):
+            return data
+        if "technique" in data and "category" not in data:
+            data["category"] = data.pop("technique")
+        return data
+
+
+class RagAttackPromptList(BaseModel):
+    prompts: list[RagAttackPrompt]
+
+
+class DocumentPayload(BaseModel):
+    name: str = "poisoned_doc"
+    visible_content: str = ""
+    hidden_instruction: str = ""
+
+    @model_validator(mode="before")
+    @classmethod
+    def normalize(cls, data):
+        if isinstance(data, str):
+            return {"name": "poisoned_doc", "visible_content": data, "hidden_instruction": ""}
+        return data
+
+
+class DocumentPayloadList(BaseModel):
+    documents: list[DocumentPayload]
+
+
 class ToolMisusePrompt(BaseModel):
     category: str
     prompt: str
@@ -433,6 +469,7 @@ class PotentialVulnerability(BaseModel):
 class VulnerabilityReport(BaseModel):
     potential_vulnerabilities: list[PotentialVulnerability]
     severity_summary: dict[str, int]
+    recommended_probe_order: list[str] = []
 
 class AnalyseRequest(BaseModel):
     profile: Optional[AgentProfile] = None

@@ -1,19 +1,14 @@
 from dotenv import load_dotenv
+from owasp.probes.prompt_injection.prompt_injection import PromptInjectionProbe
+from owasp.probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
+from owasp.probes.misinformation.misinformation import MisinformationProbe
+from owasp.probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
+from owasp.probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
+from owasp.probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
+from owasp.probes.tool_misuse.tool_misuse import ToolMisuseProbe
+from owasp.probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
 load_dotenv()
-
-from probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from probes.sensitive_information_disclosure.sensitive_information_disclosure import (
-    SensitiveInformationDisclosureProbe,
-)
-from probes.misinformation.misinformation import MisinformationProbe
-from probes.improper_output_handling.improper_output_handling import (
-    ImproperOutputHandlingProbe,
-)
-from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
-from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
-from probes.tool_misuse.tool_misuse import ToolMisuseProbe
-from probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
 _registry = None
 
@@ -40,7 +35,7 @@ def get_probes():
         },
         "data_exfiltration": {
             "action": "data_exfiltration",
-            "owasp": "LLM06: Sensitive Information Disclosure",
+            "owasp": "LLM06: Data Exfiltration",
             "description": "Tests whether the model can be tricked into exfiltrating PII, conversation history, RAG contents, or API keys.",
             "prompts_file": "data_exfiltration_prompts.json",
             "instance": DataExfiltrationProbe(),
@@ -54,7 +49,7 @@ def get_probes():
         },
         "improper_output_handling": {
             "action": "improper_output_handling",
-            "owasp": "LLM02: Insecure Output Handling",
+            "owasp": "LLM05: Improper Output Handling",
             "description": "Tests whether the model produces dangerous structured output — injected HTML, forged tool calls, malformed JSON with privilege fields.",
             "prompts_file": "improper_output_handling_prompts.json",
             "instance": ImproperOutputHandlingProbe(),
