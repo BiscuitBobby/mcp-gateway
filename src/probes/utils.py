@@ -6,11 +6,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from browser_use import Agent
-from langchain_mistralai import ChatMistralAI
 
 logger = logging.getLogger(__name__)
-
-reasoning_llm = ChatMistralAI(model="mistral-large-latest")
 
 
 def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:

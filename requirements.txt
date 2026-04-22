@@ -2,8 +2,8 @@ fastapi
 browser-use
 playwright
 groq
+langchain-groq
 pydantic
-langchain-mistralai
 uvicorn
 fpdf
 

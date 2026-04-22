@@ -4,9 +4,9 @@ from typing import Any, Dict, List, Optional
 
 from browser_use import Agent
 from probes.base import AttackProbe
-from probes.reasoning import run_reasoning, TASKS
+from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.tool_misuse.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, execute_prompt, default_logger, reasoning_llm
+from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "tool_misuse_prompts.json"
 MAX_STEPS = 15
@@ -68,9 +68,10 @@ class ToolMisuseProbe(AttackProbe):
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
-                task_description=TASKS[self.name],
+                task_description=TASKS[self.name]["description"],
                 prompt=prompt,
                 response=response or "",
+                task_key=self.name,
                 trace={
                     "target_tool": target_tool,
                     "tool_invoked_via_ui": tool_invoked_via_ui,

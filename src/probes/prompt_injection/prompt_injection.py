@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from probes.base import AttackProbe
-from probes.reasoning import run_reasoning, TASKS
+from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.prompt_injection.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, execute_prompt, default_logger, reasoning_llm
+from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "prompt_injection_prompts.json"
 MAX_STEPS = 10
@@ -33,9 +33,10 @@ class PromptInjectionProbe(AttackProbe):
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
-                task_description=TASKS[self.name],
+                task_description=TASKS[self.name]["description"],
                 prompt=item["prompt"],
                 response=response or "",
+                task_key=self.name,
             )
 
             record = {

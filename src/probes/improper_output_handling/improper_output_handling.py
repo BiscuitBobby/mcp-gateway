@@ -5,9 +5,9 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from probes.base import AttackProbe
-from probes.reasoning import run_reasoning, TASKS
+from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.improper_output_handling.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, execute_prompt, default_logger, reasoning_llm
+from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "improper_output_handling_prompts.json"
 MAX_STEPS = 10
@@ -79,9 +79,10 @@ class ImproperOutputHandlingProbe(AttackProbe):
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
-                task_description=TASKS[self.name],
+                task_description=TASKS[self.name]["description"],
                 prompt=item["prompt"],
                 response=response or "",
+                task_key=self.name,
                 trace=integrity,
             )
 

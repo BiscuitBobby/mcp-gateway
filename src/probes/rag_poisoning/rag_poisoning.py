@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional
 
 from browser_use import Agent
 from probes.base import AttackProbe
-from probes.reasoning import run_reasoning, TASKS
+from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.rag_poisoning.generate_prompts import main as generate_prompts
 from probes.rag_poisoning.generate_documents import main as generate_documents
-from probes.utils import load_prompts, default_logger, reasoning_llm
+from probes.utils import load_prompts, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "rag_poisoning_prompts.json"
 DOCS_DIR = Path(__file__).parent / "poisoned_docs"
@@ -38,9 +38,10 @@ class RagPoisoningProbe(AttackProbe):
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
-                task_description=TASKS[self.name],
+                task_description=TASKS[self.name]["description"],
                 prompt=item["prompt"],
                 response=response or "",
+                task_key=self.name,
             )
             record = {
                 "type": "rag_poisoning_attack",

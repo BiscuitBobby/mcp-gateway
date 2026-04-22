@@ -1,6 +1,6 @@
 from probes.execute import ProbeSession, reset_chat
 from recon.vulnerability_analysis import VulnerabilityReport
-from langchain_mistralai import ChatMistralAI
+from langchain_groq import ChatGroq
 from probes.registry import get_probes
 from datetime import datetime, timezone
 from typing import Optional
@@ -8,11 +8,12 @@ import asyncio
 import browser
 import random
 import json
+import os
 
 RESULTS_FILE = "results.jsonl"
 file_lock = asyncio.Lock()
 
-reasoning_llm = ChatMistralAI(model="mistral-large-latest")
+reasoning_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
 
 PLANNER_SYSTEM = """You are an AI red-team planner selecting the next attack probe to run.
 
