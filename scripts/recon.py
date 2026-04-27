@@ -10,7 +10,6 @@ import hashlib
 import struct
 import random
 import json
-import time
 import re
 
 
@@ -25,10 +24,13 @@ tracer = trace.get_tracer("mcp.recon")
 
 # --- MCP Protocol Fingerprints ---
 MCP_METHODS = {
+    # Core Methods
     "initialize",
     "initialized",
     "resources/list",
     "resources/read",
+    "resources/subscribe",
+    "resources/unsubscribe",
     "prompts/list",
     "prompts/get",
     "tools/list",
@@ -36,143 +38,271 @@ MCP_METHODS = {
     "logging/setLevel",
     "sampling/createMessage",
     "elicitation/create",
+    "completion/complete",
+    "$/cancelRequest",
+    # Notifications
+    "notifications/initialized",
+    "notifications/message",
+    "notifications/progress",
+    "notifications/tasks/list_changed",
+    "notifications/tasks/status",
+    "notifications/resources/list_changed",
+    "notifications/prompts/list_changed",
+    "notifications/tools/list_changed",
 }
 
-# Keys typically found in MCP initialize/capabilities objects
-MCP_KEYWORDS = {"capabilities", "serverInfo", "instructions", "mcp-session-id"}
+# Key identifiers found in packets/JSON objects
+MCP_KEYWORDS = {
+    # Identity & Versioning
+    "capabilities",
+    "serverInfo",
+    "instructions",
+    "mcp-session-id",
+    "mcp-protocol-version",
+    # Transport & Config
+    "transportType",
+    "connectionType",
+    "proxyFullAddress",
+    "sseUrl",
+    # Proxy/Auth
+    "x-mcp-proxy-auth",
+    "x-custom-auth-header",
+    "x-custom-auth-headers",
+    "client_id",
+    "client_secret",
+    "oauthScope",
+    # Features
+    "sampling",
+    "elicitation",
+    "roots",
+}
 
-# Patterns for headers (still useful if they exist, but not required)
+# Patterns for headers found in HTTP/SSE transmissions
 HEADER_PATTERNS = {
     "session_id": re.compile(r"mcp-session-id:\s*([^\r\n]+)", re.I),
     "protocol_version": re.compile(r"mcp-protocol-version:\s*([^\r\n]+)", re.I),
+    "proxy_auth": re.compile(r"x-mcp-proxy-auth:\s*([^\r\n]+)", re.I),
+    "custom_auth": re.compile(r"x-custom-auth-header:\s*([^\r\n]+)", re.I),
+    "custom_headers": re.compile(r"x-custom-auth-headers:\s*([^\r\n]+)", re.I),
 }
+
+# Per-flow session cache: maps flow-key -> {session data}
+# Keyed without src_port so all connections to the same server share session info.
+_flow_sessions = {}
+_flow_lock = threading.Lock()
+
+
+def _find_next_brace_block(text, start):
+    """Find the next balanced {…} block starting at or after `start`."""
+    open_pos = text.find("{", start)
+    if open_pos == -1:
+        return None, -1
+
+    count = 0
+    for i in range(open_pos, len(text)):
+        if text[i] == "{":
+            count += 1
+        elif text[i] == "}":
+            count -= 1
+        if count == 0:
+            return text[open_pos : i + 1], i + 1
+
+    return None, -1
+
+
+def _try_parse_jsonrpc(raw_json):
+    """Parse a JSON string, returning the object only if it looks like JSON-RPC."""
+    try:
+        obj = json.loads(raw_json)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+    if isinstance(obj, dict) and (obj.get("jsonrpc") == "2.0" or "method" in obj):
+        return obj
+    return None
 
 
 def extract_json_rpc(text):
     """URL-independent extraction of JSON-RPC objects."""
-    results = []
-    # Strip SSE 'data: ' prefix if present, but keep the JSON
     clean_text = re.sub(r"^data:\s*", "", text, flags=re.MULTILINE)
+    results = []
+    pos = 0
 
-    start = 0
-    while True:
-        start = clean_text.find("{", start)
-        if start == -1:
+    while pos < len(clean_text):
+        raw_json, end = _find_next_brace_block(clean_text, pos)
+        if raw_json is None:
             break
 
-        count = 0
-        for i in range(start, len(clean_text)):
-            if clean_text[i] == "{":
-                count += 1
-            elif clean_text[i] == "}":
-                count -= 1
+        obj = _try_parse_jsonrpc(raw_json)
+        if obj is not None:
+            results.append(obj)
 
-            if count == 0:
-                try:
-                    obj = json.loads(clean_text[start : i + 1])
-                    if isinstance(obj, dict) and (
-                        obj.get("jsonrpc") == "2.0" or "method" in obj
-                    ):
-                        results.append(obj)
-                    start = i + 1
-                    break
-                except:
-                    break
-        else:
-            break
-        start += 1
+        pos = end
+
     return results
+
+
+def _dict_scan_keywords(d):
+    """Deep scan a dict for any MCP keywords."""
+    if not isinstance(d, dict):
+        return False
+
+    found_key = False
+    # Check keys
+    if any(key in d for key in MCP_KEYWORDS):
+        found_key = True
+
+    # Recursively check nested dicts
+    for v in d.values():
+        if isinstance(v, dict) and _dict_scan_keywords(v) and found_key:
+            return True
+        elif isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict) and _dict_scan_keywords(item) and found_key:
+                    return True
+    return False
 
 
 def is_mcp_content(rpc_objects, payload):
     """Fingerprints content to see if it belongs to MCP."""
+    for name, p in HEADER_PATTERNS.items():
+        if p.search(payload):
+            print(f"\n{payload}\n")
+            return True, f"Header Match: {name}"
+
     for obj in rpc_objects:
         method = obj.get("method")
         if method in MCP_METHODS:
+            print(f"\n{payload}\n")
             return True, f"Method Match: {method}"
 
-        params = obj.get("params", {})
-        if isinstance(params, dict):
-            if any(key in params for key in MCP_KEYWORDS):
-                return True, "Keyword Match in Params"
-
-        result = obj.get("result", {})
-        if isinstance(result, dict):
-            if any(key in result for key in MCP_KEYWORDS):
-                return True, "Keyword Match in Result"
-
-    if any(p.search(payload) for p in HEADER_PATTERNS.values()):
-        return True, "MCP Header Match"
+        # Scan params/result/error for keywords
+        if _dict_scan_keywords(obj):
+            print(f"\n{payload}\n")
+            return True, "Keyword Match in JSON Body"
 
     return False, None
 
 
 def flow_to_trace_id(src_ip, src_port, dst_ip, dst_port):
-    """
-    Derive a stable 128-bit OTel trace_id from the TCP 4-tuple.
-    OTel expects trace_id as an int (128 bits).
-    """
+    """Derive a stable 128-bit OTel trace_id from the TCP 4-tuple."""
     flow = f"{src_ip}:{src_port}-{dst_ip}:{dst_port}"
-    digest = hashlib.md5(flow.encode()).digest()  # 16 bytes
-    # Pad to 16 bytes (md5 already is) and interpret as two 64-bit ints
+    digest = hashlib.md5(flow.encode()).digest()
     hi, lo = struct.unpack(">QQ", digest)
-    return (hi << 64) | lo  # 128-bit int
+    return (hi << 64) | lo
 
 
-def emit_span(packet, obj, reason):
+def _flow_key(ip, tcp):
+    """Key for the session cache — ignores src_port so all connections to the same server share state."""
+    return (ip.src, ip.dst, tcp.dport)
+
+
+def _extract_headers_from_payload(payload):
+    """Pull MCP-related header values out of a raw payload."""
+    data = {}
+    for name, p in HEADER_PATTERNS.items():
+        match = p.search(payload)
+        if match:
+            data[name] = match.group(1).strip()
+    return data
+
+
+def _cache_session_data(key, new_data):
+    """Merge new_data into the flow session cache and return the merged result."""
+    with _flow_lock:
+        existing = _flow_sessions.get(key, {})
+        existing.update(new_data)
+        _flow_sessions[key] = existing
+        return dict(existing)
+
+
+def _extract_mcp_session_data(obj, payload, ip, tcp):
+    """Extract session data from headers/body, merging with the per-flow cache."""
+    data = _extract_headers_from_payload(payload)
+
+    # Check JSON body for specific fields
+    if isinstance(obj, dict):
+        if "mcp-session-id" in obj:
+            data["session_id"] = obj["mcp-session-id"]
+
+        for area in (obj.get("params", {}), obj.get("result", {})):
+            if isinstance(area, dict):
+                if "mcp-session-id" in area:
+                    data["session_id"] = area["mcp-session-id"]
+                if "transportType" in area:
+                    data["transport_type"] = area["transportType"]
+                if "connectionType" in area:
+                    data["connection_type"] = area["connectionType"]
+
+    # Merge with (and update) the per-flow cache
+    key = _flow_key(ip, tcp)
+    return _cache_session_data(key, data)
+
+
+def _set_network_attributes(span, ip, tcp):
+    span.set_attribute("net.transport", "ip_tcp")
+    span.set_attribute("net.peer.ip", ip.src)
+    span.set_attribute("net.peer.port", tcp.sport)
+    span.set_attribute("net.host.ip", ip.dst)
+    span.set_attribute("net.host.port", tcp.dport)
+
+
+def _set_mcp_attributes(span, obj, method, reason, session_data):
+    span.set_attribute("rpc.system", "jsonrpc")
+    span.set_attribute("rpc.method", method)
+    span.set_attribute("rpc.jsonrpc.version", obj.get("jsonrpc", "2.0"))
+    span.set_attribute("rpc.jsonrpc.request_id", str(obj.get("id", "")))
+    span.set_attribute("mcp.match_reason", reason)
+
+    # Add session data as attributes
+    for k, v in session_data.items():
+        span.set_attribute(f"mcp.{k}", v)
+
+
+def _add_payload_events(span, obj):
+    for key in ("params", "result"):
+        if key in obj:
+            span.add_event(key, {"message": str(obj[key])[:500]})
+
+    if "error" in obj:
+        err = obj["error"]
+        span.add_event("error", {"message": str(err)[:500]})
+        span.set_status(StatusCode.ERROR, description=str(err.get("message", "")))
+    else:
+        span.set_status(StatusCode.OK)
+
+
+def emit_span(packet, obj, reason, payload):
     """Create and export a real OpenTelemetry span for one JSON-RPC object."""
     ip, tcp = packet[IP], packet[TCP]
 
+    session_data = _extract_mcp_session_data(obj, payload, ip, tcp)
+
+    # Trace ID remains flow-based, but includes session identification as attributes
     trace_id = flow_to_trace_id(ip.src, tcp.sport, ip.dst, tcp.dport)
     span_id = random.getrandbits(64)
 
-    # Build a remote SpanContext so this span is linked to the sniffed flow's trace
     remote_ctx = trace.span.SpanContext(
         trace_id=trace_id,
         span_id=span_id,
         is_remote=True,
-        trace_flags=trace.TraceFlags(0x01),  # sampled
+        trace_flags=trace.TraceFlags(0x01),
     )
-    link = trace.Link(context=remote_ctx)
 
     method = obj.get("method", "jsonrpc.response")
-    is_error = "error" in obj
 
     with tracer.start_as_current_span(
         name=method,
         kind=SpanKind.CLIENT,
-        links=[link],
+        links=[trace.Link(context=remote_ctx)],
     ) as span:
-        # Network attributes (OpenTelemetry semantic conventions)
-        span.set_attribute("net.transport", "ip_tcp")
-        span.set_attribute("net.peer.ip", ip.src)
-        span.set_attribute("net.peer.port", tcp.sport)
-        span.set_attribute("net.host.ip", ip.dst)
-        span.set_attribute("net.host.port", tcp.dport)
+        _set_network_attributes(span, ip, tcp)
+        _set_mcp_attributes(span, obj, method, reason, session_data)
+        _add_payload_events(span, obj)
 
-        # JSON-RPC / MCP attributes
-        span.set_attribute("rpc.system", "jsonrpc")
-        span.set_attribute("rpc.method", method)
-        span.set_attribute("rpc.jsonrpc.version", obj.get("jsonrpc", "2.0"))
-        span.set_attribute("rpc.jsonrpc.request_id", str(obj.get("id", "")))
-        span.set_attribute("mcp.match_reason", reason)
-
-        # Params, result, error as span events (truncated to stay within limits)
-        if "params" in obj:
-            span.add_event("params", {"message": str(obj["params"])[:500]})
-
-        if "result" in obj:
-            span.add_event("result", {"message": str(obj["result"])[:500]})
-
-        if is_error:
-            err = obj["error"]
-            span.add_event("error", {"message": str(err)[:500]})
-            span.set_status(StatusCode.ERROR, description=str(err.get("message", "")))
-        else:
-            span.set_status(StatusCode.OK)
-
+    sid = session_data.get("session_id", "no-session-id")
     print(
-        f"[span] {method} | {ip.src}:{tcp.sport} → {ip.dst}:{tcp.dport} | {reason}"
+        f"[span] {method} | SID: {sid[:8]}... | {ip.src}:{tcp.sport} → {ip.dst}:{tcp.dport} | {reason}"
     )
 
 
@@ -182,34 +312,41 @@ def process_packet(packet):
 
     try:
         payload = packet[Raw].load.decode(errors="ignore")
-    except:
+    except Exception:
         return
 
+    # Always cache any MCP headers we see, even in packets with no JSON body.
+    # This bridges the TCP segmentation gap.
+    ip, tcp = packet[IP], packet[TCP]
+    header_data = _extract_headers_from_payload(payload)
+    if header_data:
+        _cache_session_data(_flow_key(ip, tcp), header_data)
+
     rpc_objects = extract_json_rpc(payload)
-
     is_mcp, reason = is_mcp_content(rpc_objects, payload)
-
     if not is_mcp:
         return
 
     for obj in rpc_objects:
-        emit_span(packet, obj, reason)
+        emit_span(packet, obj, reason, payload)
+
+
+def _sniff_interface(iface):
+    sniff(iface=iface, filter="tcp", prn=process_packet, store=False)
 
 
 def main():
     interfaces = get_if_list()
-    print("[*] MCP Recon — OpenTelemetry tracing active")
+    print("[*] MCP Recon — Enhanced OpenTelemetry tracing active")
     print(f"[*] Exporting spans to http://localhost:4317")
     print(f"[*] Listening on {len(interfaces)} interface(s): {', '.join(interfaces)}")
 
-    threads = []
-    for iface in interfaces:
-        def start_sniff(i=iface):
-            sniff(iface=i, filter="tcp", prn=process_packet, store=False)
-
-        t = threading.Thread(target=start_sniff, daemon=True)
+    threads = [
+        threading.Thread(target=_sniff_interface, args=(iface,), daemon=True)
+        for iface in interfaces
+    ]
+    for t in threads:
         t.start()
-        threads.append(t)
 
     try:
         for t in threads:
