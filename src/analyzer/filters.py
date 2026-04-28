@@ -7,13 +7,12 @@ from src.analyzer.models import (
     get_scan_id,
 )
 from typing import Union
-import getpass
 import os
 
 from src.policies.views import GLOBAL_POLICIES, get_policies, load_json
 
 if "GOOGLE_API_KEY" not in os.environ:
-    os.environ["GOOGLE_API_KEY"] = getpass.getpass("Enter your Google AI API key: ")
+    raise RuntimeError("GOOGLE_API_KEY environment variable is not set")
 
 model = ChatGoogleGenerativeAI(
     model="gemini-2.5-flash",

@@ -1,4 +1,23 @@
 services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    container_name: mcp-gateway
+    network_mode: host
+    ports:
+      - "8000:8000"
+    environment:
+      - OTL_EXPORTER_URL=http://localhost:4317
+      - HOST=http://localhost:8000
+      - GOOGLE_API_KEY=EXAMPLE_KEY
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      jaeger:
+        condition: service_started
+    restart: unless-stopped
+
   opensearch:
     image: opensearchproject/opensearch:3.4.0@sha256:c27e2f52eed924f7b7a98970618debb0f4bea0217b5dbee36f966d27727e18c0
     container_name: opensearch
