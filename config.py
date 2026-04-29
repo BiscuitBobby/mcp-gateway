@@ -17,10 +17,10 @@ class Settings(BaseSettings):
     app_name: str = "mcp-gateway"
     debug: bool = False
 
-    otl_exporter_url: str = "http://localhost:4317"
-    frontend_url: str = "http://localhost:5173"
+    otl_exporter_url: str = "otl_exporter.biscuitbobby.eu.org" # "http://localhost:4317"
+    frontend_url: str = "jaeger.biscuitbobby.eu.org" # "http://localhost:5173"
     temp_dir: str = "temp"
-    host: str = "http://localhost:8000"
+    host: str = "gateway.biscuitbobby.eu.org" # "http://localhost:8000"
     # database_url: str
 
 
