@@ -27,7 +27,12 @@ class LoggingMiddleware(Middleware):
         # ---- tools/call path ----
 
         propagated_meta = inject_trace_context(result.meta)
-        traceparent = propagated_meta["fastmcp.traceparent"]
+        traceparent = propagated_meta.get("fastmcp.traceparent")
+        
+        if not traceparent:
+            logger.warning("No traceparent found in meta, skipping dynamic scan")
+            return result
+            
         print(self.name, context.method, traceparent)
         try:
             dynamic_scan(

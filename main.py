@@ -104,6 +104,17 @@ async def proxy_alias(alias: str, request: Request):
         await client.aclose()
 
 
+@app.get("/debug/settings")
+async def debug_settings():
+    """Debug endpoint to check current settings"""
+    return {
+        "host": settings.host,
+        "frontend_url": settings.frontend_url,
+        "otl_exporter_url": settings.otl_exporter_url,
+        "debug": settings.debug,
+    }
+
+
 app.mount("/mcp", mcp_app)  # MCP endpoint at /mcp
 app.include_router(gateway_router)
 app.include_router(analyzer_router)
