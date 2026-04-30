@@ -32,6 +32,12 @@ def save_config(cfg):
 async def mount_proxy(mcp: FastMCP, alias: str, cfg: dict):
     proxy = create_proxy({alias: cfg}, name=alias)
     proxy.alias = alias
+    
+    # Set backend_name to avoid telemetry errors
+    # This is used by OpenTelemetry span attributes
+    if not hasattr(proxy, 'backend_name') or proxy.backend_name is None:
+        proxy.backend_name = alias
+        print(f"[GATEWAY] Set backend_name for proxy '{alias}' to '{alias}'")
 
     interceptor = LoggingMiddleware(alias)
     proxy.add_middleware(interceptor)

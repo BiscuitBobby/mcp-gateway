@@ -13,49 +13,43 @@ class LoggingMiddleware(Middleware):
     def __init__(self, name: str = "default"):
         super().__init__()
         self.name = name
-        print(f"[LoggingMiddleware] Initialized for: {self.name}")
 
     async def on_message(self, context: MiddlewareContext, call_next):
-        print(f"[LoggingMiddleware] {self.name} - on_message called, method: {context.method}")
-        
         if context.method == "tools/call":
             context.message.meta = inject_trace_context(context.message.meta)
-            print(f"[LoggingMiddleware] {self.name} - Injected trace context for tools/call")
 
         result = await call_next(context)
-        print(f"[LoggingMiddleware] {self.name} - Received result from call_next")
 
         if context.method != "tools/call":
             logger.info("response: %s", result)
-            print(f"[LoggingMiddleware] {self.name} - Non-tools/call method, returning result")
             return result
 
-        # ---- tools/call path ----
-        print(f"[LoggingMiddleware] {self.name} - Processing tools/call path")
+        # Ensure result.meta is a dict
+        if result.meta is None:
+            result.meta = {}
 
         propagated_meta = inject_trace_context(result.meta)
-        traceparent = propagated_meta.get("fastmcp.traceparent")
+        traceparent = propagated_meta.get("fastmcp.traceparent") or propagated_meta.get("traceparent")
         
         if not traceparent:
             logger.warning("No traceparent found in meta, skipping dynamic scan")
-            print(f"[LoggingMiddleware] {self.name} - WARNING: No traceparent found, skipping scan")
             return result
-            
-        print(f"[LoggingMiddleware] {self.name} - traceparent: {traceparent}")
-        print(self.name, context.method, traceparent)
+        
+        # Extract input arguments from the request
+        input_args = None
+        if context.message:
+            input_args = context.message
         
         try:
-            print(f"[LoggingMiddleware] {self.name} - Running input scan")
             dynamic_scan(
                 logger,
                 traceparent,
                 "input",
-                result.content,
+                input_args if input_args is not None else result.content,
                 self.name,
             )
-            print(f"[LoggingMiddleware] {self.name} - Input scan completed")
+            print(f"[LoggingMiddleware] {input_args} - Input scan completed")
         except Exception as e:
-            print(f"[LoggingMiddleware] {self.name} - Input scan FAILED: {e}")
             raise Exception(f"Input scan failed: {e}") from e
 
         out = {
@@ -67,7 +61,6 @@ class LoggingMiddleware(Middleware):
         logger.info("response: %s", result)
 
         try:
-            print(f"[LoggingMiddleware] {self.name} - Running output scan")
             scan_result = dynamic_scan(
                 logger,
                 traceparent,
@@ -75,15 +68,12 @@ class LoggingMiddleware(Middleware):
                 out,
                 self.name,
             )
-            print(f"[LoggingMiddleware] {self.name} - Output scan completed")
+            print(f"[LoggingMiddleware] {result} - Output scan completed")
         except Exception as e:
-            print(f"[LoggingMiddleware] {self.name} - Output scan FAILED: {e}")
             raise Exception(f"Output scan failed: {e}") from e
 
         if isinstance(scan_result, ScanFailure):
-            print(f"[LoggingMiddleware] {self.name} - Output scan returned ScanFailure: {scan_result.error}")
             raise Exception(f"Output scan failed: {scan_result.error}")
 
         logger.info("\n")
-        print(f"[LoggingMiddleware] {self.name} - Middleware processing complete, returning result")
         return result

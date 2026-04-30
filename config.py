@@ -35,8 +35,10 @@ settings = get_settings()
 
 # Print settings on startup for debugging
 print(f"[CONFIG] Loaded settings:")
+print(f"  - app_name: {settings.app_name}")
 print(f"  - host: {settings.host}")
 print(f"  - frontend_url: {settings.frontend_url}")
+print(f"  - otl_exporter_url: {settings.otl_exporter_url}")
 print(f"  - debug: {settings.debug}")
 
 
@@ -46,11 +48,16 @@ resource = Resource.create({"service.name": settings.app_name})
 provider = TracerProvider(resource=resource)
 # For gRPC with TLS, don't use https:// prefix, just the hostname:port
 # The exporter will use secure channel by default for non-localhost
-processor = BatchSpanProcessor(
-    OTLPSpanExporter(
-        endpoint=settings.otl_exporter_url,
-        insecure=True  # Set to True if not using TLS
+try:
+    processor = BatchSpanProcessor(
+        OTLPSpanExporter(
+            endpoint=settings.otl_exporter_url,
+            insecure=True  # Set to True if not using TLS
+        )
     )
-)
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
+    provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+    print(f"[CONFIG] ✓ Telemetry initialized successfully with endpoint: {settings.otl_exporter_url}")
+except Exception as e:
+    print(f"[CONFIG] ✗ Failed to initialize telemetry: {e}")
+    print(f"[CONFIG] Continuing without telemetry - traceparent will not be available")
