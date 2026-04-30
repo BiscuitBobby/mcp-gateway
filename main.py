@@ -13,20 +13,43 @@ from src.gateway.views import mcp
 import uvicorn
 import asyncio
 import httpx
+import logging
+
+logger = logging.getLogger(__name__)
 
 routes = ServerRoutes()
-TIMEOUT = httpx.Timeout(None)
+# Set reasonable timeouts to prevent hanging connections
+# None for read timeout allows long-running streams, but connect/write have limits
+TIMEOUT = httpx.Timeout(
+    connect=10.0,  # 10 seconds to establish connection
+    read=None,     # No timeout for reading (allows streaming)
+    write=30.0,    # 30 seconds to write request
+    pool=10.0      # 10 seconds to get connection from pool
+)
 mcp_app = mcp.http_app(path="/")
+
+# Shared client — created once, reused across requests, properly closed on shutdown
+_http_client: httpx.AsyncClient | None = None
+
+
+def get_http_client() -> httpx.AsyncClient:
+    return _http_client
 
 
 @asynccontextmanager
 async def app_lifespan(app):
+    global _http_client
+    _http_client = httpx.AsyncClient(timeout=TIMEOUT)
     asyncio.create_task(run_all())
-    yield
+    try:
+        yield
+    finally:
+        await _http_client.aclose()
 
 
 app = FastAPI(
-    title=settings.app_name, lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan)
+    title=settings.app_name,
+    lifespan=combine_lifespans(app_lifespan, mcp_app.lifespan),
 )
 app.add_middleware(
     CORSMiddleware,
@@ -34,6 +57,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Headers that must not be forwarded downstream as-is
+_HOP_BY_HOP = frozenset(
+    {"transfer-encoding", "content-encoding", "content-length", "connection",
+     "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailers",
+     "upgrade"}
 )
 
 
@@ -48,8 +78,7 @@ async def proxy_alias(alias: str, request: Request):
     target_url = f"http://localhost:{port}/v1/{alias}/"
 
     headers = {k: v for k, v in request.headers.items() if k.lower() != "host"}
-
-    client = httpx.AsyncClient(timeout=TIMEOUT)
+    client = get_http_client()
 
     forwarded_request = client.build_request(
         request.method,
@@ -59,54 +88,66 @@ async def proxy_alias(alias: str, request: Request):
         params=request.query_params,
     )
 
-    response = await client.send(forwarded_request, follow_redirects=False, stream=True)
+    try:
+        response = await client.send(forwarded_request, follow_redirects=False, stream=True)
+    except httpx.RequestError as exc:
+        logger.error("Upstream request failed for alias=%s: %s", alias, exc)
+        raise HTTPException(status_code=502, detail="Upstream unreachable") from exc
 
-    # Detect SSE or any streaming content-type and stream it back
     content_type = response.headers.get("content-type", "")
+    # Only treat as streaming when the upstream explicitly says so — not just because
+    # it uses chunked transfer encoding (all HTTP/1.1 responses may be chunked).
     is_streaming = (
         "text/event-stream" in content_type
         or "application/octet-stream" in content_type
-        or response.headers.get("transfer-encoding", "").lower() == "chunked"
     )
 
-    if is_streaming:
+    safe_headers = {
+        k: v for k, v in response.headers.items()
+        if k.lower() not in _HOP_BY_HOP
+    }
 
+    if is_streaming:
         async def stream_generator():
             try:
                 async for chunk in response.aiter_bytes():
                     yield chunk
+            except (httpx.RemoteProtocolError, httpx.ReadError) as exc:
+                # Upstream closed the connection early — log and stop iteration
+                # cleanly so FastAPI can still send a complete HTTP response frame.
+                logger.warning(
+                    "Upstream closed stream early for alias=%s: %s", alias, exc
+                )
+            except Exception as exc:
+                logger.error("Unexpected error while streaming alias=%s: %s", alias, exc)
             finally:
                 await response.aclose()
-                await client.aclose()
 
         return StreamingResponse(
             stream_generator(),
             status_code=response.status_code,
-            headers={
-                k: v
-                for k, v in response.headers.items()
-                if k.lower()
-                not in ("transfer-encoding", "content-encoding", "content-length")
-            },
+            headers=safe_headers,
             media_type=content_type,
         )
 
-    # Non-streaming: buffer the response normally
+    # Non-streaming: buffer the full response body before returning
     try:
         content = await response.aread()
-        return Response(
-            content=content,
-            status_code=response.status_code,
-            headers=dict(response.headers),
-        )
+    except (httpx.RemoteProtocolError, httpx.ReadError) as exc:
+        logger.error("Failed to read upstream response for alias=%s: %s", alias, exc)
+        raise HTTPException(status_code=502, detail="Upstream closed connection early") from exc
     finally:
         await response.aclose()
-        await client.aclose()
+
+    return Response(
+        content=content,
+        status_code=response.status_code,
+        headers=safe_headers,
+    )
 
 
 @app.get("/debug/settings")
 async def debug_settings():
-    """Debug endpoint to check current settings"""
     return {
         "host": settings.host,
         "frontend_url": settings.frontend_url,
