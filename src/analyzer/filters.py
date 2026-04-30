@@ -1,4 +1,5 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from dataclasses import dataclass
 from typing import Literal
 from src.analyzer.models import (
@@ -11,16 +12,28 @@ import os
 
 from src.policies.views import GLOBAL_POLICIES, get_policies, load_json
 
-if "GOOGLE_API_KEY" not in os.environ:
-    raise RuntimeError("GOOGLE_API_KEY environment variable is not set")
+if "GOOGLE_API_KEY" in os.environ:
+    model = ChatGoogleGenerativeAI(
+        model="gemini-2.5-flash",
+        temperature=1.0,  # Gemini 3.0+ defaults to 1.0
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+    )
+elif "OPENAI_API_KEY" in os.environ:
+    model = ChatOpenAI(
+        model="gpt-5.4-mini",
+        temperature=0,
+        max_tokens=None,
+        timeout=None,
+        max_retries=2,
+        # api_key="...",
+        # base_url="...",
+    )
+else:
+    raise RuntimeError("neither GOOGLE_API_KEY nor OPENAI_API_KEY environment variables set")
 
-model = ChatGoogleGenerativeAI(
-    model="gemini-2.5-flash",
-    temperature=1.0,  # Gemini 3.0+ defaults to 1.0
-    max_tokens=None,
-    timeout=None,
-    max_retries=2,
-)
+
 
 model_with_structure = model.with_structured_output(Report)
 

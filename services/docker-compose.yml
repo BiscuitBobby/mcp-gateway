@@ -11,7 +11,7 @@ services:
       - OTL_EXPORTER_URL=http://localhost:4317
       - HOST=https://gateway.biscuitbobby.eu.org
       - FRONTEND_URL=https://jaeger.biscuitbobby.eu.org
-      - GOOGLE_API_KEY=EXAMPLE_KEY
+      - OPENAI_API_KEY=EXAMPLE_KEY
       - DEBUG=false
     depends_on:
       opensearch:
