@@ -1,4 +1,4 @@
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from scapy.all import sniff, TCP, IP, Raw, get_if_list
 from opentelemetry.trace import SpanKind, StatusCode
@@ -14,9 +14,12 @@ import re
 
 
 # --- OpenTelemetry Setup ---
+exporter_url="https://4318.biscuitbobby.eu.org/v1/traces"
 resource = Resource.create({"service.name": "MCP Recon"})
 provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317"))
+processor = BatchSpanProcessor(
+    OTLPSpanExporter(endpoint=exporter_url)
+)
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
@@ -338,7 +341,7 @@ def _sniff_interface(iface):
 def main():
     interfaces = get_if_list()
     print("[*] MCP Recon — Enhanced OpenTelemetry tracing active")
-    print(f"[*] Exporting spans to http://localhost:4317")
+    print(f"[*] Exporting spans to {exporter_url}")
     print(f"[*] Listening on {len(interfaces)} interface(s): {', '.join(interfaces)}")
 
     threads = [
