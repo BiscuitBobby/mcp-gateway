@@ -8,17 +8,29 @@ from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
 from probes.tool_misuse.tool_misuse import ToolMisuseProbe
 from probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
+from mitre.ai_attack_staging.attack_staging import AttackStaging
+from mitre.collection.collection import Collection
+from mitre.context_manipulation.context_manipulation import ContextManipulation
+from mitre.credential_extraction.credential_extraction import CredentialExtraction
+from mitre.discovery.discovery import Discovery
+from mitre.evasion_techniques.evasion import EvasionTechniques
+from mitre.impact.impact import Impact
+from mitre.lateral_movement.lateral_movement import LateralMovement
+from mitre.reconnaissance.reconnaissance import Reconnaissance
+from mitre.user_execution.user_execution import UserExecution
+
 load_dotenv()
 
-_registry = None
+_owasp_registry = None
+_mitre_registry = None
 
 
-def get_probes():
-    global _registry
-    if _registry is not None:
-        return _registry
+def get_owasp_probes():
+    global _owasp_registry
+    if _owasp_registry is not None:
+        return _owasp_registry
 
-    _registry = {
+    _owasp_registry = {
         "prompt_injection": {
             "action": "prompt_injection",
             "owasp": "LLM01: Prompt Injection",
@@ -77,4 +89,80 @@ def get_probes():
         },
     }
 
-    return _registry
+    return _owasp_registry
+
+
+def get_mitre_probes():
+    global _mitre_registry
+    if _mitre_registry is not None:
+        return _mitre_registry
+
+    _mitre_registry = {
+        "reconnaissance": {
+            "action": "reconnaissance",
+            "mitre": "ATLAS: Reconnaissance",
+            "description": "Tests whether the model assists in gathering intelligence about a target AI system, its users, or its infrastructure.",
+            "instance": Reconnaissance(),
+        },
+        "attack_staging": {
+            "action": "attack_staging",
+            "mitre": "ATLAS: ML Attack Staging",
+            "description": "Tests whether the model assists in preparing, verifying, or refining an adversarial attack against an AI system.",
+            "instance": AttackStaging(),
+        },
+        "user_execution": {
+            "action": "user_execution",
+            "mitre": "ATLAS: User Execution",
+            "description": "Tests whether the model generates content designed to trick a user into executing a malicious action.",
+            "instance": UserExecution(),
+        },
+        "discovery": {
+            "action": "discovery",
+            "mitre": "ATLAS: Discovery",
+            "description": "Tests whether the model reveals information about its own architecture, configuration, capabilities, or the AI system it belongs to.",
+            "instance": Discovery(),
+        },
+        "collection": {
+            "action": "collection",
+            "mitre": "ATLAS: Collection",
+            "description": "Tests whether the model surfaces or facilitates extraction of data from AI services, RAG stores, or agent tools.",
+            "instance": Collection(),
+        },
+        "credential_extraction": {
+            "action": "credential_extraction",
+            "mitre": "ATLAS: Credential Access",
+            "description": "Tests whether the model discloses credentials, tokens, or secrets sourced from RAG stores, agent tool configs, or its own configuration.",
+            "instance": CredentialExtraction(),
+        },
+        "lateral_movement": {
+            "action": "lateral_movement",
+            "mitre": "ATLAS: Lateral Movement",
+            "description": "Tests whether the model assists in pivoting to other systems, accounts, or services via social engineering or token abuse.",
+            "instance": LateralMovement(),
+        },
+        "evasion_techniques": {
+            "action": "evasion_techniques",
+            "mitre": "ATLAS: Defense Evasion",
+            "description": "Tests whether the model can be deceived into bypassing its own safety measures, filters, or identity constraints.",
+            "instance": EvasionTechniques(),
+        },
+        "context_manipulation": {
+            "action": "context_manipulation",
+            "mitre": "ATLAS: Impact (Context Manipulation)",
+            "description": "Tests whether the model's behaviour was altered by manipulation of its context window, chat history, or trusted output components.",
+            "instance": ContextManipulation(),
+        },
+        "impact": {
+            "action": "impact",
+            "mitre": "ATLAS: Impact",
+            "description": "Tests whether the model can be used to cause denial of service, resource exhaustion, cost inflation, or real-world harm.",
+            "instance": Impact(),
+        },
+    }
+
+    return _mitre_registry
+
+
+# Backward-compatible alias — existing code that calls get_probes() keeps working
+def get_probes():
+    return get_owasp_probes()

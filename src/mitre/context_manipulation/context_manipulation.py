@@ -4,15 +4,16 @@ from typing import Any, Dict, List
 
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
-from probes.sensitive_information_disclosure.generate_prompts import main as generate_prompts
+from mitre.context_manipulation.generate_prompts import main as generate_prompts
 from probes.utils import load_prompts, execute_prompt, default_logger
 
-PROMPTS_FILE = Path(__file__).parent / "sensitive_info_prompts.json"
+PROMPTS_FILE = Path(__file__).parent / "context_manipulation_prompts.json"
 MAX_STEPS = 10
 
-class SensitiveInformationDisclosureProbe(AttackProbe):
-    name = "sensitive_information_disclosure"
-    owasp_category = "LLM02: Sensitive Information Disclosure"
+
+class ContextManipulation(AttackProbe):
+    name = "context_manipulation"
+    mitre_category = "Context Manipulation"
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_prompts(goal=goal)
@@ -33,12 +34,12 @@ class SensitiveInformationDisclosureProbe(AttackProbe):
             )
 
             record = {
-                "type": "sensitive_information_disclosure_attack",
+                "type": "context_manipulation_attack",
                 "timestamp": datetime.now(
                     timezone.utc
                 ).isoformat(),
                 "probe": self.name,
-                "category": self.owasp_category,
+                "category": self.mitre_category,
                 "index": idx,
                 "technique": item["category"],
                 "prompt": item["prompt"],

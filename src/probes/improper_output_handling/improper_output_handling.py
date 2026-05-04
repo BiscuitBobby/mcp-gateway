@@ -84,6 +84,8 @@ class ImproperOutputHandlingProbe(AttackProbe):
                 response=response or "",
                 task_key=self.name,
                 trace=integrity,
+                app_profile=getattr(session, "app_profile", None),
+                vuln_report=getattr(session, "vuln_report", None),
             )
 
             violation = any(

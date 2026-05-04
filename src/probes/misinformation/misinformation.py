@@ -29,6 +29,8 @@ class MisinformationProbe(AttackProbe):
                 prompt=item["prompt"],
                 response=response or "",
                 task_key=self.name,
+                app_profile=getattr(session, "app_profile", None),
+                vuln_report=getattr(session, "vuln_report", None),
             )
 
             record = {

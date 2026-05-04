@@ -1,7 +1,7 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from routes import session, agents
+from routes import session, agents, mitre
 from dotenv import load_dotenv
 from fastapi import FastAPI
 import uvicorn
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(session.router)
 app.include_router(agents.router)
+app.include_router(mitre.router)
 
 # Serve static files
 current_dir = os.path.dirname(os.path.abspath(__file__))

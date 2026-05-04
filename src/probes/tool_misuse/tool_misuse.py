@@ -76,6 +76,8 @@ class ToolMisuseProbe(AttackProbe):
                     "target_tool": target_tool,
                     "tool_invoked_via_ui": tool_invoked_via_ui,
                 },
+                app_profile=getattr(session, "app_profile", None),
+                vuln_report=getattr(session, "vuln_report", None),
             )
 
             record = {
