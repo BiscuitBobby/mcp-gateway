@@ -1,0 +1,8 @@
+{
+  "prompt_injection": "Malicious or injected instructions that attempt to override intended behaviour or control logic.",
+  "sensitive_information_disclosure": "Covers the risk of exposing system prompts, credentials, or other sensitive data through indirect or seemingly harmless interactions.",
+  "data_exfiltration": "Concerns the potential leakage of sensitive information such as personally identifiable data (PII), conversation history, retrieved content, or API keys.",
+  "excessive_agency": "Refers to performing unauthorized real-world actions, such as sending communications, modifying accounts, or executing harmful operations.",
+  "improper_output_handling": "Involves generating unsafe or malformed structured outputs, including injected HTML, forged tool calls, or improperly structured JSON with privileged fields.",
+  "misinformation": "Relates to producing or amplifying false or misleading information, including fabricated citations or invented statistics."
+}
