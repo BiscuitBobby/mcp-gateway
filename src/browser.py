@@ -79,7 +79,7 @@
 
 # llm = ChatOpenAI(
 #     base_url="https://integrate.api.nvidia.com/v1",
-#     api_key="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",
+#     api_key="enter api key",
 #     model="meta/llama-4-maverick-17b-128e-instruct",
 #     temperature=0.2,
 # )
