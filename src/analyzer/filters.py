@@ -1,13 +1,12 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Union
 from src.analyzer.models import (
     store,
-    Report,
+    make_report,
     get_scan_id,
 )
-from typing import Union
 import os
 
 from src.policies.views import GLOBAL_POLICIES, get_policies, load_json
@@ -22,7 +21,8 @@ if "GOOGLE_API_KEY" in os.environ:
     )
 elif "OPENAI_API_KEY" in os.environ:
     model = ChatOpenAI(
-        model="gpt-5.4-mini",
+        base_url="https://integrate.api.nvidia.com/v1",
+        model="meta/llama-4-maverick-17b-128e-instruct",
         temperature=0,
         max_tokens=None,
         timeout=None,
@@ -31,11 +31,9 @@ elif "OPENAI_API_KEY" in os.environ:
         # base_url="...",
     )
 else:
-    raise RuntimeError("neither GOOGLE_API_KEY nor OPENAI_API_KEY environment variables set")
-
-
-
-model_with_structure = model.with_structured_output(Report)
+    raise RuntimeError(
+        "neither GOOGLE_API_KEY nor OPENAI_API_KEY environment variables set"
+    )
 
 
 # --------------------
@@ -68,10 +66,12 @@ def dynamic_scan(
         policy: load_json(GLOBAL_POLICIES, {})[policy] for policy in policies
     }
 
+    model_with_structure = model.with_structured_output(make_report(selected_policies))
+
     messages = [
         (
             "system",
-            f"You are an auditing assistant that checks for these:\n{selected_policies}.",
+            f"You are an auditing assistant that checks for these threats:\n{selected_policies}.",
         ),
         ("human", text),
     ]
@@ -82,7 +82,7 @@ def dynamic_scan(
         logger.info(f"scan:{ai_msg}")
 
         if ai_msg.threat:
-            return ScanFailure(error="Attack detected")
+            return ScanFailure(error=f"Disallowed (category: {ai_msg})")
 
         return ScanSuccess(result=ai_msg)
     except Exception as e:

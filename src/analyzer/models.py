@@ -1,19 +1,31 @@
 from sqlalchemy import create_engine, Column, String, JSON, DateTime, func
+from src.policies.views import GLOBAL_POLICIES, load_json
 from sqlalchemy.orm import declarative_base, sessionmaker
+from pydantic import BaseModel, Field, ConfigDict
 from sqlalchemy import insert, select
-from pydantic import BaseModel, Field
 from typing import Literal, Optional
+from enum import Enum
 
 
-class Report(BaseModel):
-    """Analysis of LLM I/O"""
-
-    threat: bool = Field(..., description="Whether the text contains an attack")
-    rating: float = Field(..., description="The threat's rating out of 10")
-    category: Optional[str] = Field(
-        None, description="category of the attack ({category: category description})"
+def make_report(active_policies: dict) -> type:
+    """Return a Report model scoped to the given active policies."""
+    category_enum = Enum("CategoryEnum", {k: k for k in active_policies})
+    category_desc = (
+        "The exact policy key that was violated. "
+        f"Must be one of: {', '.join(active_policies.keys())}"
     )
-    description: str = Field(..., description="The description of the attack")
+
+    class Report(BaseModel):
+        """Analysis of LLM I/O"""
+
+        model_config = ConfigDict(use_enum_values=True)
+
+        threat: bool = Field(..., description="Whether the text contains an attack")
+        rating: float = Field(..., description="The threat's rating out of 10")
+        category: Optional[category_enum] = Field(None, description=category_desc)
+        description: str = Field(..., description="The description of the attack")
+
+    return Report
 
 
 DATABASE_URL = "sqlite:///scan.db"

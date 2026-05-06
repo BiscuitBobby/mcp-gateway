@@ -50,7 +50,7 @@ class LoggingMiddleware(Middleware):
             )
             print(f"[LoggingMiddleware] {input_args} - Input scan completed")
         except Exception as e:
-            raise Exception(f"Input scan failed: {e}") from e
+            raise Exception(f"Input flagged: {e}") from e
 
         out = {
             "content": result.content,
@@ -70,10 +70,10 @@ class LoggingMiddleware(Middleware):
             )
             print(f"[LoggingMiddleware] {result} - Output scan completed")
         except Exception as e:
-            raise Exception(f"Output scan failed: {e}") from e
+            raise Exception(f"Output flagged: {e}") from e
 
         if isinstance(scan_result, ScanFailure):
-            raise Exception(f"Output scan failed: {scan_result.error}")
+            raise Exception(f"Output flagged: {scan_result.error}")
 
         logger.info("\n")
         return result
