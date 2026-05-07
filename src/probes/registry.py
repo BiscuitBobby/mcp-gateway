@@ -1,23 +1,23 @@
 from dotenv import load_dotenv
-from probes.prompt_injection.prompt_injection import PromptInjectionProbe
-from probes.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
-from probes.misinformation.misinformation import MisinformationProbe
-from probes.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
-from probes.excessive_agency.excessive_agency import ExcessiveAgencyProbe
-from probes.rag_poisoning.rag_poisoning import RagPoisoningProbe
-from probes.tool_misuse.tool_misuse import ToolMisuseProbe
-from probes.data_exfiltration.data_exfiltration import DataExfiltrationProbe
+from probes.owasp.prompt_injection.prompt_injection import PromptInjectionProbe
+from probes.owasp.sensitive_information_disclosure.sensitive_information_disclosure import SensitiveInformationDisclosureProbe
+from probes.owasp.misinformation.misinformation import MisinformationProbe
+from probes.owasp.improper_output_handling.improper_output_handling import ImproperOutputHandlingProbe
+from probes.owasp.excessive_agency.excessive_agency import ExcessiveAgencyProbe
+from probes.owasp.rag_poisoning.rag_poisoning import RagPoisoningProbe
+from probes.owasp.tool_misuse.tool_misuse import ToolMisuseProbe
+from probes.owasp.data_exfiltration.data_exfiltration import DataExfiltrationProbe
 
-from mitre.ai_attack_staging.attack_staging import AttackStaging
-from mitre.collection.collection import Collection
-from mitre.context_manipulation.context_manipulation import ContextManipulation
-from mitre.credential_extraction.credential_extraction import CredentialExtraction
-from mitre.discovery.discovery import Discovery
-from mitre.evasion_techniques.evasion import EvasionTechniques
-from mitre.impact.impact import Impact
-from mitre.lateral_movement.lateral_movement import LateralMovement
-from mitre.reconnaissance.reconnaissance import Reconnaissance
-from mitre.user_execution.user_execution import UserExecution
+from probes.mitre.ai_attack_staging.attack_staging import AttackStaging
+from probes.mitre.collection.collection import Collection
+from probes.mitre.context_manipulation.context_manipulation import ContextManipulation
+from probes.mitre.credential_extraction.credential_extraction import CredentialExtraction
+from probes.mitre.discovery.discovery import Discovery
+from probes.mitre.evasion_techniques.evasion import EvasionTechniques
+from probes.mitre.impact.impact import Impact
+from probes.mitre.lateral_movement.lateral_movement import LateralMovement
+from probes.mitre.reconnaissance.reconnaissance import Reconnaissance
+from probes.mitre.user_execution.user_execution import UserExecution
 
 load_dotenv()
 

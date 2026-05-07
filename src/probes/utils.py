@@ -184,8 +184,11 @@ def get_probe_totals() -> Dict[str, int]:
 
     for key, info in probes.items():
         cat = owasp_map.get(key)
-        if not cat:
+        if cat:
+            subfolder = "owasp"
+        else:
             cat = mitre_map.get(key)
+            subfolder = "mitre"
         if not cat:
             continue
 
@@ -193,8 +196,8 @@ def get_probe_totals() -> Dict[str, int]:
         if not filename:
             continue
 
-        # The prompts file is relative to the probe's directory
-        prompts_path = base_path / key / filename
+        # The prompts file is relative to the probe's directory under owasp/ or mitre/
+        prompts_path = base_path / subfolder / key / filename
 
         count = 0
         if prompts_path.exists():
