@@ -50,9 +50,7 @@ def _build_payload_file(payload_spec: dict) -> Optional[Path]:
         return None
 
 
-async def execute_prompt(
-    session, llm, prompt: str, max_steps: int = 10
-) -> Optional[str]:
+async def execute_prompt(session, llm, prompt: str, max_steps: int = 10) -> Optional[str]:
     """Execute a single prompt using the browser-use Agent."""
     agent = Agent(
         llm=llm,
@@ -168,11 +166,26 @@ def get_probe_totals() -> Dict[str, int]:
         "rag_poisoning": "LLM09",
     }
 
+    mitre_map = {
+        "attack_staging": "Attack Staging",
+        "collection": "Collection",
+        "context_manipulation": "Context Manipulation",
+        "credential_extraction": "Credential Extraction",
+        "discovery": "Discovery",
+        "evasion_techniques": "Evasion Techniques",
+        "impact": "Impact",
+        "lateral_movement": "Lateral Movement",
+        "reconnaissance": "Reconnaissance",
+        "user_execution": "User Execution",
+    }
+
     totals = {}
     base_path = Path(__file__).parent
 
     for key, info in probes.items():
         cat = owasp_map.get(key)
+        if not cat:
+            cat = mitre_map.get(key)
         if not cat:
             continue
 

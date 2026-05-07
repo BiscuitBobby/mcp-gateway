@@ -1,27 +1,47 @@
-from probes.prompt_injection.generate_prompts import main as gen_prompt_injection
-from probes.sensitive_information_disclosure.generate_prompts import main as gen_sensitive
-from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
-from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
-from probes.improper_output_handling.generate_prompts import main as gen_improper_output
-from probes.misinformation.generate_prompts import main as gen_misinformation
-from probes.rag_poisoning.generate_prompts import main as gen_rag_poisoning
-from probes.rag_poisoning.generate_documents import main as gen_rag_docs
-from probes.tool_misuse.generate_prompts import main as gen_tool_misuse
+# from probes.prompt_injection.generate_prompts import main as gen_prompt_injection
+# from probes.sensitive_information_disclosure.generate_prompts import main as gen_sensitive
+# from probes.data_exfiltration.generate_prompts import main as gen_data_exfil
+# from probes.excessive_agency.generate_prompts import main as gen_excessive_agency
+# from probes.improper_output_handling.generate_prompts import main as gen_improper_output
+# from probes.misinformation.generate_prompts import main as gen_misinformation
+# from probes.rag_poisoning.generate_prompts import main as gen_rag_poisoning
+# from probes.rag_poisoning.generate_documents import main as gen_rag_docs
+# from probes.tool_misuse.generate_prompts import main as gen_tool_misuse
+from mitre.ai_attack_staging.generate_prompts import main as gen_attack_staging
+from mitre.collection.generate_prompts import main as gen_collection
+from mitre.context_manipulation.generate_prompts import main as gen_context_manipulation
+from mitre.credential_extraction.generate_prompts import main as gen_credential_extraction
+from mitre.discovery.generate_prompts import main as gen_discovery
+from mitre.evasion_techniques.generate_prompts import main as gen_evasion_techniques
+from mitre.impact.generate_prompts import main as gen_impact
+from mitre.lateral_movement.generate_prompts import main as gen_lateral_movement
+from mitre.reconnaissance.generate_prompts import main as gen_reconnaissance
+from mitre.user_execution.generate_prompts import main as gen_user_execution
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 GENERATORS = [
-    ("prompt_injection", gen_prompt_injection),
-    ("sensitive_information_disclosure", gen_sensitive),
-    ("data_exfiltration", gen_data_exfil),
-    ("excessive_agency", gen_excessive_agency),
-    ("improper_output_handling", gen_improper_output),
-    ("misinformation", gen_misinformation),
-    ("rag_poisoning", gen_rag_poisoning),
-    ("rag_poisoning_docs", gen_rag_docs),
-    ("tool_misuse", gen_tool_misuse),
+    # ("prompt_injection", gen_prompt_injection),
+    # ("sensitive_information_disclosure", gen_sensitive),
+    # ("data_exfiltration", gen_data_exfil),
+    # ("excessive_agency", gen_excessive_agency),
+    # ("improper_output_handling", gen_improper_output),
+    # ("misinformation", gen_misinformation),
+    # ("rag_poisoning", gen_rag_poisoning),
+    # ("rag_poisoning_docs", gen_rag_docs),
+    # ("tool_misuse", gen_tool_misuse),
+    ("attack_staging", gen_attack_staging),
+    ("collection", gen_collection),
+    ("context_manipulation", gen_context_manipulation),
+    ("credential_extraction", gen_credential_extraction),
+    ("discovery", gen_discovery),
+    ("evasion_techniques", gen_evasion_techniques),
+    ("impact", gen_impact),
+    ("lateral_movement", gen_lateral_movement),
+    ("reconnaissance", gen_reconnaissance),
+    ("user_execution", gen_user_execution),
 ]
 
 

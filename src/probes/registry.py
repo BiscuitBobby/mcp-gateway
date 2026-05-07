@@ -163,6 +163,5 @@ def get_mitre_probes():
     return _mitre_registry
 
 
-# Backward-compatible alias — existing code that calls get_probes() keeps working
 def get_probes():
     return get_owasp_probes()
