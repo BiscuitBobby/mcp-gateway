@@ -75,6 +75,7 @@
 from browser_use import BrowserSession, ChatOpenAI
 from openai import OpenAI
 from dotenv import load_dotenv
+import os
 
 api_key = os.getenv("NVIDIA_API_KEY")
 if not api_key:

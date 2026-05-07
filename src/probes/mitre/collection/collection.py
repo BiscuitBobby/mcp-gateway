@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.mitre.collection.generate_prompts import main as generate_prompts
-from probes.utils import load_prompts, execute_prompt, default_logger
+from probes.utils import load_prompts, execute_prompt, execute_file_upload, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "collection_prompts.json"
 MAX_STEPS = 10
@@ -27,7 +27,22 @@ class Collection(AttackProbe):
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):
-            response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
+            audio_file = item.get("audio_file")
+            image_file = item.get("image_file")
+
+            if audio_file and Path(audio_file).exists():
+                response = await execute_file_upload(
+                    session, llm, item["prompt"], Path(audio_file), max_steps=MAX_STEPS
+                )
+                delivery = "audio"
+            elif image_file and Path(image_file).exists():
+                response = await execute_file_upload(
+                    session, llm, item["prompt"], Path(image_file), max_steps=MAX_STEPS
+                )
+                delivery = "image"
+            else:
+                response = await execute_prompt(session, llm, item["prompt"], max_steps=MAX_STEPS)
+                delivery = "text"
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,
@@ -48,6 +63,7 @@ class Collection(AttackProbe):
                 "category": self.mitre_category,
                 "index": idx,
                 "technique": item["category"],
+                "delivery": delivery,
                 "prompt": item["prompt"],
                 "response": response,
                 "analysis": analysis,

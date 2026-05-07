@@ -46,13 +46,12 @@ class ToolMisuseProbe(AttackProbe):
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
 
-        if not PROMPTS_FILE.exists():
-            generate_prompts(
-                app_profile=getattr(session, "app_profile", None),
-                interface_map=getattr(session, "interface_map", None),
-                goal=goal,
-                vulnerabilities=getattr(session, "vulnerabilities", None),
-            )
+        generate_prompts(
+            app_profile=getattr(session, "app_profile", None),
+            interface_map=getattr(session, "interface_map", None),
+            goal=goal,
+            vulnerabilities=getattr(session, "vulnerabilities", None),
+        )
 
         prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []

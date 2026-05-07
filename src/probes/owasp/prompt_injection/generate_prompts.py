@@ -91,5 +91,17 @@ def main(app_profile=None, goal=None, vulnerabilities=None, interface_map=None):
         result = []
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    try:
+        from probes.owasp.prompt_injection.generate_audio_prompts import generate_audio
+        result = generate_audio(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate audio for prompt_injection")
+    try:
+        from probes.owasp.prompt_injection.generate_images import generate_images
+        result = generate_images(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate images for prompt_injection")
 
     return result

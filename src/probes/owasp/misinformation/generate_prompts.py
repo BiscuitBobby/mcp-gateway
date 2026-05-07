@@ -103,5 +103,12 @@ def main(app_profile=None, goal=None, vulnerabilities=None, interface_map=None):
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
     generate_audio_for_prompts(result)
+    OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    try:
+        from probes.owasp.misinformation.generate_images import generate_images
+        result = generate_images(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate images for misinformation")
 
     return result

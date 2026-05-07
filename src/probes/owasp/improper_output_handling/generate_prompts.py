@@ -84,5 +84,17 @@ def main(app_profile=None, goal=None, vulnerabilities=None, interface_map=None):
         result = []
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    try:
+        from probes.owasp.improper_output_handling.generate_audio_prompts import generate_audio
+        result = generate_audio(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate audio for improper_output_handling")
+    try:
+        from probes.owasp.improper_output_handling.generate_images import generate_images
+        result = generate_images(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate images for improper_output_handling")
 
     return result

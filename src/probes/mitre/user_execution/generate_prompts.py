@@ -81,5 +81,13 @@ def main(
 
     if result:
         OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        try:
+            from probes.mitre.generate_audio_prompts import generate_audio
+            from probes.mitre.generate_images import generate_images
+            result = generate_audio(result, probe_name="user_execution")
+            result = generate_images(result, probe_name="user_execution")
+            OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+        except Exception:
+            logger.exception("Failed to generate audio/images for user_execution")
 
     return result

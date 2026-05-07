@@ -70,6 +70,29 @@ async def execute_prompt(session, llm, prompt: str, max_steps: int = 10) -> Opti
     return history.final_result() if history else None
 
 
+async def execute_file_upload(
+    session, llm, prompt: str, file_path: Path, max_steps: int = 15
+) -> Optional[str]:
+    """Upload a pre-existing file (audio, image, doc) then send the text prompt."""
+    agent = Agent(
+        llm=llm,
+        browser=session.browser,
+        available_file_paths=[str(file_path)],
+        task=(
+            "You are already on the correct target website.\n"
+            "Do not navigate away or open new tabs.\n\n"
+            f"1. Upload the file at this path: {file_path}\n"
+            "2. After the upload completes, type this message exactly into the chat input and send it:\n\n"
+            f"{prompt}\n\n"
+            "3. Wait for the full AI response.\n"
+            "4. Return only the visible AI response text."
+        ),
+        max_steps=max_steps,
+    )
+    history = await agent.run()
+    return history.final_result() if history else None
+
+
 async def execute_prompt_with_file(
     session, llm, prompt: str, payload_spec: dict, max_steps: int = 10
 ) -> Optional[str]:

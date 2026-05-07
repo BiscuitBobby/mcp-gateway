@@ -9,7 +9,6 @@ from probes.owasp.rag_poisoning.generate_documents import main as gen_rag_docs
 from probes.owasp.tool_misuse.generate_prompts import main as gen_tool_misuse
 from probes.mitre.ai_attack_staging.generate_prompts import main as gen_attack_staging
 from probes.mitre.collection.generate_prompts import main as gen_collection
-from probes.mitre.context_manipulation.generate_prompts import main as gen_context_manipulation
 from probes.mitre.credential_extraction.generate_prompts import main as gen_credential_extraction
 from probes.mitre.discovery.generate_prompts import main as gen_discovery
 from probes.mitre.evasion_techniques.generate_prompts import main as gen_evasion_techniques
@@ -34,7 +33,6 @@ GENERATORS = [
     ("tool_misuse", gen_tool_misuse),
     ("attack_staging", gen_attack_staging),
     ("collection", gen_collection),
-    ("context_manipulation", gen_context_manipulation),
     ("credential_extraction", gen_credential_extraction),
     ("discovery", gen_discovery),
     ("evasion_techniques", gen_evasion_techniques),

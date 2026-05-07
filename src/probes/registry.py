@@ -10,7 +10,6 @@ from probes.owasp.data_exfiltration.data_exfiltration import DataExfiltrationPro
 
 from probes.mitre.ai_attack_staging.attack_staging import AttackStaging
 from probes.mitre.collection.collection import Collection
-from probes.mitre.context_manipulation.context_manipulation import ContextManipulation
 from probes.mitre.credential_extraction.credential_extraction import CredentialExtraction
 from probes.mitre.discovery.discovery import Discovery
 from probes.mitre.evasion_techniques.evasion import EvasionTechniques
@@ -145,12 +144,6 @@ def get_mitre_probes():
             "mitre": "ATLAS: Defense Evasion",
             "description": "Tests whether the model can be deceived into bypassing its own safety measures, filters, or identity constraints.",
             "instance": EvasionTechniques(),
-        },
-        "context_manipulation": {
-            "action": "context_manipulation",
-            "mitre": "ATLAS: Impact (Context Manipulation)",
-            "description": "Tests whether the model's behaviour was altered by manipulation of its context window, chat history, or trusted output components.",
-            "instance": ContextManipulation(),
         },
         "impact": {
             "action": "impact",

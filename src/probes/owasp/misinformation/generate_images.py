@@ -1,10 +1,15 @@
 import json
+import re
+import logging
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
+from typing import List, Dict, Any
 
-IMAGE_PATH = Path("man.jpg")
-JSON_PATH  = Path("misinformation/misinformation_prompts.json")
-OUTPUT_DIR = Path("misinformation/output_images")
+logger = logging.getLogger(__name__)
+
+IMAGE_PATH = Path(__file__).parent.parent.parent / "man.jpg"
+OUTPUT_DIR = Path(__file__).parent / "misinformation_images"
+JSON_PATH  = Path(__file__).parent / "misinformation_prompts.json"
 
 # Whiteboard inner bounds (measured from the 4953x6500 source image)
 WB = (800, 2650, 4230, 4830)  # left, top, right, bottom
@@ -70,6 +75,37 @@ def draw_prompt(base, category, prompt):
         y += size * 1.3
 
     return img
+
+
+def _sanitize(name: str) -> str:
+    name = name.lower()
+    name = re.sub(r"[^\w\s-]", "", name)
+    name = re.sub(r"\s+", "_", name.strip())
+    return name[:60]
+
+
+def generate_images(prompts: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    if not IMAGE_PATH.exists():
+        logger.warning("Base image not found: %s — skipping image generation", IMAGE_PATH)
+        return prompts
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    try:
+        base = Image.open(IMAGE_PATH).convert("RGB")
+    except Exception:
+        logger.exception("Failed to open base image")
+        return prompts
+    for idx, item in enumerate(prompts):
+        item.pop("image_file", None)
+        category = item.get("category", f"prompt_{idx}")
+        image_path = OUTPUT_DIR / f"{idx:02d}_{_sanitize(category)}.png"
+        try:
+            img = draw_prompt(base, category, item["prompt"])
+            img.save(str(image_path))
+            item["image_file"] = str(image_path)
+            logger.info("Saved: %s", image_path)
+        except Exception:
+            logger.exception("Failed to generate image for idx %d", idx)
+    return prompts
 
 
 def main():

@@ -91,5 +91,17 @@ def main(
         result = []
 
     OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    try:
+        from probes.owasp.sensitive_information_disclosure.generate_audio_prompts import generate_audio
+        result = generate_audio(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate audio for sensitive_information_disclosure")
+    try:
+        from probes.owasp.sensitive_information_disclosure.generate_images import generate_images
+        result = generate_images(result)
+        OUTPUT_FILE.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    except Exception:
+        logger.exception("Failed to generate images for sensitive_information_disclosure")
 
     return result
