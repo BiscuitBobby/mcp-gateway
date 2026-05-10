@@ -418,6 +418,15 @@
       font-weight: 700;
       line-height: 1;
       color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+    .vuln-count sub {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0;
     }
 
     .vuln-name {
@@ -449,6 +458,7 @@
       align-items: center;
       gap: 4px;
       transition: color 0.15s;
+      pointer-events: none; /* Prevent link from interfering with card click */
     }
     .vuln-link:hover { color: var(--blue-600); }
 
@@ -521,7 +531,7 @@
     .bar-fill-total {
       position: absolute;
       inset: 0 auto 0 0;
-      background: rgba(59,130,246,0.2);
+      background: rgba(71, 85, 105, 0.4);
       border-radius: 99px;
       width: 0;
       transition: width 1.4s cubic-bezier(0.16,1,0.3,1) 0.1s;
@@ -1062,7 +1072,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             </div>
           </div>
-          <div class="vuln-count semi-gauge-center" style="color:var(--red-600)">80</div>
+          <div class="vuln-count semi-gauge-center" style="color:var(--red-600)">80<sub class="vuln-total">/0</sub></div>
           <div class="vuln-name">Prompt Injection</div>
           <div class="vuln-bar-track">
             <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="80"></div>
@@ -1076,7 +1086,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
             </div>
           </div>
-          <div class="vuln-count semi-gauge-center">0</div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
           <div class="vuln-name">Jailbreak</div>
           <div class="vuln-bar-track">
             <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="0"></div>
@@ -1090,7 +1100,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             </div>
           </div>
-          <div class="vuln-count semi-gauge-center">0</div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
           <div class="vuln-name">Hallucinations</div>
           <div class="vuln-bar-track">
             <div class="vuln-bar-fill semi-gauge-value" style="background:var(--orange-600)" data-value="0"></div>
@@ -1104,7 +1114,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="18" y1="20" x2="18" y2="10"/></svg>
             </div>
           </div>
-          <div class="vuln-count semi-gauge-center">0</div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
           <div class="vuln-name">Bias (Unfairness)</div>
           <div class="vuln-bar-track">
             <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="0"></div>
@@ -1118,7 +1128,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
             </div>
           </div>
-          <div class="vuln-count semi-gauge-center">0</div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
           <div class="vuln-name">Tool Misuse</div>
           <div class="vuln-bar-track">
             <div class="vuln-bar-fill semi-gauge-value" style="background:var(--orange-600)" data-value="0"></div>
@@ -1185,7 +1195,7 @@
             <div class="comp-ring-center" style="color:var(--green-600)">87%</div>
           </div>
           <div class="comp-info" style="flex:1">
-            <h4>NIST AI RMF</h4>
+            <h4>OWASP Top 10 for LLMs</h4>
             <p>Moderate readiness — 13 controls fail.</p>
             <div class="comp-bar-track">
               <div class="comp-bar-fill" style="background:var(--green-600); width:87%"></div>
@@ -1411,8 +1421,10 @@
       const pct = count > 0 ? Math.round((detected / count) * 100) : 0;
       const barEl = card.querySelector('.vuln-bar-fill');
       const countEl = card.querySelector('.semi-gauge-center');
+      const totalEl = countEl ? countEl.querySelector('.vuln-total') : null;
       if (barEl) barEl.setAttribute('data-value', pct);
-      if (countEl) countEl.textContent = detected;
+      if (countEl) countEl.childNodes[0].textContent = detected;
+      if (totalEl) totalEl.textContent = `/${count}`;
     });
 
     // OWASP
@@ -1457,6 +1469,79 @@
       const t = mitreTotals[cat] || 0;
       updateBarRow(row, h, t);
     });
+
+    // Calculate compliance readiness from coverage data
+    const owaspTotal = Object.values(owaspTotals).reduce((a, b) => a + b, 0);
+    const owaspHitsTotal = Object.values(owaspHits).reduce((a, b) => a + b, 0);
+    const owaspCompliance = owaspTotal > 0 ? Math.round((1 - (owaspHitsTotal / owaspTotal)) * 100) : 100;
+
+    const mitreTotal = Object.values(mitreTotals).reduce((a, b) => a + b, 0);
+    const mitreHitsTotal = Object.values(mitreHits).reduce((a, b) => a + b, 0);
+    const mitreCompliance = mitreTotal > 0 ? Math.round((1 - (mitreHitsTotal / mitreTotal)) * 100) : 100;
+
+    // Update OWASP compliance card
+    const owaspCompCard = document.querySelectorAll('.compliance-item')[0];
+    if (owaspCompCard) {
+      const ring = owaspCompCard.querySelector('.comp-ring-val');
+      const center = owaspCompCard.querySelector('.comp-ring-center');
+      const bar = owaspCompCard.querySelector('.comp-bar-fill');
+      const desc = owaspCompCard.querySelector('p');
+      
+      if (ring) ring.setAttribute('data-value', owaspCompliance);
+      if (center) {
+        center.textContent = owaspCompliance + '%';
+        const color = owaspCompliance >= 70 ? 'var(--green-600)' : owaspCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        center.style.color = color;
+      }
+      if (bar) {
+        bar.style.width = owaspCompliance + '%';
+        const bgColor = owaspCompliance >= 70 ? 'var(--green-600)' : owaspCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        bar.style.background = bgColor;
+      }
+      if (desc) {
+        const failCount = Object.keys(owaspHits).filter(k => owaspHits[k] > 0).length;
+        const level = owaspCompliance >= 70 ? 'Good' : owaspCompliance >= 40 ? 'Moderate' : 'Poor';
+        desc.textContent = `${level} readiness — ${failCount} categories with vulnerabilities.`;
+      }
+      
+      // Update ring stroke color
+      if (ring) {
+        const gradient = owaspCompliance >= 70 ? 'url(#gradGreen)' : owaspCompliance >= 40 ? 'url(#gradOrange)' : 'url(#gradRed)';
+        ring.setAttribute('stroke', gradient);
+      }
+    }
+
+    // Update MITRE compliance card
+    const mitreCompCard = document.querySelectorAll('.compliance-item')[1];
+    if (mitreCompCard) {
+      const ring = mitreCompCard.querySelector('.comp-ring-val');
+      const center = mitreCompCard.querySelector('.comp-ring-center');
+      const bar = mitreCompCard.querySelector('.comp-bar-fill');
+      const desc = mitreCompCard.querySelector('p');
+      
+      if (ring) ring.setAttribute('data-value', mitreCompliance);
+      if (center) {
+        center.textContent = mitreCompliance + '%';
+        const color = mitreCompliance >= 70 ? 'var(--green-600)' : mitreCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        center.style.color = color;
+      }
+      if (bar) {
+        bar.style.width = mitreCompliance + '%';
+        const bgColor = mitreCompliance >= 70 ? 'var(--green-600)' : mitreCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        bar.style.background = bgColor;
+      }
+      if (desc) {
+        const failCount = Object.keys(mitreHits).filter(k => mitreHits[k] > 0).length;
+        const level = mitreCompliance >= 70 ? 'Good' : mitreCompliance >= 40 ? 'Moderate' : 'Poor';
+        desc.textContent = `${level} readiness — ${failCount} tactics with vulnerabilities.`;
+      }
+      
+      // Update ring stroke color
+      if (ring) {
+        const gradient = mitreCompliance >= 70 ? 'url(#gradGreen)' : mitreCompliance >= 40 ? 'url(#gradOrange)' : 'url(#gradRed)';
+        ring.setAttribute('stroke', gradient);
+      }
+    }
 
     // Recommendations
     const failing = rows.filter(isViolation);
@@ -1642,13 +1727,22 @@
     document.querySelectorAll('.details-link').forEach(link => {
       link.addEventListener('click', e => {
         e.preventDefault();
+        e.stopPropagation(); // Prevent double-triggering
         const probe = e.currentTarget.getAttribute('data-probe');
+        if (probe) openModal(probe);
+      });
+    });
+
+    // Make entire vuln cards clickable
+    document.querySelectorAll('.vuln-card').forEach(card => {
+      card.addEventListener('click', e => {
+        const probe = card.getAttribute('data-probe');
         if (probe) openModal(probe);
       });
     });
   });
 
-  // ── PDF Export (preserved from original) ──
+  // ── PDF Export (Professional Document Format) ──
   async function exportPDF() {
     const btn = document.getElementById('exportPdfBtn');
     const labelEl = btn.querySelector('.export-label');
@@ -1661,33 +1755,88 @@
       const targetName = document.getElementById('targetNameDisplay')?.textContent?.trim() || 'Unknown Target';
       const scanTimeRaw = document.getElementById('scanTimeDisplay')?.textContent?.trim() || '—';
       const riskScore = document.querySelector('.risk-number')?.textContent?.replace('/100','').trim() || '0';
-      const riskLevel = document.querySelector('.risk-pill')?.textContent?.trim() || 'Unknown';
+      const riskLevel = document.querySelector('.risk-pill')?.textContent?.trim().replace(/\s+/g, ' ') || 'Unknown';
       const statVals = document.querySelectorAll('.stat-card-value');
-      const totalAtks = statVals[1]?.textContent?.trim() || '0';
-      const bypasses = statVals[2]?.textContent?.trim() || '0';
+      const totalAtks = statVals[1]?.textContent?.trim().replace(/,/g, '') || '0';
+      const bypasses = statVals[2]?.textContent?.trim().replace(/,/g, '') || '0';
+      const blocked = statVals[3]?.textContent?.trim().replace(/,/g, '') || '0';
 
+      // Extract ALL vulnerability categories (including 0s)
+      const vulnCategories = [
+        'Prompt Injection', 'Jailbreak', 'Hallucinations', 'Bias (Unfairness)', 'Tool Misuse'
+      ];
       const vulnData = [];
-      document.querySelectorAll('.vuln-card').forEach(card => {
-        vulnData.push({ title: card.querySelector('.vuln-name')?.textContent?.trim() || '', count: card.querySelector('.semi-gauge-center')?.textContent?.trim() || '0' });
+      vulnCategories.forEach(catName => {
+        const card = Array.from(document.querySelectorAll('.vuln-card')).find(c => 
+          c.querySelector('.vuln-name')?.textContent?.trim() === catName
+        );
+        let detected = '0', total = '0';
+        if (card) {
+          const countEl = card.querySelector('.semi-gauge-center');
+          if (countEl) {
+            const fullText = countEl.textContent.trim();
+            const match = fullText.match(/^(\d+)\/(\d+)$/);
+            if (match) {
+              detected = match[1];
+              total = match[2];
+            }
+          }
+        }
+        vulnData.push({ title: catName, detected, total });
       });
 
+      // Extract ALL OWASP categories (including 0s)
+      const owaspCategories = [
+        { code: 'LLM01', name: 'Prompt Injection' },
+        { code: 'LLM02', name: 'Insecure Output Handling' },
+        { code: 'LLM03', name: 'Training Data Poisoning' },
+        { code: 'LLM04', name: 'Model Denial of Service' },
+        { code: 'LLM05', name: 'Supply Chain Vulnerabilities' },
+        { code: 'LLM06', name: 'Sensitive Information Disclosure' },
+        { code: 'LLM07', name: 'Insecure Plugin Design' },
+        { code: 'LLM08', name: 'Excessive Agency' },
+        { code: 'LLM09', name: 'Overreliance' },
+        { code: 'LLM10', name: 'Model Theft' }
+      ];
       const owaspData = [];
-      document.querySelectorAll('.charts-row .bar-row').forEach(row => {
-        const code = row.querySelector('.bar-code')?.textContent?.trim() || '';
-        if (!code || code.startsWith('AML')) return;
-        const name = row.querySelector('.bar-name')?.textContent?.trim() || '';
-        const hits = row.querySelector('.v-hit')?.textContent?.trim() || '0';
-        const total = row.querySelector('.total')?.textContent?.trim() || '0';
-        if (code) owaspData.push({ code, name, hits, total });
+      owaspCategories.forEach(cat => {
+        const row = Array.from(document.querySelectorAll('.charts-row .bar-row')).find(r => 
+          r.querySelector('.bar-code')?.textContent?.trim() === cat.code
+        );
+        let hits = '0', total = '0';
+        if (row) {
+          hits = row.querySelector('.v-hit')?.textContent?.trim() || '0';
+          total = row.querySelector('.total')?.textContent?.trim() || '0';
+        }
+        owaspData.push({ code: cat.code, name: cat.name, hits, total });
       });
 
+      // Extract ALL MITRE tactics (including 0s)
+      const mitreCategories = [
+        { code: 'AML.TA0002', name: 'Reconnaissance' },
+        { code: 'AML.TA0001', name: 'AI Attack Staging' },
+        { code: 'AML.TA0004', name: 'Initial Access' },
+        { code: 'AML.TA0008', name: 'Discovery' },
+        { code: 'AML.TA0009', name: 'Collection' },
+        { code: 'AML.TA0013', name: 'Credential Access' },
+        { code: 'AML.TA0010', name: 'Exfiltration' },
+        { code: 'AML.TA0007', name: 'Defense Evasion' },
+        { code: 'AML.TA0011', name: 'Impact' }
+      ];
       const mitreData = [];
-      Object.keys(mitreMap).forEach(key => {
-        const cat = mitreMap[key];
-        const h = mitreHits[cat] || 0, t = mitreTotals[cat] || 0;
-        if (t > 0) mitreData.push({ category: cat, hits: String(h), total: String(t) });
+      mitreCategories.forEach(cat => {
+        const row = Array.from(document.querySelectorAll('#mitre-chart .bar-row')).find(r => 
+          r.querySelector('.bar-code')?.textContent?.trim() === cat.code
+        );
+        let hits = '0', total = '0';
+        if (row) {
+          hits = row.querySelector('.v-hit')?.textContent?.trim() || '0';
+          total = row.querySelector('.total')?.textContent?.trim() || '0';
+        }
+        mitreData.push({ code: cat.code, category: cat.name, hits, total });
       });
 
+      // Extract compliance data
       const compData = [];
       document.querySelectorAll('.compliance-item').forEach(card => {
         const name = card.querySelector('h4')?.textContent?.trim() || '';
@@ -1696,6 +1845,7 @@
         if (name) compData.push({ name, desc, pct });
       });
 
+      // Extract recommendations
       const recData = [];
       document.querySelectorAll('.rec-item').forEach(item => {
         const title = item.querySelector('h4')?.textContent?.trim() || '';
@@ -1706,174 +1856,388 @@
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight();
-      const ML = 14, MR = 14, MT = 14, contentW = pageW - ML - MR;
+      const ML = 20, MR = 20, MT = 20, contentW = pageW - ML - MR;
       let y = MT;
       const scoreNum = parseInt(riskScore) || 0;
       const riskRgb = scoreNum >= 75 ? [220,38,38] : scoreNum >= 50 ? [234,88,12] : scoreNum >= 25 ? [234,179,8] : [16,185,129];
 
       const newPage = () => { drawFooter(); pdf.addPage(); y = MT; };
-      const ensureSpace = n => { if (y + n > pageH - 18) newPage(); };
+      const ensureSpace = n => { if (y + n > pageH - 25) newPage(); };
       const drawFooter = () => {
         const pg = pdf.internal.getCurrentPageInfo().pageNumber;
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(120,130,150);
-        pdf.line(ML, pageH-12, pageW-MR, pageH-12);
-        pdf.text(`Security Scan Report — ${targetName}`, ML, pageH-7);
-        pdf.text(`Page ${pg}  •  ${new Date().toLocaleString()}`, pageW-MR, pageH-7, {align:'right'});
-      };
-      const sectionHeading = text => {
-        ensureSpace(14); y += 4;
-        pdf.setFillColor(20,30,50); pdf.setDrawColor(40,60,100);
-        pdf.roundedRect(ML, y, contentW, 9, 2, 2, 'FD');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(9.5); pdf.setTextColor(180,200,230);
-        pdf.text(text.toUpperCase(), ML+4, y+6.2); y += 13;
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(120,130,150);
+        pdf.setDrawColor(200,210,220); pdf.line(ML, pageH-15, pageW-MR, pageH-15);
+        pdf.text(`AI Security Assessment Report — ${targetName}`, ML, pageH-9);
+        pdf.text(`Page ${pg}`, pageW-MR, pageH-9, {align:'right'});
       };
 
-      pdf.setFillColor(8,13,26); pdf.rect(0,0,pageW,28,'F');
+      // ═══════════════════════════════════════════════════════════════
+      // COVER PAGE
+      // ═══════════════════════════════════════════════════════════════
+      pdf.setFillColor(15,23,42); pdf.rect(0,0,pageW,pageH,'F');
+      
+      // Title
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(255,255,255);
+      pdf.text('AI Security Assessment', pageW/2, 80, {align:'center'});
+      pdf.setFontSize(18); pdf.setTextColor(148,163,184);
+      pdf.text('Red Team Penetration Test Report', pageW/2, 95, {align:'center'});
+      
+      // Target info box
+      pdf.setFillColor(30,41,59); pdf.roundedRect(ML+20, 115, contentW-40, 50, 4, 4, 'F');
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(148,163,184);
+      pdf.text('TARGET SYSTEM', pageW/2, 125, {align:'center'});
       pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(255,255,255);
-      pdf.text('AI Security Scan Report', ML, 13);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(140,160,200);
-      pdf.text(`Target: ${targetName}   |   Scanned: ${scanTimeRaw}`, ML, 21);
-      y = 36;
+      pdf.text(targetName, pageW/2, 135, {align:'center'});
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(148,163,184);
+      pdf.text(`Scan Date: ${scanTimeRaw}`, pageW/2, 145, {align:'center'});
+      pdf.text(`Report Generated: ${new Date().toLocaleString()}`, pageW/2, 153, {align:'center'});
+      
+      // Risk score badge
+      pdf.setFillColor(...riskRgb); 
+      pdf.roundedRect(pageW/2-30, 185, 60, 30, 4, 4, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(32); pdf.setTextColor(255,255,255);
+      pdf.text(riskScore, pageW/2, 205, {align:'center'});
+      pdf.setFontSize(12);
+      pdf.text(riskLevel.toUpperCase(), pageW/2, 213, {align:'center'});
+      
+      // Classification
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(239,68,68);
+      pdf.text('CONFIDENTIAL — INTERNAL USE ONLY', pageW/2, pageH-20, {align:'center'});
 
-      pdf.setFillColor(...riskRgb); pdf.roundedRect(ML, y, 52, 38, 4, 4, 'F');
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(38); pdf.setTextColor(255,255,255);
-      pdf.text(riskScore, ML+26, y+24, {align:'center'});
-      pdf.setFontSize(9); pdf.text('/ 100', ML+26, y+32, {align:'center'});
+      // ═══════════════════════════════════════════════════════════════
+      // EXECUTIVE SUMMARY
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.setTextColor(15,23,42);
+      pdf.text('Executive Summary', ML, y);
+      y += 12;
+      
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 10;
+      
+      // Summary text
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const summaryText = `This report presents the findings of a comprehensive AI security assessment conducted on ${targetName}. The evaluation employed automated adversarial testing techniques to identify vulnerabilities across multiple attack vectors including prompt injection, jailbreaking, hallucination induction, bias exploitation, and tool misuse.`;
+      const summaryLines = pdf.splitTextToSize(summaryText, contentW);
+      pdf.text(summaryLines, ML, y);
+      y += summaryLines.length * 5 + 8;
+      
+      // Key Findings Box
+      pdf.setFillColor(241,245,249); pdf.setDrawColor(203,213,225);
+      pdf.roundedRect(ML, y, contentW, 45, 3, 3, 'FD');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+      pdf.text('Key Findings', ML+5, y+7);
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      pdf.text(`• Total Attack Vectors Tested: ${totalAtks}`, ML+5, y+15);
+      pdf.text(`• Successful Bypasses: ${bypasses} (${totalAtks > 0 ? Math.round((parseInt(bypasses)/parseInt(totalAtks))*100) : 0}%)`, ML+5, y+22);
+      pdf.text(`• Blocked Attacks: ${blocked} (${totalAtks > 0 ? Math.round((parseInt(blocked)/parseInt(totalAtks))*100) : 0}%)`, ML+5, y+29);
+      pdf.text(`• Overall Risk Score: ${riskScore}/100 (${riskLevel})`, ML+5, y+36);
+      y += 52;
+      
+      // Risk Assessment
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(15,23,42);
+      pdf.text('Risk Assessment', ML, y);
+      y += 8;
+      
+      let riskAssessment = '';
+      if (scoreNum >= 75) {
+        riskAssessment = 'CRITICAL: The system exhibits severe vulnerabilities that pose immediate security risks. Multiple attack vectors successfully bypassed security controls. Immediate remediation is required before production deployment.';
+      } else if (scoreNum >= 50) {
+        riskAssessment = 'HIGH: Significant security weaknesses were identified. The system is vulnerable to several attack types. Comprehensive security hardening is strongly recommended.';
+      } else if (scoreNum >= 25) {
+        riskAssessment = 'MEDIUM: Moderate security concerns exist. While basic protections are in place, improvements are needed to meet enterprise security standards.';
+      } else {
+        riskAssessment = 'LOW: The system demonstrates strong security posture with minimal vulnerabilities. Continue monitoring and periodic reassessment.';
+      }
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const riskLines = pdf.splitTextToSize(riskAssessment, contentW);
+      pdf.text(riskLines, ML, y);
+      y += riskLines.length * 5 + 10;
 
-      const rx = ML+58;
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(14); pdf.setTextColor(...riskRgb);
-      pdf.text(riskLevel, rx, y+10);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
-      pdf.text('Risk Level', rx, y+15.5);
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(220,230,245);
-      pdf.text(totalAtks, rx, y+26);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
-      pdf.text('Total Attacks', rx+14, y+26);
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(...riskRgb);
-      pdf.text(bypasses, rx, y+34);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
-      pdf.text('Successful Bypasses', rx+14, y+34);
-      y += 46;
-
-      sectionHeading('Vulnerable Categories');
-      const colW2 = contentW / vulnData.length;
-      vulnData.forEach((v,i) => {
-        const cx = ML + i*colW2 + colW2/2, count = parseInt(v.count)||0;
-        const clr = count > 0 ? riskRgb : [16,185,129];
-        pdf.setDrawColor(40,60,100); pdf.setFillColor(13,21,38);
-        pdf.roundedRect(ML+i*colW2+1, y, colW2-2, 26, 3, 3, 'FD');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(18); pdf.setTextColor(...clr);
-        pdf.text(v.count, cx, y+12, {align:'center'});
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(100,116,139);
-        pdf.text(pdf.splitTextToSize(v.title, colW2-4), cx, y+19, {align:'center'});
+      // ═══════════════════════════════════════════════════════════════
+      // VULNERABILITY BREAKDOWN
+      // ═══════════════════════════════════════════════════════════════
+      ensureSpace(60);
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('Vulnerability Category Analysis', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      vulnData.forEach((vuln, idx) => {
+        ensureSpace(25);
+        const detected = parseInt(vuln.detected) || 0;
+        const total = parseInt(vuln.total) || 0;
+        const rate = total > 0 ? Math.round((detected/total)*100) : 0;
+        const statusColor = detected > 0 ? riskRgb : [16,185,129];
+        
+        // Category box
+        pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+        pdf.roundedRect(ML, y, contentW, 20, 2, 2, 'FD');
+        
+        // Category name
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+        pdf.text(`${idx+1}. ${vuln.title}`, ML+4, y+7);
+        
+        // Stats
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(...statusColor);
+        pdf.text(`${detected}/${total}`, pageW-MR-30, y+7);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
+        pdf.text(`(${rate}%)`, pageW-MR-30, y+13);
+        
+        // Progress bar
+        const barX = ML+4, barY = y+12, barW = contentW-40, barH = 4;
+        pdf.setFillColor(226,232,240); pdf.roundedRect(barX, barY, barW, barH, 2, 2, 'F');
+        if (rate > 0) {
+          pdf.setFillColor(...statusColor); 
+          pdf.roundedRect(barX, barY, barW*(rate/100), barH, 2, 2, 'F');
+        }
+        
+        y += 24;
       });
-      y += 32;
 
-      sectionHeading('OWASP Top 10 for LLMs — Attack Coverage');
-      const colWs = [28,80,22,22,38];
-      pdf.setFillColor(15,25,45); pdf.rect(ML,y,contentW,7,'F');
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(100,116,139);
-      let cx = ML+2;
-      ['Code','Category','Hits','Total','Hit Rate'].forEach((h,i)=>{ pdf.text(h,cx,y+5); cx+=colWs[i]; });
-      y += 7;
-      owaspData.forEach((row,ri) => {
-        ensureSpace(8);
-        if (ri%2===0) { pdf.setFillColor(13,20,38); pdf.rect(ML,y,contentW,7,'F'); }
-        const hN=parseInt(row.hits)||0, tN=parseInt(row.total)||0;
-        const rate = tN>0 ? Math.round((hN/tN)*100) : 0;
-        const rc = hN>0 ? riskRgb : [16,185,129];
+
+      // ═══════════════════════════════════════════════════════════════
+      // OWASP TOP 10 FOR LLMs
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('OWASP Top 10 for LLMs Coverage', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+      const owaspIntro = 'Assessment coverage mapped to OWASP Top 10 for Large Language Model Applications security risks.';
+      pdf.text(pdf.splitTextToSize(owaspIntro, contentW), ML, y);
+      y += 10;
+      
+      // Table header
+      pdf.setFillColor(241,245,249); pdf.rect(ML, y, contentW, 8, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(51,65,85);
+      pdf.text('Code', ML+2, y+5.5);
+      pdf.text('Vulnerability Category', ML+20, y+5.5);
+      pdf.text('Tested', ML+110, y+5.5);
+      pdf.text('Bypassed', ML+130, y+5.5);
+      pdf.text('Rate', ML+155, y+5.5);
+      y += 8;
+      
+      owaspData.forEach((item, idx) => {
+        ensureSpace(7);
+        if (idx % 2 === 0) {
+          pdf.setFillColor(249,250,251); pdf.rect(ML, y, contentW, 7, 'F');
+        }
+        
+        const hits = parseInt(item.hits) || 0;
+        const total = parseInt(item.total) || 0;
+        const rate = total > 0 ? Math.round((hits/total)*100) : 0;
+        const statusColor = hits > 0 ? riskRgb : [100,116,139];
+        
         pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(59,130,246);
-        cx=ML+2; pdf.text(row.code,cx,y+5); cx+=colWs[0];
-        pdf.setFont('helvetica','normal'); pdf.setTextColor(200,215,235);
-        pdf.text(row.name,cx,y+5); cx+=colWs[1];
-        pdf.setFont('helvetica','bold'); pdf.setTextColor(...rc);
-        pdf.text(row.hits,cx,y+5); cx+=colWs[2];
-        pdf.setFont('helvetica','normal'); pdf.setTextColor(100,116,139);
-        pdf.text(row.total,cx,y+5); cx+=colWs[3];
-        const bx=cx, bw=colWs[4]-4;
-        pdf.setFillColor(30,45,80); pdf.roundedRect(bx,y+2.5,bw,3,1,1,'F');
-        if (rate>0) { pdf.setFillColor(...rc); pdf.roundedRect(bx,y+2.5,bw*rate/100,3,1,1,'F'); }
-        pdf.setFontSize(7); pdf.setTextColor(100,116,139);
-        pdf.text(`${rate}%`, cx+colWs[4]-2, y+5, {align:'right'});
-        pdf.setDrawColor(20,35,65); pdf.line(ML,y+7,ML+contentW,y+7);
+        pdf.text(item.code, ML+2, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(51,65,85);
+        const catName = pdf.splitTextToSize(item.name, 85);
+        pdf.text(catName[0], ML+20, y+5);
+        pdf.setTextColor(71,85,105);
+        pdf.text(String(total), ML+110, y+5);
+        pdf.setFont('helvetica','bold'); pdf.setTextColor(...statusColor);
+        pdf.text(String(hits), ML+130, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
+        pdf.text(`${rate}%`, ML+155, y+5);
+        
         y += 7;
       });
-      y += 2;
 
-      if (mitreData.length > 0) {
-        sectionHeading('MITRE ATLAS — Adversarial Tactics Coverage');
-        const mColWs=[80,22,22,38];
-        pdf.setFillColor(15,25,45); pdf.rect(ML,y,contentW,7,'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(100,116,139);
-        cx=ML+2;
-        ['Tactic','Hits','Total','Hit Rate'].forEach((h,i)=>{ pdf.text(h,cx,y+5); cx+=mColWs[i]; });
-        y+=7;
-        mitreData.forEach((row,ri) => {
-          ensureSpace(8);
-          if (ri%2===0) { pdf.setFillColor(13,20,38); pdf.rect(ML,y,contentW,7,'F'); }
-          const hN=parseInt(row.hits)||0, tN=parseInt(row.total)||0;
-          const rate=tN>0?Math.round((hN/tN)*100):0;
-          const rc=hN>0?riskRgb:[16,185,129];
-          cx=ML+2; pdf.setFont('helvetica','normal'); pdf.setTextColor(200,215,235);
-          pdf.text(row.category,cx,y+5); cx+=mColWs[0];
-          pdf.setFont('helvetica','bold'); pdf.setTextColor(...rc);
-          pdf.text(row.hits,cx,y+5); cx+=mColWs[1];
-          pdf.setFont('helvetica','normal'); pdf.setTextColor(100,116,139);
-          pdf.text(row.total,cx,y+5); cx+=mColWs[2];
-          const bx=cx,bw=mColWs[3]-4;
-          pdf.setFillColor(30,45,80); pdf.roundedRect(bx,y+2.5,bw,3,1,1,'F');
-          if (rate>0){pdf.setFillColor(...rc);pdf.roundedRect(bx,y+2.5,bw*rate/100,3,1,1,'F');}
-          pdf.setFontSize(7);pdf.setTextColor(100,116,139);
-          pdf.text(`${rate}%`,cx+mColWs[3]-2,y+5,{align:'right'});
-          pdf.setDrawColor(20,35,65);pdf.line(ML,y+7,ML+contentW,y+7);
-          y+=7;
-        });
-        y+=2;
-      }
-
-      sectionHeading('Compliance Readiness');
-      compData.forEach((c,i) => {
-        ensureSpace(18);
-        const pN=parseInt(c.pct)||0;
-        const cClr=pN>=70?[16,185,129]:pN>=40?[234,88,12]:[220,38,38];
-        const bx=ML+(i===0?0:contentW/2+4), bw=contentW/2-4;
-        pdf.setFillColor(13,20,38);pdf.setDrawColor(40,60,100);
-        pdf.roundedRect(bx,y,bw,16,3,3,'FD');
-        pdf.setFont('helvetica','bold');pdf.setFontSize(14);pdf.setTextColor(...cClr);
-        pdf.text(c.pct,bx+14,y+10,{align:'center'});
-        pdf.setFont('helvetica','bold');pdf.setFontSize(9);pdf.setTextColor(200,215,235);
-        pdf.text(c.name,bx+22,y+6);
-        pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(100,116,139);
-        pdf.text(pdf.splitTextToSize(c.desc,bw-24),bx+22,y+11);
-        if (i%2===1||i===compData.length-1) y+=20;
+      // ═══════════════════════════════════════════════════════════════
+      // MITRE ATLAS
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('MITRE ATLAS Adversarial Tactics', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+      const mitreIntro = 'Coverage analysis mapped to MITRE ATLAS (Adversarial Threat Landscape for Artificial-Intelligence Systems) framework.';
+      pdf.text(pdf.splitTextToSize(mitreIntro, contentW), ML, y);
+      y += 10;
+      
+      // Table header
+      pdf.setFillColor(241,245,249); pdf.rect(ML, y, contentW, 8, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(51,65,85);
+      pdf.text('Tactic ID', ML+2, y+5.5);
+      pdf.text('Tactic Name', ML+30, y+5.5);
+      pdf.text('Tested', ML+110, y+5.5);
+      pdf.text('Bypassed', ML+130, y+5.5);
+      pdf.text('Rate', ML+155, y+5.5);
+      y += 8;
+      
+      mitreData.forEach((item, idx) => {
+        ensureSpace(7);
+        if (idx % 2 === 0) {
+          pdf.setFillColor(249,250,251); pdf.rect(ML, y, contentW, 7, 'F');
+        }
+        
+        const hits = parseInt(item.hits) || 0;
+        const total = parseInt(item.total) || 0;
+        const rate = total > 0 ? Math.round((hits/total)*100) : 0;
+        const statusColor = hits > 0 ? riskRgb : [100,116,139];
+        
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(59,130,246);
+        pdf.text(item.code, ML+2, y+5);
+        pdf.setTextColor(51,65,85);
+        const tacticName = pdf.splitTextToSize(item.category, 75);
+        pdf.text(tacticName[0], ML+30, y+5);
+        pdf.setTextColor(71,85,105);
+        pdf.text(String(total), ML+110, y+5);
+        pdf.setFont('helvetica','bold'); pdf.setTextColor(...statusColor);
+        pdf.text(String(hits), ML+130, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
+        pdf.text(`${rate}%`, ML+155, y+5);
+        
+        y += 7;
       });
 
-      if (recData.length > 0) {
-        newPage();
-        pdf.setFillColor(8,13,26);pdf.rect(0,0,pageW,18,'F');
-        pdf.setFont('helvetica','bold');pdf.setFontSize(12);pdf.setTextColor(255,255,255);
-        pdf.text('Actionable Recommendations', ML, 12);
-        y=26;
-        recData.forEach((rec,i) => {
-          const bodyLines = pdf.splitTextToSize(rec.body.replace(/<[^>]+>/g,'').replace(/\*+/g,'').trim(), contentW-8);
-          const cardH = 10 + Math.min(bodyLines.length, 6)*4.5;
-          ensureSpace(cardH+4);
-          const accent = i%2===0?[59,130,246]:[249,115,22];
-          pdf.setFillColor(13,20,38);pdf.setDrawColor(40,60,100);
-          pdf.roundedRect(ML,y,contentW,cardH,3,3,'FD');
-          pdf.setFillColor(...accent);pdf.roundedRect(ML,y,3,cardH,1,1,'F');
-          pdf.setFont('helvetica','bold');pdf.setFontSize(9.5);pdf.setTextColor(200,215,235);
-          pdf.text(`${i+1}. ${rec.title}`,ML+7,y+7);
-          pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(100,116,139);
-          pdf.text(bodyLines.slice(0,6),ML+7,y+12);
-          y+=cardH+4;
+      // ═══════════════════════════════════════════════════════════════
+      // COMPLIANCE READINESS
+      // ═══════════════════════════════════════════════════════════════
+      if (compData.length > 0) {
+        ensureSpace(50);
+        y += 10;
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+        pdf.text('Compliance & Standards Readiness', ML, y);
+        y += 10;
+        pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+        pdf.line(ML, y, pageW-MR, y);
+        y += 10;
+        
+        compData.forEach(comp => {
+          ensureSpace(30);
+          const pct = parseInt(comp.pct) || 0;
+          const compColor = pct >= 70 ? [16,185,129] : pct >= 40 ? [234,88,12] : [220,38,38];
+          
+          pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+          pdf.roundedRect(ML, y, contentW, 25, 3, 3, 'FD');
+          
+          // Score circle
+          pdf.setFillColor(...compColor);
+          pdf.circle(ML+15, y+12.5, 8, 'F');
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(255,255,255);
+          pdf.text(`${pct}%`, ML+15, y+14.5, {align:'center'});
+          
+          // Framework name
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+          pdf.text(comp.name, ML+28, y+10);
+          
+          // Description
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+          const descLines = pdf.splitTextToSize(comp.desc, contentW-35);
+          pdf.text(descLines, ML+28, y+16);
+          
+          y += 30;
         });
       }
 
+      // ═══════════════════════════════════════════════════════════════
+      // RECOMMENDATIONS
+      // ═══════════════════════════════════════════════════════════════
+      if (recData.length > 0) {
+        newPage();
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+        pdf.text('Security Recommendations', ML, y);
+        y += 10;
+        pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+        pdf.line(ML, y, pageW-MR, y);
+        y += 10;
+        
+        recData.forEach((rec, idx) => {
+          const cleanBody = rec.body
+            .replace(/<[^>]+>/g, '')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .replace(/#+\s/g, '')
+            .replace(/\n+/g, ' ')
+            .trim();
+          
+          const bodyLines = pdf.splitTextToSize(cleanBody, contentW-8);
+          const recHeight = 15 + Math.min(bodyLines.length, 8) * 4.5;
+          
+          ensureSpace(recHeight);
+          
+          // Priority badge color
+          const priorityColor = idx < 3 ? [220,38,38] : idx < 6 ? [234,88,12] : [59,130,246];
+          
+          pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+          pdf.roundedRect(ML, y, contentW, recHeight, 3, 3, 'FD');
+          
+          // Priority indicator
+          pdf.setFillColor(...priorityColor);
+          pdf.rect(ML, y, 3, recHeight, 'F');
+          
+          // Number (without circle)
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(...priorityColor);
+          pdf.text(`${idx+1}.`, ML+6, y+9);
+          
+          // Title
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(15,23,42);
+          const titleLines = pdf.splitTextToSize(rec.title, contentW-25);
+          pdf.text(titleLines, ML+14, y+9);
+          
+          // Body
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+          pdf.text(bodyLines.slice(0, 8), ML+6, y+9+titleLines.length*4.5);
+          
+          y += recHeight + 4;
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CONCLUSION
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('Conclusion', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 10;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const conclusion = `This comprehensive security assessment of ${targetName} has identified ${bypasses} successful attack vectors out of ${totalAtks} total tests, resulting in a risk score of ${riskScore}/100. ${scoreNum >= 50 ? 'Immediate action is recommended to address the identified vulnerabilities before production deployment.' : 'The system demonstrates reasonable security controls, though continued monitoring and improvement are advised.'}\n\nThis assessment should be repeated periodically as the system evolves and new attack vectors emerge. Regular security testing is essential for maintaining a robust AI security posture.`;
+      
+      const conclusionLines = pdf.splitTextToSize(conclusion, contentW);
+      pdf.text(conclusionLines, ML, y);
+      y += conclusionLines.length * 5 + 15;
+      
+      // Disclaimer
+      pdf.setFillColor(254,243,199); pdf.setDrawColor(251,191,36);
+      pdf.roundedRect(ML, y, contentW, 25, 3, 3, 'FD');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(146,64,14);
+      pdf.text('DISCLAIMER', ML+4, y+6);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(120,53,15);
+      const disclaimer = 'This report is based on automated testing and may not identify all potential vulnerabilities. Manual security review and additional testing methods are recommended for comprehensive security assurance.';
+      const disclaimerLines = pdf.splitTextToSize(disclaimer, contentW-8);
+      pdf.text(disclaimerLines, ML+4, y+12);
+
       drawFooter();
-      pdf.setProperties({ title:`Security Report - ${targetName}`, subject:'AI Red-Teaming Scan Results', creator:'Red-Teaming Agent Dashboard' });
+      pdf.setProperties({ 
+        title: `AI Security Assessment - ${targetName}`, 
+        subject: 'Red Team Penetration Test Report', 
+        author: 'AI Security Assessment Platform',
+        creator: 'Red-Teaming Agent Dashboard' 
+      });
+      
       const slug = targetName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-      pdf.save(`scan-report-${slug}-${Date.now()}.pdf`);
+      const dateSlug = new Date().toISOString().split('T')[0];
+      pdf.save(`security-assessment-${slug}-${dateSlug}.pdf`);
     } catch (err) {
       console.error('PDF export failed:', err);
       alert('PDF export failed. Check the console for details.');
