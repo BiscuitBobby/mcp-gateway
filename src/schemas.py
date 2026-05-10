@@ -1,10 +1,21 @@
 from __future__ import annotations
 from typing import Any, Literal, Optional
-from pydantic import BaseModel, Field, model_validator
+from enum import Enum
+from datetime import datetime
+from pydantic import (
+    BaseModel,
+    Field,
+    model_validator,
+    ConfigDict,
+    field_validator,
+    constr,
+    conint,
+)
 
 # ── Enums ──────────────────────────────────────────────────────
 
 AttackType = Literal[
+    # OWASP LLM Top 10
     "prompt_injection",
     "sensitive_information_disclosure",
     "misinformation",
@@ -13,6 +24,16 @@ AttackType = Literal[
     "excessive_agency",
     "rag_poisoning",
     "tool_misuse",
+    # MITRE ATLAS
+    "reconnaissance",
+    "attack_staging",
+    "user_execution",
+    "discovery",
+    "collection",
+    "credential_extraction",
+    "lateral_movement",
+    "evasion_techniques",
+    "impact",
 ]
 
 Surface = Literal["ui", "tool", "rag"]
@@ -105,7 +126,9 @@ class Vulnerability(BaseModel):
 class InterfaceMap(BaseModel):
     chat_inputs: list[str] = []
     file_uploads: list[str] = []
-    supported_modalities: list[Literal["text", "image", "audio", "document", "url"]] = ["text"]
+    supported_modalities: list[Literal["text", "image", "audio", "document", "url"]] = [
+        "text"
+    ]
     buttons: list[str] = []
     api_endpoints: list[str] = []
     notes: Optional[str] = None
@@ -151,18 +174,22 @@ class AgentProfile(BaseModel):
 
     notes: Optional[str] = None
 
+
 # ── Tool Discovery ────────────────────────────────────────────
+
 
 class DiscoveredTool(BaseModel):
     name: str
     description: str
     risk_notes: Optional[str] = None
 
+
 class DiscoveredDatasource(BaseModel):
     name: str
     type: str  # e.g. "database", "api", "file_system", "vector_store", "web"
     description: str
     risk_notes: Optional[str] = None
+
 
 class ToolDiscoveryProfile(BaseModel):
     tools: list[DiscoveredTool] = []
@@ -175,8 +202,8 @@ class ToolDiscoveryProfile(BaseModel):
     raw_transcript: Optional[str] = None
     notes: Optional[str] = None
 
+
 class FullProfile(BaseModel):
-    
     # ── AgentProfile fields ──
     agent_type: str = ""
     agent_description: str = ""
@@ -259,7 +286,9 @@ class FullProfile(BaseModel):
             notes=self.notes,
         )
 
+
 # goal
+
 
 class GoalRequest(BaseModel):
     goal: str
@@ -269,35 +298,123 @@ class GoalRequest(BaseModel):
     vuln_report: Optional[VulnerabilityReport] = None
     max_iterations: int = 20
 
+
+# ── Enums ──────────────────────────────────────────────────────
+
+
+class ProbeCategory(str, Enum):
+    jailbreak = "jailbreak"
+    prompt_injection = "prompt_injection"
+    toxicity = "toxicity"
+    pii = "pii"
+    hallucination = "hallucination"
+
+
 # ── Reasoning ──────────────────────────────────────────────────
 
+
 class ReasoningAnalysis(BaseModel):
-    user_intent: str
-    model_behavior: str
-    evidence: str
-    violation: bool
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    user_intent: constr(min_length=3, max_length=2000)
+    model_behavior: constr(min_length=3, max_length=4000)
+    evidence: constr(min_length=3, max_length=4000)
+
+    violation: bool = Field(description="Whether the analyzed response violated policy")
+
 
 class ReasoningResult(BaseModel):
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
     analysis: ReasoningAnalysis
-    detected: bool
+
+    detected: bool = Field(
+        description="Whether the probe successfully triggered the target behavior"
+    )
+
     risk_level: RiskLevel
-    reasoning: str
-    confidence: float  # 0.0 → 1.0
+
+    reasoning: constr(min_length=5, max_length=8000)
+
+    confidence: float = Field(
+        ge=0.0,
+        le=1.0,
+        description="Confidence score from 0.0 to 1.0",
+    )
+
+    @model_validator(mode="after")
+    def validate_risk_consistency(self):
+        """
+        Optional consistency checks.
+        """
+
+        if self.detected and self.risk_level == "LOW":
+            raise ValueError("detected=True should not have risk_level='LOW'")
+
+        if not self.analysis.violation and self.risk_level in {
+            "HIGH",
+            "CRITICAL",
+        }:
+            raise ValueError("Non-violations cannot have high/critical risk")
+
+        return self
+
 
 # ── Base Probe Result ──────────────────────────────────────────
 
+
 class BaseProbeResult(BaseModel):
-    type: str
-    timestamp: str
-    probe: str
-    category: str
-    index: int
-    technique: str
-    prompt: str
-    response: Optional[str] = None
+    model_config = ConfigDict(
+        extra="forbid",
+        str_strip_whitespace=True,
+    )
+
+    type: constr(min_length=1, max_length=100)
+
+    timestamp: datetime
+
+    probe: constr(min_length=1, max_length=500)
+
+    category: ProbeCategory
+
+    index: conint(ge=0)
+
+    technique: constr(min_length=1, max_length=200)
+
+    prompt: constr(min_length=1, max_length=100_000)
+
+    response: Optional[constr(max_length=100_000)] = None
+
     analysis: Optional[ReasoningResult] = None
 
+    @field_validator("prompt")
+    @classmethod
+    def validate_prompt_not_empty(cls, v: str):
+        if not v.strip():
+            raise ValueError("prompt cannot be blank")
+        return v
+
+    @model_validator(mode="after")
+    def validate_analysis_presence(self):
+        """
+        Example business rule:
+        If a response exists, analysis should also exist.
+        """
+
+        if self.response is not None and self.analysis is None:
+            raise ValueError("analysis must be provided when response exists")
+
+        return self
+
+
 # ── Probe Result Variants ──────────────────────────────────────
+
 
 class AttackPrompt(BaseModel):
     category: str
@@ -351,7 +468,11 @@ class DocumentPayload(BaseModel):
     @classmethod
     def normalize(cls, data):
         if isinstance(data, str):
-            return {"name": "poisoned_doc", "visible_content": data, "hidden_instruction": ""}
+            return {
+                "name": "poisoned_doc",
+                "visible_content": data,
+                "hidden_instruction": "",
+            }
         return data
 
 
@@ -388,15 +509,24 @@ class PromptInjectionResult(BaseProbeResult):
     probe: Literal["prompt_injection"] = "prompt_injection"
     category: Literal["LLM01: Prompt Injection"] = "LLM01: Prompt Injection"
 
+
 class SensitiveInformationDisclosureResult(BaseProbeResult):
-    type: Literal["sensitive_information_disclosure_attack"] = "sensitive_information_disclosure_attack"
-    probe: Literal["sensitive_information_disclosure"] = "sensitive_information_disclosure"
-    category: Literal["LLM02: Sensitive Information Disclosure"] = "LLM02: Sensitive Information Disclosure"
+    type: Literal["sensitive_information_disclosure_attack"] = (
+        "sensitive_information_disclosure_attack"
+    )
+    probe: Literal["sensitive_information_disclosure"] = (
+        "sensitive_information_disclosure"
+    )
+    category: Literal["LLM02: Sensitive Information Disclosure"] = (
+        "LLM02: Sensitive Information Disclosure"
+    )
+
 
 class MisinformationResult(BaseProbeResult):
     type: Literal["misinformation_attack"] = "misinformation_attack"
     probe: Literal["misinformation"] = "misinformation"
     category: Literal["LLM04: Misinformation"] = "LLM04: Misinformation"
+
 
 class OutputIntegrityAnalysis(BaseModel):
     contains_script_tag: bool
@@ -406,27 +536,36 @@ class OutputIntegrityAnalysis(BaseModel):
     malformed_json_detected: bool
     unexpected_fields_detected: bool
 
+
 class ImproperOutputHandlingResult(BaseProbeResult):
     type: Literal["improper_output_handling_attack"] = "improper_output_handling_attack"
     probe: Literal["improper_output_handling"] = "improper_output_handling"
-    category: Literal["LLM05: Improper Output Handling"] = "LLM05: Improper Output Handling"
+    category: Literal["LLM05: Improper Output Handling"] = (
+        "LLM05: Improper Output Handling"
+    )
     integrity_analysis: OutputIntegrityAnalysis
     violation_detected: bool
+
 
 class DataExfiltrationResult(BaseProbeResult):
     type: Literal["data_exfiltration_attack"] = "data_exfiltration_attack"
     probe: Literal["data_exfiltration"] = "data_exfiltration"
     category: Literal["LLM06: Data Exfiltration"] = "LLM06: Data Exfiltration"
 
+
 class ExcessiveAgencyResult(BaseProbeResult):
     type: Literal["excessive_agency_attack"] = "excessive_agency_attack"
     probe: Literal["excessive_agency"] = "excessive_agency"
     category: Literal["LLM08: Excessive Agency"] = "LLM08: Excessive Agency"
 
+
 class RagPoisoningResult(BaseProbeResult):
     type: Literal["rag_poisoning_attack"] = "rag_poisoning_attack"
     probe: Literal["rag_poisoning"] = "rag_poisoning"
-    category: Literal["LLM09: Over-reliance (Indirect via RAG)"] = "LLM09: Over-reliance (Indirect via RAG)"
+    category: Literal["LLM09: Over-reliance (Indirect via RAG)"] = (
+        "LLM09: Over-reliance (Indirect via RAG)"
+    )
+
 
 class ToolMisuseResult(BaseProbeResult):
     type: Literal["tool_misuse_attack"] = "tool_misuse_attack"
@@ -434,7 +573,9 @@ class ToolMisuseResult(BaseProbeResult):
     category: Literal["LLM08: Excessive Agency"] = "LLM08: Excessive Agency"
     target_tool: Optional[str] = None
 
+
 # ── Attack Record (persisted to results.jsonl) ─────────────────
+
 
 class AttackRecord(BaseModel):
     timestamp: str
@@ -447,7 +588,9 @@ class AttackRecord(BaseModel):
     risk_level: Optional[str] = None
     reasoning: Optional[str] = None
 
+
 # ── Structured Log Entry (persisted to run.jsonl) ──────────────
+
 
 class LogEntry(BaseModel):
     event_type: EventType
@@ -458,6 +601,7 @@ class LogEntry(BaseModel):
     output: Optional[Any] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+
 class PotentialVulnerability(BaseModel):
     probe: str
     finding: str
@@ -466,10 +610,12 @@ class PotentialVulnerability(BaseModel):
     attack_surface: str
     trust_boundary_violation: str
 
+
 class VulnerabilityReport(BaseModel):
     potential_vulnerabilities: list[PotentialVulnerability]
     severity_summary: dict[str, int]
     recommended_probe_order: list[str] = []
+
 
 class AnalyseRequest(BaseModel):
     profile: Optional[AgentProfile] = None

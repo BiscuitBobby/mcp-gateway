@@ -1101,6 +1101,8 @@
 
     // ─── Probe → display name (titlecase fallback for unknown keys) ───────────
     function probeDisplayName(action) {
+      if (!action) return 'Unknown Probe';
+      
       const names = {
         prompt_injection: 'Prompt Injection',
         sensitive_information_disclosure: 'Sensitive Information Disclosure',
@@ -1182,8 +1184,12 @@
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
 
-        // data.probes is the dict returned by get_probes()
-        const probes = Object.values(data.probes);
+        // data.probes is { owasp: {...}, mitre: {...} }
+        // Flatten both categories into a single array
+        const probes = [
+          ...Object.values(data.probes.owasp || {}),
+          ...Object.values(data.probes.mitre || {})
+        ];
 
         if (!probes.length) {
           container.innerHTML = `<div class="fetch-error">No probes registered in the registry.</div>`;

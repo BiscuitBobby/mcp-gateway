@@ -77,13 +77,19 @@
       pointer-events: none;
     }
 
-    .hero-title {
+    /* Center content must always sit above cards */
+    .hero-title,
+    .hero-sub,
+    .btn-cta {
       position: relative;
+      z-index: 10;
+    }
+
+    .hero-title {
       font-size: clamp(42px, 6vw, 68px);
       font-weight: 700;
       letter-spacing: -2px;
       line-height: 1.05;
-      z-index: 2;
     }
 
     .hero-title .line2 {
@@ -97,15 +103,12 @@
     }
 
     .hero-sub {
-      position: relative;
       margin-top: 18px;
       font-size: 15px;
       color: #666;
-      z-index: 2;
     }
 
     .btn-cta {
-      position: relative;
       margin-top: 28px;
       background: linear-gradient(135deg, #3b82f6, #6366f1);
       background-size: 200% 200%;
@@ -117,7 +120,6 @@
       font-family: inherit;
       font-weight: 600;
       cursor: pointer;
-      z-index: 2;
       transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 8px 24px rgba(59, 130, 246, 0.35);
     }
@@ -294,8 +296,13 @@
       flex-shrink: 0;
     }
 
-    .task-num.red { background: #ef4444; }
-    .task-num.orange { background: #f97316; }
+    .task-num.red {
+      background: #ef4444;
+    }
+
+    .task-num.orange {
+      background: #f97316;
+    }
 
     .task-name {
       font-size: 12.5px;
@@ -303,7 +310,9 @@
       flex: 1;
     }
 
-    .task-avatars { display: flex; }
+    .task-avatars {
+      display: flex;
+    }
 
     .avatar {
       width: 20px;
@@ -319,7 +328,9 @@
       color: #fff;
     }
 
-    .avatar:first-child { margin-left: 0; }
+    .avatar:first-child {
+      margin-left: 0;
+    }
 
     .task-date-row {
       display: flex;
@@ -341,8 +352,13 @@
       border-radius: 4px;
     }
 
-    .progress-fill.blue { background: #3b82f6; }
-    .progress-fill.red { background: #ef4444; }
+    .progress-fill.blue {
+      background: #3b82f6;
+    }
+
+    .progress-fill.red {
+      background: #ef4444;
+    }
 
     /* ===== DISCOVER INTEGRATIONS CAROUSEL CARD ===== */
     .integrations-card {
@@ -373,7 +389,9 @@
       margin-bottom: 7px;
     }
 
-    .carousel-row:last-child { margin-bottom: 0; }
+    .carousel-row:last-child {
+      margin-bottom: 0;
+    }
 
     .carousel-inner {
       display: flex;
@@ -381,8 +399,13 @@
       width: max-content;
     }
 
-    .row-a .carousel-inner { animation: go-left 15s linear infinite; }
-    .row-b .carousel-inner { animation: go-right 19s linear infinite; }
+    .row-a .carousel-inner {
+      animation: go-left 15s linear infinite;
+    }
+
+    .row-b .carousel-inner {
+      animation: go-right 19s linear infinite;
+    }
 
     .int-logo {
       width: 38px;
@@ -396,11 +419,61 @@
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.09);
     }
 
-    @keyframes go-left { 0% { transform: translateX(0) } 100% { transform: translateX(-50%) } }
-    @keyframes go-right { 0% { transform: translateX(-50%) } 100% { transform: translateX(0) } }
-    @keyframes float1 { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-10px) } }
-    @keyframes float2 { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-8px) } }
-    @keyframes float3 { 0%, 100% { transform: translateY(0) } 50% { transform: translateY(-12px) } }
+    @keyframes go-left {
+      0% {
+        transform: translateX(0)
+      }
+
+      100% {
+        transform: translateX(-50%)
+      }
+    }
+
+    @keyframes go-right {
+      0% {
+        transform: translateX(-50%)
+      }
+
+      100% {
+        transform: translateX(0)
+      }
+    }
+
+    @keyframes float1 {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-10px)
+      }
+    }
+
+    @keyframes float2 {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-8px)
+      }
+    }
+
+    @keyframes float3 {
+
+      0%,
+      100% {
+        transform: translateY(0)
+      }
+
+      50% {
+        transform: translateY(-12px)
+      }
+    }
 
     /* PAST SCANS SECTION */
     .scans-section {
@@ -461,7 +534,10 @@
       gap: 6px;
     }
 
-    .filter-checkbox:hover { background: #f9fafb; border-color: #d1d5db; }
+    .filter-checkbox:hover {
+      background: #f9fafb;
+      border-color: #d1d5db;
+    }
 
     .filter-checkbox input {
       width: 14px;
@@ -484,7 +560,9 @@
       transition: background 0.15s;
     }
 
-    .btn-new-scan:hover { background: #7c3aed; }
+    .btn-new-scan:hover {
+      background: #7c3aed;
+    }
 
     .scans-grid {
       display: flex;
@@ -525,7 +603,10 @@
       border-color: #cbd5e1;
     }
 
-    .scan-card:hover::after { transform: translateX(4px); color: #3b82f6; }
+    .scan-card:hover::after {
+      transform: translateX(4px);
+      color: #3b82f6;
+    }
 
     .scan-thumb {
       grid-area: thumb;
@@ -536,7 +617,9 @@
       transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .scan-card:hover .scan-thumb { transform: scale(1.05); }
+    .scan-card:hover .scan-thumb {
+      transform: scale(1.05);
+    }
 
     .scan-title {
       grid-area: title;
@@ -559,14 +642,36 @@
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    .fade-up-1 { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
-    .fade-up-2 { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards; opacity: 0; }
-    .fade-up-3 { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards; opacity: 0; }
-    .fade-up-4 { animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards; opacity: 0; }
+    .fade-up-1 {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      opacity: 0;
+    }
+
+    .fade-up-2 {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.1s forwards;
+      opacity: 0;
+    }
+
+    .fade-up-3 {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s forwards;
+      opacity: 0;
+    }
+
+    .fade-up-4 {
+      animation: fadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.3s forwards;
+      opacity: 0;
+    }
 
     body {
       font-family: 'DM Sans', sans-serif;
@@ -578,7 +683,10 @@
       padding: 40px 10px;
     }
 
-    .app-container { width: 100%; max-width: 98%; }
+    .app-container {
+      width: 100%;
+      max-width: 98%;
+    }
 
     .top-nav {
       font-size: 14px;
@@ -590,9 +698,19 @@
       gap: 8px;
     }
 
-    .top-nav span { color: var(--text); }
-    .top-nav a { color: inherit; text-decoration: none; }
-    .top-nav a:hover { color: var(--text); text-decoration: underline; }
+    .top-nav span {
+      color: var(--text);
+    }
+
+    .top-nav a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .top-nav a:hover {
+      color: var(--text);
+      text-decoration: underline;
+    }
 
     .header-row {
       display: flex;
@@ -647,7 +765,10 @@
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
     }
 
-    .btn-run:hover { background: var(--brand-hover); transform: translateY(-1px); }
+    .btn-run:hover {
+      background: var(--brand-hover);
+      transform: translateY(-1px);
+    }
 
     .config-grid {
       display: grid;
@@ -688,7 +809,7 @@
       border: 1px solid var(--border);
       border-radius: var(--radius);
       overflow: hidden;
-      margin-bottom: 32px;
+      margin-bottom: 2rem;
       box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
     }
 
@@ -726,8 +847,13 @@
       background: var(--surface);
     }
 
-    .t-row:hover { background: var(--surface-hover); }
-    .t-row-group:last-child .t-row { border-bottom: none; }
+    .t-row:hover {
+      background: var(--surface-hover);
+    }
+
+    .t-row-group:last-child .t-row {
+      border-bottom: none;
+    }
 
     .td-name {
       font-weight: 600;
@@ -766,15 +892,30 @@
       gap: 4px;
     }
 
-    .edit-btn:hover { text-decoration: underline; }
+    .edit-btn:hover {
+      text-decoration: underline;
+    }
 
-    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
-    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 40px;
+      height: 22px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
 
     .slider {
       position: absolute;
       cursor: pointer;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background-color: #cbd5e1;
       transition: .3s;
       border-radius: 24px;
@@ -783,17 +924,27 @@
     .slider:before {
       position: absolute;
       content: "";
-      height: 16px; width: 16px;
-      left: 3px; bottom: 3px;
+      height: 16px;
+      width: 16px;
+      left: 3px;
+      bottom: 3px;
       background-color: #fff;
       transition: .3s;
       border-radius: 50%;
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     }
 
-    input:checked+.slider { background-color: var(--brand); }
-    input:checked+.slider:before { transform: translateX(18px); }
-    input:focus+.slider { box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+    input:checked+.slider {
+      background-color: var(--brand);
+    }
+
+    input:checked+.slider:before {
+      transform: translateX(18px);
+    }
+
+    input:focus+.slider {
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+    }
 
     .t-expanded {
       display: none;
@@ -802,16 +953,30 @@
       border-bottom: 1px solid var(--border);
     }
 
-    .t-row-group.open .t-expanded { display: block; }
-    .t-row-group.open .t-row { border-bottom: none; }
+    .t-row-group.open .t-expanded {
+      display: block;
+    }
 
-    .goals-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .t-row-group.open .t-row {
+      border-bottom: none;
+    }
 
-    .goal-item { display: flex; align-items: center; gap: 12px; }
+    .goals-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .goal-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
 
     .goal-item input[type="checkbox"] {
       appearance: none;
-      width: 16px; height: 16px;
+      width: 16px;
+      height: 16px;
       border: 1px solid #94a3b8;
       border-radius: 4px;
       background: #fff;
@@ -819,21 +984,35 @@
       position: relative;
     }
 
-    .goal-item input[type="checkbox"]:checked { background: var(--brand); border-color: var(--brand); }
+    .goal-item input[type="checkbox"]:checked {
+      background: var(--brand);
+      border-color: var(--brand);
+    }
 
     .goal-item input[type="checkbox"]:checked::after {
       content: '';
       position: absolute;
-      left: 4px; top: 1px;
-      width: 4px; height: 8px;
+      left: 4px;
+      top: 1px;
+      width: 4px;
+      height: 8px;
       border: solid white;
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
     }
 
-    .goal-item label { font-size: 13.5px; color: #334155; cursor: pointer; font-weight: 500; }
+    .goal-item label {
+      font-size: 13.5px;
+      color: #334155;
+      cursor: pointer;
+      font-weight: 500;
+    }
 
-    .edit-icon { width: 14px; height: 14px; display: inline-block; }
+    .edit-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+    }
 
     .btn-new-policy {
       background: #f1f5f9;
@@ -847,7 +1026,10 @@
       transition: all 0.2s;
     }
 
-    .btn-new-policy:hover { background: #e2e8f0; color: #0f172a; }
+    .btn-new-policy:hover {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
 
     .new-policy-form {
       display: none;
@@ -858,9 +1040,19 @@
       align-items: flex-end;
     }
 
-    .new-policy-form .input-group { margin-bottom: 0; flex: 1; }
-    .new-policy-form label { font-size: 12px; margin-bottom: 4px; }
-    .new-policy-form input { padding: 8px 12px; }
+    .new-policy-form .input-group {
+      margin-bottom: 0;
+      flex: 1;
+    }
+
+    .new-policy-form label {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+
+    .new-policy-form input {
+      padding: 8px 12px;
+    }
 
     .btn-add-policy {
       background: var(--brand);
@@ -874,7 +1066,9 @@
       white-space: nowrap;
     }
 
-    .btn-add-policy:hover { background: var(--brand-hover); }
+    .btn-add-policy:hover {
+      background: var(--brand-hover);
+    }
 
     /* Loading skeleton */
     .skeleton-row {
@@ -894,7 +1088,11 @@
       animation: shimmer 1.4s infinite;
     }
 
-    @keyframes shimmer { to { background-position: -200% 0; } }
+    @keyframes shimmer {
+      to {
+        background-position: -200% 0;
+      }
+    }
 
     /* Error state */
     .fetch-error {
@@ -904,8 +1102,18 @@
       font-size: 14px;
     }
 
-    .fetch-error svg { display: block; margin: 0 auto 10px; color: #f87171; }
-    .fetch-error strong { display: block; color: #ef4444; font-size: 15px; margin-bottom: 6px; }
+    .fetch-error svg {
+      display: block;
+      margin: 0 auto 10px;
+      color: #f87171;
+    }
+
+    .fetch-error strong {
+      display: block;
+      color: #ef4444;
+      font-size: 15px;
+      margin-bottom: 6px;
+    }
 
     .btn-retry {
       margin-top: 12px;
@@ -920,12 +1128,17 @@
       transition: background 0.15s;
     }
 
-    .btn-retry:hover { background: #e2e8f0; }
+    .btn-retry:hover {
+      background: #e2e8f0;
+    }
 
     /* Modal styles */
     .modal-overlay {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
       background: rgba(0, 0, 0, 0.4);
       display: none;
       align-items: center;
@@ -935,7 +1148,10 @@
       transition: opacity 0.2s;
     }
 
-    .modal-overlay.show { display: flex; opacity: 1; }
+    .modal-overlay.show {
+      display: flex;
+      opacity: 1;
+    }
 
     .modal-content {
       background: white;
@@ -946,7 +1162,10 @@
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
     }
 
-    .modal-content h3 { margin-bottom: 16px; font-size: 16px; }
+    .modal-content h3 {
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
 
     .modal-actions {
       display: flex;
@@ -978,13 +1197,18 @@
     }
 
     /* ===== GLOBAL SIDEBAR ===== */
-    .app-shell { display: flex; min-height: 100vh; width: 100%; }
+    .app-shell {
+      display: flex;
+      min-height: 100vh;
+      width: 100%;
+    }
 
     .global-sidebar {
       width: 68px;
       min-height: 100vh;
       position: fixed;
-      top: 0; left: 0;
+      top: 0;
+      left: 0;
       z-index: 100;
       display: flex;
       flex-direction: column;
@@ -999,10 +1223,13 @@
     }
 
     .sidebar-logo {
-      width: 38px; height: 38px;
+      width: 38px;
+      height: 38px;
       border-radius: 12px;
       background: linear-gradient(135deg, #3b82f6, #6366f1);
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       margin-bottom: 20px;
       box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
       flex-shrink: 0;
@@ -1010,16 +1237,33 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .sidebar-logo:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
-    .sidebar-logo svg { width: 20px; height: 20px; color: white; }
+    .sidebar-logo:hover {
+      transform: scale(1.08);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+    }
 
-    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .sidebar-logo svg {
+      width: 20px;
+      height: 20px;
+      color: white;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+      padding: 0 10px;
+    }
 
     .sidebar-link {
       position: relative;
-      width: 48px; height: 48px;
+      width: 48px;
+      height: 48px;
       border-radius: 14px;
-      display: flex; align-items: center; justify-content: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       color: #94a3b8;
       text-decoration: none;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1045,24 +1289,32 @@
     .sidebar-link.active::before {
       content: '';
       position: absolute;
-      left: -10px; top: 50%;
+      left: -10px;
+      top: 50%;
       transform: translateY(-50%);
-      width: 3px; height: 20px;
+      width: 3px;
+      height: 20px;
       background: linear-gradient(180deg, #3b82f6, #6366f1);
       border-radius: 0 3px 3px 0;
     }
 
-    .sidebar-link svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .sidebar-link svg {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+    }
 
     .sidebar-tooltip {
       position: absolute;
-      left: 64px; top: 50%;
+      left: 64px;
+      top: 50%;
       transform: translateY(-50%);
       background: #0f172a;
       color: white;
       padding: 6px 12px;
       border-radius: 8px;
-      font-size: 12px; font-weight: 600;
+      font-size: 12px;
+      font-weight: 600;
       white-space: nowrap;
       pointer-events: none;
       opacity: 0;
@@ -1075,17 +1327,172 @@
     .sidebar-tooltip::before {
       content: '';
       position: absolute;
-      left: -4px; top: 50%;
+      left: -4px;
+      top: 50%;
       transform: translateY(-50%) rotate(45deg);
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       background: #0f172a;
     }
 
-    .sidebar-link:hover .sidebar-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+    .sidebar-link:hover .sidebar-tooltip {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
 
-    .sidebar-divider { width: 28px; height: 1px; background: #e2e8f0; margin: 8px 0; flex-shrink: 0; }
+    .sidebar-divider {
+      width: 28px;
+      height: 1px;
+      background: #e2e8f0;
+      margin: 8px 0;
+      flex-shrink: 0;
+    }
 
-    .app-main { flex: 1; margin-left: 68px; }
+    .app-main {
+      flex: 1;
+      margin-left: 68px;
+    }
+
+    /* ==========================================================
+       RESPONSIVE: floating hero cards scale down then disappear
+       ========================================================== */
+
+    /* 1200px – cards start to get crowded, scale them back */
+    @media (max-width: 1200px) {
+      .sticky-group {
+        left: 24px;
+        top: 80px;
+        transform: scale(0.85);
+        transform-origin: top left;
+      }
+
+      .reminder-card {
+        right: 24px;
+        top: 70px;
+        transform: scale(0.85);
+        transform-origin: top right;
+      }
+
+      .tasks-card {
+        left: 24px;
+        bottom: 60px;
+        width: 200px;
+        transform: scale(0.85);
+        transform-origin: bottom left;
+      }
+
+      .integrations-card {
+        right: 24px;
+        bottom: 60px;
+        width: 220px;
+        transform: scale(0.85);
+        transform-origin: bottom right;
+      }
+
+      .hero-title {
+        font-size: clamp(32px, 4.5vw, 56px);
+      }
+    }
+
+    /* 1000px – shrink cards further and disable pointer events so they can't block clicks */
+    @media (max-width: 1000px) {
+      .sticky-group {
+        left: 10px;
+        top: 60px;
+        transform: scale(0.68);
+        transform-origin: top left;
+        pointer-events: none;
+      }
+
+      .reminder-card {
+        right: 10px;
+        top: 60px;
+        transform: scale(0.68);
+        transform-origin: top right;
+        pointer-events: none;
+      }
+
+      .tasks-card {
+        left: 10px;
+        bottom: 40px;
+        transform: scale(0.68);
+        transform-origin: bottom left;
+        pointer-events: none;
+      }
+
+      .integrations-card {
+        right: 10px;
+        bottom: 40px;
+        transform: scale(0.68);
+        transform-origin: bottom right;
+        pointer-events: none;
+      }
+
+      .hero {
+        padding: 40px 20px 60px;
+      }
+
+      .hero-title {
+        font-size: clamp(28px, 4vw, 48px);
+      }
+    }
+
+    /* 800px – hide all decorative cards; text gets full stage */
+    @media (max-width: 800px) {
+
+      .sticky-group,
+      .reminder-card,
+      .tasks-card,
+      .integrations-card {
+        display: none !important;
+      }
+
+      .hero {
+        height: auto;
+        min-height: 55vh;
+        padding: 60px 24px 60px;
+      }
+
+      .hero-title {
+        font-size: clamp(28px, 7vw, 44px);
+        letter-spacing: -1px;
+      }
+
+      .hero-sub {
+        font-size: 14px;
+      }
+    }
+
+    /* 600px – tighten spacing, make hero compact */
+    @media (max-width: 600px) {
+      .hero {
+        min-height: 48vh;
+        padding: 48px 16px;
+        width: 95%;
+      }
+
+      .hero-title {
+        font-size: clamp(22px, 8vw, 34px);
+      }
+
+      .btn-cta {
+        padding: 14px 28px;
+        font-size: 15px;
+      }
+
+      .scans-section {
+        width: 95%;
+        padding: 32px 20px;
+      }
+
+      .app-main {
+        margin-left: 56px;
+      }
+
+      .global-sidebar {
+        width: 56px;
+      }
+    }
   </style>
 </head>
 
@@ -1143,7 +1550,8 @@
         <section class="hero">
 
           <div class="sticky-group">
-            <div class="sticky-note">Simulate adversarial attacks on your AI agents before real threats exploit them.</div>
+            <div class="sticky-note">Simulate adversarial attacks on your AI agents before real threats exploit them.
+            </div>
             <div class="checkbox-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -1177,7 +1585,8 @@
           </div>
 
           <h1 class="hero-title fade-up-1">Attack, expose, and harden<span class="line2">your AI agents</span></h1>
-          <p class="hero-sub fade-up-2">Automated red-teaming that finds vulnerabilities and maps your AI threat surface.</p>
+          <p class="hero-sub fade-up-2">Automated red-teaming that finds vulnerabilities and maps your AI threat
+            surface.</p>
           <button class="btn-cta fade-up-3" onclick="openNewScanModal()">Start new scan</button>
 
           <div class="card tasks-card">
@@ -1192,7 +1601,9 @@
                 </div>
               </div>
               <div class="task-date-row"><span>GPT-4o</span><span>78%</span></div>
-              <div class="progress-bar"><div class="progress-fill blue" style="width:78%"></div></div>
+              <div class="progress-bar">
+                <div class="progress-fill blue" style="width:78%"></div>
+              </div>
             </div>
             <div class="task-row">
               <div class="task-row-top">
@@ -1203,7 +1614,9 @@
                 </div>
               </div>
               <div class="task-date-row"><span>Claude 3.5</span><span>Critical</span></div>
-              <div class="progress-bar"><div class="progress-fill red" style="width:100%"></div></div>
+              <div class="progress-bar">
+                <div class="progress-fill red" style="width:100%"></div>
+              </div>
             </div>
           </div>
 
@@ -1211,38 +1624,166 @@
           <div class="card integrations-card">
             <div class="ic-label">Discover integrations</div>
             <div class="carousel-wrap">
-              <!-- Row A → scrolls left -->
+              <!-- Row A scrolls left -->
               <div class="carousel-row row-a">
                 <div class="carousel-inner" id="row-a-inner">
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M6 40h8V22.5L4 16v20c0 2.2 1.8 4 4 4z"/><path fill="#34A853" d="M34 40h8c2.2 0 4-1.8 4-4V16l-10 6.5V40z"/><path fill="#4285F4" d="M4 16l10 6.5L24 16 14 8 4 16z"/><path fill="#34A853" d="M44 16l-10 6.5L24 16l10-8 10 8z"/><path fill="#FBBC05" d="M14 22.5L4 16v4l10 6.5z"/><path fill="#EA4335" d="M34 22.5L44 16v4l-10 6.5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#E01E5A" d="M12.7 30.2c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8 1.7-3.8 3.8-3.8h3.8v3.8z"/><path fill="#E01E5A" d="M14.7 30.2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8v-9.5z"/><path fill="#36C5F0" d="M18.5 12.7c-2.1 0-3.8-1.7-3.8-3.8S16.4 5.1 18.5 5.1s3.8 1.7 3.8 3.8v3.8h-3.8z"/><path fill="#36C5F0" d="M18.5 14.7c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8H9c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8h9.5z"/><path fill="#2EB67D" d="M35.3 18.5c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8-1.7 3.8-3.8 3.8h-3.8v-3.8z"/><path fill="#2EB67D" d="M33.3 18.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8V9c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5z"/><path fill="#ECB22E" d="M29.5 35.3c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8-3.8-1.7-3.8-3.8v-3.8h3.8z"/><path fill="#ECB22E" d="M29.5 33.3c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8H39c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8h-9.5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M16 6L4 26h12l12-20z"/><path fill="#34A853" d="M44 26L32 6H20l12 20z"/><path fill="#FBBC05" d="M4 26l8 14h24l8-14z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="6" fill="white" stroke="#e0e0e0" stroke-width="2"/><rect x="4" y="4" width="40" height="14" rx="6" fill="#1a73e8"/><rect x="4" y="14" width="40" height="4" fill="#1a73e8"/><text x="24" y="38" text-anchor="middle" font-size="18" font-weight="700" fill="#1a73e8" font-family="sans-serif">31</text></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#333" d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#2D8CFF"/><path fill="white" d="M8 16h20a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4zm24 4v8l8 6V14l-8 6z"/></svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#EA4335" d="M6 40h8V22.5L4 16v20c0 2.2 1.8 4 4 4z" />
+                      <path fill="#34A853" d="M34 40h8c2.2 0 4-1.8 4-4V16l-10 6.5V40z" />
+                      <path fill="#4285F4" d="M4 16l10 6.5L24 16 14 8 4 16z" />
+                      <path fill="#34A853" d="M44 16l-10 6.5L24 16l10-8 10 8z" />
+                      <path fill="#FBBC05" d="M14 22.5L4 16v4l10 6.5z" />
+                      <path fill="#EA4335" d="M34 22.5L44 16v4l-10 6.5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#E01E5A"
+                        d="M12.7 30.2c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8 1.7-3.8 3.8-3.8h3.8v3.8z" />
+                      <path fill="#E01E5A"
+                        d="M14.7 30.2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8v-9.5z" />
+                      <path fill="#36C5F0"
+                        d="M18.5 12.7c-2.1 0-3.8-1.7-3.8-3.8S16.4 5.1 18.5 5.1s3.8 1.7 3.8 3.8v3.8h-3.8z" />
+                      <path fill="#36C5F0"
+                        d="M18.5 14.7c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8H9c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8h9.5z" />
+                      <path fill="#2EB67D"
+                        d="M35.3 18.5c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8-1.7 3.8-3.8 3.8h-3.8v-3.8z" />
+                      <path fill="#2EB67D"
+                        d="M33.3 18.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8V9c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5z" />
+                      <path fill="#ECB22E"
+                        d="M29.5 35.3c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8-3.8-1.7-3.8-3.8v-3.8h3.8z" />
+                      <path fill="#ECB22E"
+                        d="M29.5 33.3c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8H39c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8h-9.5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#4285F4" d="M16 6L4 26h12l12-20z" />
+                      <path fill="#34A853" d="M44 26L32 6H20l12 20z" />
+                      <path fill="#FBBC05" d="M4 26l8 14h24l8-14z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect x="4" y="4" width="40" height="40" rx="6" fill="white" stroke="#e0e0e0" stroke-width="2" />
+                      <rect x="4" y="4" width="40" height="14" rx="6" fill="#1a73e8" />
+                      <rect x="4" y="14" width="40" height="4" fill="#1a73e8" /><text x="24" y="38" text-anchor="middle"
+                        font-size="18" font-weight="700" fill="#1a73e8" font-family="sans-serif">31</text>
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24">
+                      <path fill="#333"
+                        d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect width="48" height="48" rx="10" fill="#2D8CFF" />
+                      <path fill="white"
+                        d="M8 16h20a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4zm24 4v8l8 6V14l-8 6z" />
+                    </svg></div>
                   <!-- duplicate set for seamless loop -->
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M6 40h8V22.5L4 16v20c0 2.2 1.8 4 4 4z"/><path fill="#34A853" d="M34 40h8c2.2 0 4-1.8 4-4V16l-10 6.5V40z"/><path fill="#4285F4" d="M4 16l10 6.5L24 16 14 8 4 16z"/><path fill="#34A853" d="M44 16l-10 6.5L24 16l10-8 10 8z"/><path fill="#FBBC05" d="M14 22.5L4 16v4l10 6.5z"/><path fill="#EA4335" d="M34 22.5L44 16v4l-10 6.5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#E01E5A" d="M12.7 30.2c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8 1.7-3.8 3.8-3.8h3.8v3.8z"/><path fill="#E01E5A" d="M14.7 30.2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8v-9.5z"/><path fill="#36C5F0" d="M18.5 12.7c-2.1 0-3.8-1.7-3.8-3.8S16.4 5.1 18.5 5.1s3.8 1.7 3.8 3.8v3.8h-3.8z"/><path fill="#36C5F0" d="M18.5 14.7c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8H9c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8h9.5z"/><path fill="#2EB67D" d="M35.3 18.5c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8-1.7 3.8-3.8 3.8h-3.8v-3.8z"/><path fill="#2EB67D" d="M33.3 18.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8V9c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5z"/><path fill="#ECB22E" d="M29.5 35.3c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8-3.8-1.7-3.8-3.8v-3.8h3.8z"/><path fill="#ECB22E" d="M29.5 33.3c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8H39c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8h-9.5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#4285F4" d="M16 6L4 26h12l12-20z"/><path fill="#34A853" d="M44 26L32 6H20l12 20z"/><path fill="#FBBC05" d="M4 26l8 14h24l8-14z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect x="4" y="4" width="40" height="40" rx="6" fill="white" stroke="#e0e0e0" stroke-width="2"/><rect x="4" y="4" width="40" height="14" rx="6" fill="#1a73e8"/><rect x="4" y="14" width="40" height="4" fill="#1a73e8"/><text x="24" y="38" text-anchor="middle" font-size="18" font-weight="700" fill="#1a73e8" font-family="sans-serif">31</text></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#333" d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#2D8CFF"/><path fill="white" d="M8 16h20a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4zm24 4v8l8 6V14l-8 6z"/></svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#EA4335" d="M6 40h8V22.5L4 16v20c0 2.2 1.8 4 4 4z" />
+                      <path fill="#34A853" d="M34 40h8c2.2 0 4-1.8 4-4V16l-10 6.5V40z" />
+                      <path fill="#4285F4" d="M4 16l10 6.5L24 16 14 8 4 16z" />
+                      <path fill="#34A853" d="M44 16l-10 6.5L24 16l10-8 10 8z" />
+                      <path fill="#FBBC05" d="M14 22.5L4 16v4l10 6.5z" />
+                      <path fill="#EA4335" d="M34 22.5L44 16v4l-10 6.5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#E01E5A"
+                        d="M12.7 30.2c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8 1.7-3.8 3.8-3.8h3.8v3.8z" />
+                      <path fill="#E01E5A"
+                        d="M14.7 30.2c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8v-9.5z" />
+                      <path fill="#36C5F0"
+                        d="M18.5 12.7c-2.1 0-3.8-1.7-3.8-3.8S16.4 5.1 18.5 5.1s3.8 1.7 3.8 3.8v3.8h-3.8z" />
+                      <path fill="#36C5F0"
+                        d="M18.5 14.7c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8H9c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8h9.5z" />
+                      <path fill="#2EB67D"
+                        d="M35.3 18.5c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8-1.7 3.8-3.8 3.8h-3.8v-3.8z" />
+                      <path fill="#2EB67D"
+                        d="M33.3 18.5c0 2.1-1.7 3.8-3.8 3.8s-3.8-1.7-3.8-3.8V9c0-2.1 1.7-3.8 3.8-3.8s3.8 1.7 3.8 3.8v9.5z" />
+                      <path fill="#ECB22E"
+                        d="M29.5 35.3c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8-3.8-1.7-3.8-3.8v-3.8h3.8z" />
+                      <path fill="#ECB22E"
+                        d="M29.5 33.3c-2.1 0-3.8-1.7-3.8-3.8s1.7-3.8 3.8-3.8H39c2.1 0 3.8 1.7 3.8 3.8s-1.7 3.8-3.8 3.8h-9.5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <path fill="#4285F4" d="M16 6L4 26h12l12-20z" />
+                      <path fill="#34A853" d="M44 26L32 6H20l12 20z" />
+                      <path fill="#FBBC05" d="M4 26l8 14h24l8-14z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect x="4" y="4" width="40" height="40" rx="6" fill="white" stroke="#e0e0e0" stroke-width="2" />
+                      <rect x="4" y="4" width="40" height="14" rx="6" fill="#1a73e8" />
+                      <rect x="4" y="14" width="40" height="4" fill="#1a73e8" /><text x="24" y="38" text-anchor="middle"
+                        font-size="18" font-weight="700" fill="#1a73e8" font-family="sans-serif">31</text>
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24">
+                      <path fill="#333"
+                        d="M12 2C6.48 2 2 6.48 2 12c0 4.42 2.87 8.17 6.84 9.49.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.15-1.11-1.46-1.11-1.46-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.89 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02A9.56 9.56 0 0 1 12 6.8c.85 0 1.71.11 2.51.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12c0-5.52-4.48-10-10-10z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect width="48" height="48" rx="10" fill="#2D8CFF" />
+                      <path fill="white"
+                        d="M8 16h20a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-8a4 4 0 0 1 4-4zm24 4v8l8 6V14l-8 6z" />
+                    </svg></div>
                 </div>
               </div>
-              <!-- Row B → scrolls right -->
+              <!-- Row B scrolls right -->
               <div class="carousel-row row-b">
                 <div class="carousel-inner">
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 32 32"><path fill="#2684FF" d="M16 1L3 14l5 5 8-8 8 8 5-5z"/><path fill="#0052CC" d="M16 17L11 22l5 5 5-5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="14" r="8" fill="#FC636B"/><circle cx="12" cy="32" r="8" fill="#FC636B"/><circle cx="36" cy="32" r="8" fill="#FC636B"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#0052CC"/><rect x="6" y="8" width="14" height="24" rx="3" fill="white"/><rect x="28" y="8" width="14" height="16" rx="3" fill="white"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 100 100"><defs><linearGradient id="lin" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5E6AD2"/><stop offset="100%" stop-color="#7B8AE2"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lin)"/><path d="M18 55L45 82l37-37-7-7-30 30-20-20z" fill="white"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#111" d="M5 4h9l5 5v11.5a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-16A.5.5 0 0 1 5 4zm0 0v16.5h13V9.5H13.5A.5.5 0 0 1 13 9V4H5z"/><path fill="#111" d="M8 10h8v1H8zm0 3h8v1H8zm0 3h5v1H8z"/></svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 32 32">
+                      <path fill="#2684FF" d="M16 1L3 14l5 5 8-8 8 8 5-5z" />
+                      <path fill="#0052CC" d="M16 17L11 22l5 5 5-5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <circle cx="24" cy="14" r="8" fill="#FC636B" />
+                      <circle cx="12" cy="32" r="8" fill="#FC636B" />
+                      <circle cx="36" cy="32" r="8" fill="#FC636B" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect width="48" height="48" rx="8" fill="#0052CC" />
+                      <rect x="6" y="8" width="14" height="24" rx="3" fill="white" />
+                      <rect x="28" y="8" width="14" height="16" rx="3" fill="white" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 100 100">
+                      <defs>
+                        <linearGradient id="lin" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stop-color="#5E6AD2" />
+                          <stop offset="100%" stop-color="#7B8AE2" />
+                        </linearGradient>
+                      </defs>
+                      <rect width="100" height="100" rx="20" fill="url(#lin)" />
+                      <path d="M18 55L45 82l37-37-7-7-30 30-20-20z" fill="white" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24">
+                      <path fill="#111"
+                        d="M5 4h9l5 5v11.5a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-16A.5.5 0 0 1 5 4zm0 0v16.5h13V9.5H13.5A.5.5 0 0 1 13 9V4H5z" />
+                      <path fill="#111" d="M8 10h8v1H8zm0 3h8v1H8zm0 3h5v1H8z" />
+                    </svg></div>
                   <!-- duplicates -->
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 32 32"><path fill="#2684FF" d="M16 1L3 14l5 5 8-8 8 8 5-5z"/><path fill="#0052CC" d="M16 17L11 22l5 5 5-5z"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><circle cx="24" cy="14" r="8" fill="#FC636B"/><circle cx="12" cy="32" r="8" fill="#FC636B"/><circle cx="36" cy="32" r="8" fill="#FC636B"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48"><rect width="48" height="48" rx="8" fill="#0052CC"/><rect x="6" y="8" width="14" height="24" rx="3" fill="white"/><rect x="28" y="8" width="14" height="16" rx="3" fill="white"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 100 100"><defs><linearGradient id="lin2" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#5E6AD2"/><stop offset="100%" stop-color="#7B8AE2"/></linearGradient></defs><rect width="100" height="100" rx="20" fill="url(#lin2)"/><path d="M18 55L45 82l37-37-7-7-30 30-20-20z" fill="white"/></svg></div>
-                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#111" d="M5 4h9l5 5v11.5a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-16A.5.5 0 0 1 5 4zm0 0v16.5h13V9.5H13.5A.5.5 0 0 1 13 9V4H5z"/><path fill="#111" d="M8 10h8v1H8zm0 3h8v1H8zm0 3h5v1H8z"/></svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 32 32">
+                      <path fill="#2684FF" d="M16 1L3 14l5 5 8-8 8 8 5-5z" />
+                      <path fill="#0052CC" d="M16 17L11 22l5 5 5-5z" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <circle cx="24" cy="14" r="8" fill="#FC636B" />
+                      <circle cx="12" cy="32" r="8" fill="#FC636B" />
+                      <circle cx="36" cy="32" r="8" fill="#FC636B" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 48 48">
+                      <rect width="48" height="48" rx="8" fill="#0052CC" />
+                      <rect x="6" y="8" width="14" height="24" rx="3" fill="white" />
+                      <rect x="28" y="8" width="14" height="16" rx="3" fill="white" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 100 100">
+                      <defs>
+                        <linearGradient id="lin2" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stop-color="#5E6AD2" />
+                          <stop offset="100%" stop-color="#7B8AE2" />
+                        </linearGradient>
+                      </defs>
+                      <rect width="100" height="100" rx="20" fill="url(#lin2)" />
+                      <path d="M18 55L45 82l37-37-7-7-30 30-20-20z" fill="white" />
+                    </svg></div>
+                  <div class="int-logo"><svg width="20" height="20" viewBox="0 0 24 24">
+                      <path fill="#111"
+                        d="M5 4h9l5 5v11.5a.5.5 0 0 1-.5.5h-13a.5.5 0 0 1-.5-.5v-16A.5.5 0 0 1 5 4zm0 0v16.5h13V9.5H13.5A.5.5 0 0 1 13 9V4H5z" />
+                      <path fill="#111" d="M8 10h8v1H8zm0 3h8v1H8zm0 3h5v1H8z" />
+                    </svg></div>
                 </div>
               </div>
             </div>
@@ -1270,7 +1811,8 @@
           </div>
 
           <div class="scans-grid" id="past-scans-grid">
-            <div style="padding: 20px; color: var(--muted); text-align: center; grid-column: 1/-1;">Loading past scans...</div>
+            <div style="padding: 20px; color: var(--muted); text-align: center; grid-column: 1/-1;">Loading past
+              scans...</div>
           </div>
         </section>
       </div>
@@ -1296,9 +1838,10 @@
               <div class="warning-bar">
                 <span class="badge-yellow">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                    <line x1="12" y1="9" x2="12" y2="13"/>
-                    <line x1="12" y1="17" x2="12.01" y2="17"/>
+                    <path
+                      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
                   </svg>
                   Important
                 </span>
@@ -1318,20 +1861,37 @@
               <input type="text" id="target-url" class="form-control" placeholder="https://api.example.com/v1/chat">
             </div>
           </div>
-          
+
           <div class="config-grid" style="grid-template-columns: 1fr; margin-bottom: 40px; margin-top: -20px;">
             <div class="input-group">
               <label>Goal (Optional: Custom agent goal / run-goal)</label>
-              <input type="text" id="target-goal" class="form-control" placeholder="e.g. Find prompt injection vulnerabilities bypassing the safety filter">
+              <input type="text" id="target-goal" class="form-control"
+                placeholder="e.g. Find prompt injection vulnerabilities bypassing the safety filter">
             </div>
           </div>
 
-          <!-- DYNAMIC POLICIES TABLE -->
+          <!-- OWASP POLICIES TABLE -->
           <div class="table-container">
-            <div class="section-title">
-              <span>✨ Dynamic policies</span>
+            <div class="section-title" style="cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between;" onclick="toggleCategory('owasp')">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg id="owasp-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <svg width="20" height="20" viewBox="0 0 200 200">
+                  <circle cx="100" cy="100" r="90" fill="none" stroke="#5B6670" stroke-width="12"/>
+                  <circle cx="100" cy="100" r="35" fill="#5B6670"/>
+                </svg>
+                <span>OWASP LLM Top 10</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Select all</span>
+                <label class="switch" onclick="event.stopPropagation(); toggleAllInCategory('owasp')">
+                  <input type="checkbox" id="owasp-toggle-all" checked>
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
-
+            <div id="owasp-content">
             <div class="policy-table" id="dynamic-policy-table">
               <div class="t-head">
                 <div class="th-name">Policy name</div>
@@ -1340,7 +1900,6 @@
                 <div class="th-edit">Edit</div>
                 <div class="th-select">Select</div>
               </div>
-              <!-- Dynamic rows injected by loadProbes() -->
               <div id="dynamic-policy-rows">
                 <div class="skeleton-row">
                   <div class="skeleton-block" style="width:65%"></div>
@@ -1365,97 +1924,62 @@
                 </div>
               </div>
             </div>
+            </div>
           </div>
 
-          <!-- INDUSTRY STANDARDS TABLE -->
+          <!-- INDUSTRY STANDARDS TABLE (MITRE ATLAS) -->
           <div class="table-container">
-            <div class="section-title">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-              </svg>
-              Industry Standards
+            <div class="section-title" style="cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between;" onclick="toggleCategory('mitre')">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg id="mitre-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition: transform 0.2s;">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <svg width="20" height="20" viewBox="0 0 200 200">
+                  <path d="M100 20 L180 180 L20 180 Z" fill="none" stroke="#5B6670" stroke-width="12" stroke-linejoin="miter"/>
+                </svg>
+                <span>MITRE ATLAS</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 12px; color: var(--muted); font-weight: 500;">Select all</span>
+                <label class="switch" onclick="event.stopPropagation(); toggleAllInCategory('mitre')">
+                  <input type="checkbox" id="mitre-toggle-all">
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
-
-            <div class="policy-table">
+            <div id="mitre-content">
+            <div class="policy-table" id="mitre-policy-table">
               <div class="t-head">
                 <div class="th-name">Policy name</div>
                 <div class="th-desc">Description</div>
-                <div class="th-goals">Number of goals selected</div>
+                <div class="th-goals">Goals</div>
                 <div class="th-edit">Edit</div>
                 <div class="th-select">Select</div>
               </div>
-
-              <div class="t-row-group">
-                <div class="t-row" onclick="this.parentElement.classList.toggle('open')">
-                  <div class="td-name">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <circle cx="12" cy="12" r="10"/><path d="M12 8L12 16"/><path d="M8 12L16 12"/>
-                    </svg>
-                    OWASP
-                  </div>
-                  <div class="td-desc">Industry-standard OWASP tests for LLM Top-10 risks.</div>
-                  <div class="td-goals"><span class="goals-badge">1/1 goals</span></div>
-                  <div class="td-edit">
-                    <button class="edit-btn">
-                      <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                      Edit
-                    </button>
-                  </div>
-                  <div class="td-select">
-                    <label class="switch" onclick="event.stopPropagation()">
-                      <input type="checkbox" checked>
-                      <span class="slider"></span>
-                    </label>
-                  </div>
+              <div id="mitre-policy-rows">
+                <div class="skeleton-row">
+                  <div class="skeleton-block" style="width:65%"></div>
+                  <div class="skeleton-block" style="width:90%"></div>
+                  <div class="skeleton-block" style="width:55%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
                 </div>
-                <div class="t-expanded">
-                  <div class="goals-grid">
-                    <div class="goal-item"><input type="checkbox" checked><label>OWASP LLM Top-10 Automatic Suite</label></div>
-                  </div>
+                <div class="skeleton-row">
+                  <div class="skeleton-block" style="width:75%"></div>
+                  <div class="skeleton-block" style="width:80%"></div>
+                  <div class="skeleton-block" style="width:55%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
+                </div>
+                <div class="skeleton-row">
+                  <div class="skeleton-block" style="width:55%"></div>
+                  <div class="skeleton-block" style="width:85%"></div>
+                  <div class="skeleton-block" style="width:55%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
+                  <div class="skeleton-block" style="width:30%"></div>
                 </div>
               </div>
-
-              <div class="t-row-group">
-                <div class="t-row" onclick="this.parentElement.classList.toggle('open')">
-                  <div class="td-name">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polygon points="12 2 2 22 22 22 12 2"/>
-                    </svg>
-                    MITRE ATLAS
-                  </div>
-                  <div class="td-desc">Simulates adversary tactics from the MITRE ATLAS playbook.</div>
-                  <div class="td-goals"><span class="goals-badge">9/12 goals</span></div>
-                  <div class="td-edit">
-                    <button class="edit-btn">
-                      <svg class="edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-                      Edit
-                    </button>
-                  </div>
-                  <div class="td-select">
-                    <label class="switch" onclick="event.stopPropagation()">
-                      <input type="checkbox">
-                      <span class="slider"></span>
-                    </label>
-                  </div>
-                </div>
-                <div class="t-expanded">
-                  <div class="goals-grid">
-                    <div class="goal-item"><input type="checkbox" checked><label>Reconnaissance (AML.T0002)</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Resource Development</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Initial Access</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Execution (AML.T0005)</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Persistence</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Privilege Escalation</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Defense Evasion</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Credential Access</label></div>
-                    <div class="goal-item"><input type="checkbox" checked><label>Discovery</label></div>
-                    <div class="goal-item"><input type="checkbox"><label>Collection</label></div>
-                    <div class="goal-item"><input type="checkbox"><label>Exfiltration (AML.T0012)</label></div>
-                    <div class="goal-item"><input type="checkbox"><label>Impact</label></div>
-                  </div>
-                </div>
-              </div>
+            </div>
             </div>
           </div>
 
@@ -1477,9 +2001,9 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8000';
+    // Use same origin for API calls (works for both local and deployed)
+    const API = window.location.origin;
 
-    // ─── Icon map: probe action key → SVG path content ────────────────────────
     const PROBE_ICONS = {
       prompt_injection: `<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>`,
       sensitive_information_disclosure: `<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>`,
@@ -1488,6 +2012,15 @@
       improper_output_handling: `<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>`,
       misinformation: `<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="12" y1="7" x2="12" y2="11"/><line x1="12" y1="15" x2="12.01" y2="15"/>`,
       rag_poisoning: `<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/>`,
+      reconnaissance: `<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>`,
+      attack_staging: `<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>`,
+      user_execution: `<path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/>`,
+      discovery: `<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>`,
+      collection: `<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M22 11l-3 3-3-3"/>`,
+      credential_extraction: `<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>`,
+      lateral_movement: `<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>`,
+      evasion_techniques: `<path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/>`,
+      impact: `<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>`,
       _default: `<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>`,
     };
 
@@ -1500,6 +2033,15 @@
         improper_output_handling: 'Improper Output Handling',
         misinformation: 'Misinformation',
         rag_poisoning: 'RAG Poisoning',
+        reconnaissance: 'Reconnaissance',
+        attack_staging: 'ML Attack Staging',
+        user_execution: 'User Execution',
+        discovery: 'Discovery',
+        collection: 'Collection',
+        credential_extraction: 'Credential Access',
+        lateral_movement: 'Lateral Movement',
+        evasion_techniques: 'Defense Evasion',
+        impact: 'Impact',
       };
       return names[action] || action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
     }
@@ -1513,14 +2055,23 @@
         improper_output_handling: ['XSS Injection', 'JSON Privilege Injection'],
         misinformation: ['Fact Manipulation', 'Fabricated Citation'],
         rag_poisoning: ['Document Hijacking', 'Context Contamination'],
+        reconnaissance: ['System Intelligence Gathering', 'Infrastructure Mapping'],
+        attack_staging: ['Adversarial Attack Preparation', 'Attack Refinement'],
+        user_execution: ['Social Engineering', 'Malicious Action Triggering'],
+        discovery: ['Architecture Disclosure', 'Capability Enumeration'],
+        collection: ['Data Extraction', 'RAG Store Access'],
+        credential_extraction: ['Token Disclosure', 'Secret Leakage'],
+        lateral_movement: ['Account Pivoting', 'Service Escalation'],
+        evasion_techniques: ['Safety Filter Bypass', 'Identity Constraint Evasion'],
+        impact: ['Denial of Service', 'Resource Exhaustion'],
       };
       return goalMap[probe.action] || ['Dynamic custom goal'];
     }
 
-    function buildProbeRow(probe) {
+    function buildProbeRow(probe, type = 'owasp') {
       const name = probeDisplayName(probe.action);
       const icon = PROBE_ICONS[probe.action] || PROBE_ICONS._default;
-      const owasp = probe.owasp || '';
+      const label = type === 'owasp' ? (probe.owasp || '') : (probe.mitre || '');
       const desc = probe.description || '';
       const goals = defaultGoals(probe);
       const isUnimplemented = probe.instance === null;
@@ -1532,13 +2083,13 @@
         </div>`).join('');
 
       return `
-        <div class="t-row-group" data-action="${probe.action}">
+        <div class="t-row-group" data-action="${probe.action}" data-type="${type}">
           <div class="t-row" onclick="this.parentElement.classList.toggle('open')">
             <div class="td-name">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icon}</svg>
               <div>
                 <strong>${name}</strong>
-                ${owasp ? `<div style="font-size:10px;color:var(--muted);font-weight:500;">${owasp}</div>` : ''}
+                ${label ? `<div style="font-size:10px;color:var(--muted);font-weight:500;">${label}</div>` : ''}
               </div>
             </div>
             <div class="td-desc desc-text">${desc}</div>
@@ -1551,7 +2102,7 @@
             </div>
             <div class="td-select">
               <label class="switch" onclick="event.stopPropagation()">
-                <input type="checkbox" ${isUnimplemented ? '' : 'checked'}>
+                <input type="checkbox" ${isUnimplemented ? '' : 'checked'} onchange="updateCategoryToggle('${type}')">
                 <span class="slider"></span>
               </label>
             </div>
@@ -1562,31 +2113,45 @@
         </div>`;
     }
 
-    // ─── Track whether probes have been fetched already ───────────────────────
     let probesLoaded = false;
 
     async function loadProbes() {
       if (probesLoaded) return;
-      const container = document.getElementById('dynamic-policy-rows');
+      const owaspContainer = document.getElementById('dynamic-policy-rows');
+      const mitreContainer = document.getElementById('mitre-policy-rows');
 
       try {
         const res = await fetch(`${API}/session/probes`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-
-        const probes = Object.values(data.probes);
-
-        if (!probes.length) {
-          container.innerHTML = `<div class="fetch-error">No probes registered in the registry.</div>`;
-          probesLoaded = true;
-          return;
+        
+        console.log('Probes data received:', data);
+        
+        // Handle OWASP probes
+        const owaspProbes = data.probes?.owasp ? Object.values(data.probes.owasp) : Object.values(data.probes || {});
+        console.log('OWASP probes:', owaspProbes);
+        if (!owaspProbes.length) {
+          owaspContainer.innerHTML = `<div class="fetch-error">No OWASP probes registered in the registry.</div>`;
+        } else {
+          owaspContainer.innerHTML = owaspProbes.map(p => buildProbeRow(p, 'owasp')).join('');
+          updateCategoryToggle('owasp');
         }
 
-        container.innerHTML = probes.map(buildProbeRow).join('');
+        // Handle MITRE probes
+        const mitreProbes = data.probes?.mitre ? Object.values(data.probes.mitre) : [];
+        console.log('MITRE probes:', mitreProbes);
+        if (!mitreProbes.length) {
+          mitreContainer.innerHTML = `<div class="fetch-error">No MITRE probes registered in the registry.</div>`;
+        } else {
+          mitreContainer.innerHTML = mitreProbes.map(p => buildProbeRow(p, 'mitre')).join('');
+          updateCategoryToggle('mitre');
+        }
+
         probesLoaded = true;
 
       } catch (err) {
-        container.innerHTML = `
+        console.error('Failed to load probes:', err);
+        const errorHtml = `
           <div class="fetch-error">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -1596,20 +2161,79 @@
             <br>
             <button class="btn-retry" onclick="probesLoaded=false; loadProbes()">↻ Retry</button>
           </div>`;
+        owaspContainer.innerHTML = errorHtml;
+        if (mitreContainer) mitreContainer.innerHTML = errorHtml;
       }
     }
 
-    // ─── Modal open/close ─────────────────────────────────────────────────────
     function openNewScanModal() {
       document.getElementById('newScanModal').classList.add('show');
-      loadProbes(); // fetch probes lazily when modal first opens
+      loadProbes();
     }
 
     function closeNewScanModal() {
       document.getElementById('newScanModal').classList.remove('show');
     }
 
-    // ─── Edit modal ───────────────────────────────────────────────────────────
+    function toggleCategory(category) {
+      const content = document.getElementById(`${category}-content`);
+      const chevron = document.getElementById(`${category}-chevron`);
+      
+      if (content.style.display === 'none') {
+        content.style.display = 'block';
+        chevron.style.transform = 'rotate(0deg)';
+      } else {
+        content.style.display = 'none';
+        chevron.style.transform = 'rotate(-90deg)';
+      }
+    }
+
+    function toggleAllInCategory(category) {
+      const toggleAll = document.getElementById(`${category}-toggle-all`);
+      const isChecked = toggleAll.checked;
+      
+      const tableId = category === 'owasp' ? 'dynamic-policy-table' : 'mitre-policy-table';
+      const table = document.getElementById(tableId);
+      
+      if (table) {
+        const switches = table.querySelectorAll('.t-row-group .switch input[type="checkbox"]');
+        switches.forEach(sw => {
+          sw.checked = isChecked;
+        });
+      }
+      
+      // Auto-expand/collapse based on selection
+      const content = document.getElementById(`${category}-content`);
+      const chevron = document.getElementById(`${category}-chevron`);
+      
+      if (content && chevron) {
+        if (isChecked) {
+          // Auto-expand when selected
+          content.style.display = 'block';
+          chevron.style.transform = 'rotate(0deg)';
+        } else {
+          // Auto-collapse when deselected
+          content.style.display = 'none';
+          chevron.style.transform = 'rotate(-90deg)';
+        }
+      }
+    }
+
+    function updateCategoryToggle(category) {
+      const tableId = category === 'owasp' ? 'dynamic-policy-table' : 'mitre-policy-table';
+      const table = document.getElementById(tableId);
+      const toggleAll = document.getElementById(`${category}-toggle-all`);
+      
+      if (table && toggleAll) {
+        const switches = table.querySelectorAll('.t-row-group .switch input[type="checkbox"]');
+        const allChecked = Array.from(switches).every(sw => sw.checked);
+        const noneChecked = Array.from(switches).every(sw => !sw.checked);
+        
+        toggleAll.checked = allChecked;
+        toggleAll.indeterminate = !allChecked && !noneChecked;
+      }
+    }
+
     let currentEditRow = null;
 
     function openEditModal(btn) {
@@ -1632,7 +2256,7 @@
       }
       closeEditModal();
     }
-    // ─── Start scan ───────────────────────────────────────────────────────────
+
     async function startScan() {
       const btn = document.getElementById('run-scan-btn');
       const originalHTML = btn.innerHTML;
@@ -1660,7 +2284,17 @@
         }
 
         const policies = [];
+        
+        // Collect OWASP policies
         document.querySelectorAll('#dynamic-policy-table .t-row-group').forEach(group => {
+          const toggle = group.querySelector('.switch input');
+          if (!toggle || !toggle.checked) return;
+          const action = group.getAttribute('data-action');
+          if (action) policies.push(action);
+        });
+
+        // Collect MITRE policies
+        document.querySelectorAll('#mitre-policy-table .t-row-group').forEach(group => {
           const toggle = group.querySelector('.switch input');
           if (!toggle || !toggle.checked) return;
           const action = group.getAttribute('data-action');
@@ -1685,7 +2319,6 @@
       }
     }
 
-    // ─── Load latest scan results banner ─────────────────────────────────────
     async function loadLatestScan() {
       try {
         const resp = await fetch(`${API}/session/results`);
@@ -1733,7 +2366,7 @@
         const resp = await fetch(`${API}/session/logs`);
         if (!resp.ok) throw new Error('Failed to fetch logs');
         const { sessions } = await resp.json();
-        
+
         if (!sessions || sessions.length === 0) {
           container.innerHTML = '<div style="padding: 20px; color: var(--muted); text-align: center; grid-column: 1/-1;">No past scans found.</div>';
           return;

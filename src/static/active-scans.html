@@ -139,7 +139,8 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8000';
+    // Use same origin for API calls (works for both local and deployed)
+    const API = window.location.origin;
 
     async function loadActiveScans() {
       const container = document.getElementById('active-scans-grid');

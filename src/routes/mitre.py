@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from fastapi.responses import StreamingResponse
-from probes.execute import run_one_mitre, run_all_mitre
+from probes.execute import run_one_mitre
 from probes.registry import get_mitre_probes
 from pydantic import BaseModel
 import browser as browser_mod
@@ -26,7 +26,9 @@ class AgentStatus(str, Enum):
 
 
 class MitreScanRecord:
-    def __init__(self, scan_id: str, policies: list[str], session_id: Optional[str] = None):
+    def __init__(
+        self, scan_id: str, policies: list[str], session_id: Optional[str] = None
+    ):
         self.scan_id = scan_id
         self.policies = policies
         self.session_id = session_id
@@ -71,6 +73,7 @@ class MitreScanRequest(BaseModel):
 
 # ── Probe catalogue ────────────────────────────────────────────
 
+
 @router.get("/probes")
 async def list_mitre_probes():
     """Return the full MITRE ATLAS probe catalogue (no browser required)."""
@@ -86,6 +89,7 @@ async def list_mitre_probes():
 
 
 # ── Scan lifecycle ─────────────────────────────────────────────
+
 
 @router.get("/scans")
 async def list_scans():
@@ -108,7 +112,9 @@ async def start_mitre_scan(body: MitreScanRequest, background_tasks: BackgroundT
         )
     scan_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    record = MitreScanRecord(scan_id=scan_id, policies=body.policies, session_id=session_id)
+    record = MitreScanRecord(
+        scan_id=scan_id, policies=body.policies, session_id=session_id
+    )
     registry[scan_id] = record
     task = asyncio.ensure_future(_run_mitre_probes(record))
     record.task_handle = task
@@ -125,7 +131,9 @@ async def start_full_mitre_scan(background_tasks: BackgroundTasks):
     all_actions = list(get_mitre_probes().keys())
     scan_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    record = MitreScanRecord(scan_id=scan_id, policies=all_actions, session_id=session_id)
+    record = MitreScanRecord(
+        scan_id=scan_id, policies=all_actions, session_id=session_id
+    )
     registry[scan_id] = record
     task = asyncio.ensure_future(_run_mitre_probes(record))
     record.task_handle = task
@@ -166,7 +174,11 @@ async def stream_scan(scan_id: str):
                 yield f"data: {json.dumps(record.to_dict())}\n\n"
             except Exception:
                 break
-            if record.status in (AgentStatus.DONE, AgentStatus.ERROR, AgentStatus.STOPPED):
+            if record.status in (
+                AgentStatus.DONE,
+                AgentStatus.ERROR,
+                AgentStatus.STOPPED,
+            ):
                 break
             await asyncio.sleep(1)
 

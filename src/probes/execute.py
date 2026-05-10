@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 import browser
-from probes.registry import get_probes, get_mitre_probes
+from probes.registry import get_owasp_probes, get_mitre_probes
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,12 @@ class ProbeSession:
         # Recon artefacts — loaded from disk if available so every probe and
         # the reasoning layer can access target context without extra plumbing.
         self.app_profile: Optional[dict] = _load_session_log("profile", self.session_id)
-        self.vuln_report: Optional[dict] = _load_session_log("vulnerabilities", self.session_id)
-        self.interface_map: Optional[dict] = _load_session_log("interface", self.session_id)
+        self.vuln_report: Optional[dict] = _load_session_log(
+            "vulnerabilities", self.session_id
+        )
+        self.interface_map: Optional[dict] = _load_session_log(
+            "interface", self.session_id
+        )
 
 
 async def reset_chat() -> None:
@@ -51,10 +55,13 @@ async def reset_chat() -> None:
 
 
 async def run_all(session_id: Optional[str] = None) -> dict[str, Any]:
-    probes = get_probes()
+    from probes.registry import get_owasp_probes
+
     all_results = []
 
-    for name, meta in probes.items():
+    # Run OWASP probes
+    owasp_probes = get_owasp_probes()
+    for name, meta in owasp_probes.items():
         probe = meta["instance"]
 
         if probe is None:
@@ -71,7 +78,7 @@ async def run_all(session_id: Optional[str] = None) -> dict[str, Any]:
             )
             continue
 
-        logger.info("[executor] Running: %s", name)
+        logger.info("[executor] Running OWASP: %s", name)
         await reset_chat()
         session = ProbeSession(session_id=session_id)
 
@@ -100,6 +107,54 @@ async def run_all(session_id: Optional[str] = None) -> dict[str, Any]:
                 }
             )
 
+    # Run MITRE probes
+    mitre_probes = get_mitre_probes()
+    for name, meta in mitre_probes.items():
+        probe = meta["instance"]
+
+        if probe is None:
+            logger.warning("[executor] No probe class for MITRE action: %s", name)
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "mitre": meta["mitre"],
+                    "success": False,
+                    "results": [],
+                    "error": f"No handler for action '{name}'",
+                }
+            )
+            continue
+
+        logger.info("[executor] Running MITRE: %s", name)
+        await reset_chat()
+        session = ProbeSession(session_id=session_id)
+
+        try:
+            result = await probe.run(session=session, llm=browser.llm)
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "mitre": meta["mitre"],
+                    "success": result.get("success", False),
+                    "results": result.get("results", []),
+                    "error": result.get("error"),
+                }
+            )
+        except Exception as exc:
+            logger.exception("[executor] MITRE %s raised: %s", name, exc)
+            all_results.append(
+                {
+                    "probe": name,
+                    "action": meta["action"],
+                    "mitre": meta["mitre"],
+                    "success": False,
+                    "results": [],
+                    "error": str(exc),
+                }
+            )
+
     return {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "probes_run": len(all_results),
@@ -108,8 +163,16 @@ async def run_all(session_id: Optional[str] = None) -> dict[str, Any]:
 
 
 async def run_one(action: str, session_id: Optional[str] = None) -> dict[str, Any]:
-    probes = get_probes()
-    meta = next((m for m in probes.values() if m["action"] == action), None)
+
+    owasp_probes = get_owasp_probes()
+    meta = next((m for m in owasp_probes.values() if m["action"] == action), None)
+    probe_type = "owasp"
+
+    # If not found, check MITRE probes
+    if meta is None:
+        mitre_probes = get_mitre_probes()
+        meta = next((m for m in mitre_probes.values() if m["action"] == action), None)
+        probe_type = "mitre"
 
     if meta is None:
         return {"success": False, "error": f"Unknown action: '{action}'"}
@@ -123,24 +186,34 @@ async def run_one(action: str, session_id: Optional[str] = None) -> dict[str, An
 
     try:
         result = await probe.run(session=session, llm=browser.llm)
-        return {
+        response = {
             "probe": action,
-            "owasp": meta["owasp"],
             "session_id": session.session_id,
             "success": result.get("success", False),
             "results": result.get("results", []),
             "error": result.get("error"),
         }
+        # Add the appropriate category field
+        if probe_type == "owasp":
+            response["owasp"] = meta.get("owasp", "")
+        else:
+            response["mitre"] = meta.get("mitre", "")
+        return response
     except Exception as exc:
         logger.exception("[executor] %s raised: %s", action, exc)
-        return {
+        response = {
             "probe": action,
-            "owasp": meta["owasp"],
             "session_id": session.session_id,
             "success": False,
             "results": [],
             "error": str(exc),
         }
+        # Add the appropriate category field
+        if probe_type == "owasp":
+            response["owasp"] = meta.get("owasp", "")
+        else:
+            response["mitre"] = meta.get("mitre", "")
+        return response
 
 
 async def run_all_mitre(session_id: Optional[str] = None) -> dict[str, Any]:
@@ -200,7 +273,9 @@ async def run_all_mitre(session_id: Optional[str] = None) -> dict[str, Any]:
     }
 
 
-async def run_one_mitre(action: str, session_id: Optional[str] = None) -> dict[str, Any]:
+async def run_one_mitre(
+    action: str, session_id: Optional[str] = None
+) -> dict[str, Any]:
     probes = get_mitre_probes()
     meta = next((m for m in probes.values() if m["action"] == action), None)
 

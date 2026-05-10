@@ -13,7 +13,9 @@ import os
 RESULTS_FILE = "results.jsonl"
 file_lock = asyncio.Lock()
 
-reasoning_llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY"))
+reasoning_llm = ChatGroq(
+    model="llama-3.3-70b-versatile", api_key=os.getenv("GROQ_API_KEY")
+)
 
 PLANNER_SYSTEM = """You are an AI red-team planner selecting the next attack probe to run.
 
@@ -138,9 +140,7 @@ async def select_attack(
     return fallback, {"reason": "parse fallback", "confidence": 0.0}
 
 
-async def run_probe(
-    probe_name: str, run_id: str, goal: str = ""
-) -> dict:
+async def run_probe(probe_name: str, run_id: str, goal: str = "") -> dict:
     registry = get_probes()
     probe = registry[probe_name]["instance"]
 

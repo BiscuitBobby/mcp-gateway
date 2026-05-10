@@ -1,3 +1,5 @@
+import re
+import wave
 import json
 import logging
 import asyncio
@@ -50,7 +52,9 @@ def _build_payload_file(payload_spec: dict) -> Optional[Path]:
         return None
 
 
-async def execute_prompt(session, llm, prompt: str, max_steps: int = 10) -> Optional[str]:
+async def execute_prompt(
+    session, llm, prompt: str, max_steps: int = 10
+) -> Optional[str]:
     """Execute a single prompt using the browser-use Agent."""
     agent = Agent(
         llm=llm,
@@ -173,9 +177,7 @@ def get_probe_totals() -> Dict[str, int]:
     Dynamically calculate the total number of probes for each OWASP category
     based on the registered probes and their prompt files.
     """
-    from probes.registry import get_probes
-
-    probes = get_probes()
+    from probes.registry import get_owasp_probes, get_mitre_probes
 
     # Map from probe action name to OWASP short code (matching dashboard.html)
     owasp_map = {
@@ -205,23 +207,15 @@ def get_probe_totals() -> Dict[str, int]:
     totals = {}
     base_path = Path(__file__).parent
 
-    for key, info in probes.items():
+    # Count OWASP probes
+    for key, info in get_owasp_probes().items():
         cat = owasp_map.get(key)
-        if cat:
-            subfolder = "owasp"
-        else:
-            cat = mitre_map.get(key)
-            subfolder = "mitre"
         if not cat:
             continue
-
         filename = info.get("prompts_file")
         if not filename:
             continue
-
-        # The prompts file is relative to the probe's directory under owasp/ or mitre/
-        prompts_path = base_path / subfolder / key / filename
-
+        prompts_path = base_path / "owasp" / key / filename
         count = 0
         if prompts_path.exists():
             try:
@@ -229,12 +223,122 @@ def get_probe_totals() -> Dict[str, int]:
                 if isinstance(data, list):
                     count = len(data)
             except Exception:
-                # If file exists but is invalid JSON or not a list, count is 0
                 pass
+        totals[cat] = totals.get(cat, 0) + count
 
+    # Count MITRE probes
+    for key, info in get_mitre_probes().items():
+        cat = mitre_map.get(key)
+        if not cat:
+            continue
+        # MITRE probes may not have prompts_file in registry, use config
+        from probes.probe_configs import MITRE_PROBES
+
+        config = MITRE_PROBES.get(key, {})
+        dir_name = config.get("dir_name", key)
+        filename = config.get("output_file", "")
+        if not filename:
+            continue
+        prompts_path = base_path / "mitre" / dir_name / filename
+        count = 0
+        if prompts_path.exists():
+            try:
+                data = json.loads(prompts_path.read_text(encoding="utf-8"))
+                if isinstance(data, list):
+                    count = len(data)
+            except Exception:
+                pass
         totals[cat] = totals.get(cat, 0) + count
 
     return totals
 
 
 default_logger = AttackLogger()
+
+
+# ============================================================================
+# Audio Generation Utilities
+# ============================================================================
+
+try:
+    from piper import PiperVoice
+except ImportError:
+    logger.error("piper-tts not installed. Audio generation will be disabled.")
+    PiperVoice = None
+
+
+def sanitize(name: str) -> str:
+    """
+    Sanitize a string for use in filenames.
+
+    Args:
+        name: The string to sanitize
+
+    Returns:
+        A filesystem-safe string (lowercase, alphanumeric + underscores/hyphens)
+    """
+    name = name.lower()
+    name = re.sub(r"[^\w\s-]", "", name)
+    name = re.sub(r"\s+", "_", name.strip())
+    return name[:60]
+
+
+def generate_audio(
+    prompts: List[Dict[str, Any]], output_dir: Path, voice: str = "danny"
+) -> List[Dict[str, Any]]:
+    """
+    Generate a .wav file for every prompt in the list.
+
+    Args:
+        prompts: List of prompt dicts (must have "prompt" and optionally "category" keys).
+        output_dir: Directory where audio files will be saved.
+        voice: Voice model name or path to .onnx model file (default: "danny").
+               If just a name is provided, looks for model in src/models/<voice>/en_US-<voice>-low.onnx
+
+    Returns:
+        The same list with "audio_file" added/updated on each item.
+    """
+    if PiperVoice is None:
+        logger.warning(
+            "[audio_generator] PiperVoice not available. Skipping audio generation."
+        )
+        return prompts
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Resolve model path
+    if voice.endswith(".onnx"):
+        model_path = voice
+    else:
+        # Go up from probes/ to src/ then to models/
+        models_dir = Path(__file__).parent.parent / "models" / voice
+        model_path = str(models_dir / f"en_US-{voice}-low.onnx")
+
+    # Load voice model
+    try:
+        piper_voice = PiperVoice.load(model_path)
+    except Exception:
+        logger.exception("[audio_generator] Failed to load voice model: %s", model_path)
+        return prompts
+
+    # Generate audio for each prompt
+    for idx, item in enumerate(prompts):
+        item.pop("audio_file", None)
+
+        category = item.get("category", f"prompt_{idx}")
+        audio_path = output_dir / f"{idx:02d}_{sanitize(category)}.wav"
+
+        try:
+            with wave.open(str(audio_path), "wb") as wav_file:
+                piper_voice.synthesize_wav(item["prompt"], wav_file)
+
+            item["audio_file"] = str(audio_path)
+            logger.info("[audio_generator] Saved: %s", audio_path)
+        except Exception:
+            logger.exception(
+                "[audio_generator] Failed to generate audio for index %d (%s)",
+                idx,
+                category,
+            )
+
+    return prompts

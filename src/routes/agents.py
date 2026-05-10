@@ -1,15 +1,20 @@
-from fastapi import APIRouter, HTTPException, BackgroundTasks
+from fastapi import (
+    APIRouter,
+    HTTPException,
+    BackgroundTasks,
+)
 from fastapi.responses import StreamingResponse
+from datetime import datetime, timezone
 from probes.execute import run_one
 from pydantic import BaseModel
 import browser as browser_mod
-from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum
 import asyncio
+import logging
 import uuid
 import json
-import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -37,11 +42,21 @@ class AgentRecord:
         self.task_handle: Optional[asyncio.Task] = None
 
     def to_dict(self):
+        raw_cdp = getattr(browser_mod.instance, "cdp_url", None)
+        # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
+        if raw_cdp:
+            import re
+
+            raw_cdp = re.sub(
+                r"^ws://(?:localhost|127\.0\.0\.1):(\d+)",
+                r"/session/cdp-proxy/\1",
+                raw_cdp,
+            )
         return {
             "agent_id": self.agent_id,
             "session_id": self.session_id,
             "policies": self.policies,
-            "cdp_url": getattr(browser_mod.instance, "cdp_url", None),
+            "cdp_url": raw_cdp,
             "status": self.status,
             "result": self.result,
             "error": self.error,
@@ -148,3 +163,15 @@ async def delete_agent(agent_id: str):
     if not record:
         raise HTTPException(404, "Agent not found")
     return {"agent_id": agent_id, "message": "removed"}
+
+
+@router.get("/cdp-url")
+async def get_cdp_url():
+    """Get the Chrome DevTools Protocol WebSocket URL for the current browser session."""
+    cdp_url = getattr(browser_mod.instance, "cdp_url", None)
+    if cdp_url:
+        # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
+        cdp_url = re.sub(
+            r"^ws://(?:localhost|127\.0\.0\.1):(\d+)", r"/session/cdp-proxy/\1", cdp_url
+        )
+    return {"cdp_url": cdp_url}

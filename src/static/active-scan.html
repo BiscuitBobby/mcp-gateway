@@ -273,8 +273,15 @@
     }
 
     @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .split-view {
@@ -1452,7 +1459,7 @@
         <header>
           <div class="breadcrumbs">
             <a href="index.html">Home</a><span class="slash">/</span>
-            <a href="new-scan.html">New Scan</a><span class="slash">/</span>
+            <a href="index.html">New Scan</a><span class="slash">/</span>
             <span style="color:var(--text);">Active Scan</span>
           </div>
           <div class="header-actions">
@@ -1600,7 +1607,8 @@
   </div>
 
   <script>
-    const API = 'http://localhost:8000';
+    // Use same origin for API calls (works for both local and deployed)
+    const API = window.location.origin;
     const urlParams = new URLSearchParams(window.location.search);
     const agentId = urlParams.get('agent_id');
     const targetUrl = urlParams.get('url');
@@ -1934,19 +1942,31 @@
 
       let _cdpTimer = null;
       async function pollCdp() {
-        try { const r = await fetch(`${API}/session/cdp-url`); const d = await r.json(); if (d.cdp_url && d.cdp_url !== bpConnectedUrl) { bpConnectedUrl = d.cdp_url; bpConnect(d.cdp_url); return; } } catch (e) { }
+        try {
+          const r = await fetch(`${API}/session/cdp-url`);
+          const d = await r.json();
+          if (d.cdp_url && d.cdp_url !== bpConnectedUrl) {
+            bpConnectedUrl = d.cdp_url;
+            // Convert server-relative path to a full WebSocket URL using current page's host
+            const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsHost = window.location.host;
+            const fullWsUrl = `${wsProto}//${wsHost}${d.cdp_url}`;
+            bpConnect(fullWsUrl);
+            return;
+          }
+        } catch (e) { }
         _cdpTimer = setTimeout(pollCdp, 1200);
       }
       pollCdp();
       window._stopCdpPoll = () => clearTimeout(_cdpTimer);
     }
 
-    window.toggleScanDropdown = function(e) {
+    window.toggleScanDropdown = function (e) {
       e.stopPropagation();
       document.getElementById('scanDropdown').classList.toggle('show');
     };
 
-    window.onclick = function(event) {
+    window.onclick = function (event) {
       if (!event.target.matches('.split-btn-drop') && !event.target.closest('.split-btn-drop')) {
         const dropdowns = document.getElementsByClassName("dropdown-content");
         for (let i = 0; i < dropdowns.length; i++) {
@@ -1958,7 +1978,7 @@
       }
     };
 
-    window.toggleDiscoveryButtons = function(disabled) {
+    window.toggleDiscoveryButtons = function (disabled) {
       const db = document.getElementById('discoverToolsBtn');
       if (db && db.textContent.includes('Discover')) db.disabled = disabled;
       document.querySelectorAll('#topologyModalOverlay button').forEach(b => {
@@ -1973,12 +1993,26 @@
       try {
         const cr = await fetch(`${API}/session/confirm`, { method: 'POST' });
         if (!cr.ok) throw new Error('confirm: ' + await cr.text());
-        
+
         if (!skipProfiling) {
           addMessage('<strong>Auth saved.</strong> Mapping interface...');
           btn.textContent = 'Mapping interface...';
-          const mapRes = await fetch(`${API}/session/map-interface`, { method: 'POST' });
-          if (!mapRes.ok) throw new Error('map-interface: ' + await mapRes.text());
+          const mapStartRes = await fetch(`${API}/session/map-interface`, { method: 'POST' });
+          if (!mapStartRes.ok) throw new Error('map-interface: ' + await mapStartRes.text());
+          const mapAgent = await mapStartRes.json();
+
+          // Poll until map-interface completes (avoids 524 proxy timeout)
+          await (async () => {
+            while (true) {
+              await new Promise(r => setTimeout(r, 3000));
+              const poll = await fetch(`${API}/session/map-interface/${mapAgent.agent_id}`);
+              if (!poll.ok) throw new Error('map-interface poll: ' + await poll.text());
+              const state = await poll.json();
+              if (state.status === 'done') break;
+              if (state.status === 'error') throw new Error('map-interface: ' + (state.error || 'unknown error'));
+              if (state.status === 'stopped') throw new Error('map-interface was stopped');
+            }
+          })();
 
           addMessage('<strong>Interface mapping complete.</strong> Profiling target application…');
           btn.textContent = 'Profiling target…';
@@ -2019,14 +2053,14 @@
           if (!ar.ok) throw new Error('scan: ' + await ar.text());
           agent = await ar.json();
         }
-        
+
         window._stopCdpPoll?.();
         addMessage('<strong>Profiling & Scan Initialized.</strong> Switching to live stream…', 'success');
-        
+
         const p = new URLSearchParams({ agent_id: agent.agent_id, url: targetUrl, name: targetName });
         const newUrl = `${window.location.pathname}?${p.toString()}`;
         window.history.pushState({ agent_id: agent.agent_id }, '', newUrl);
-        
+
         runningMode(agent.agent_id);
       } catch (err) {
         addMessage(`<strong>Error:</strong> ${err.message}`, 'critical');
@@ -2034,16 +2068,25 @@
       }
     };
 
+    function cdpUrlToWs(cdpUrl) {
+      if (!cdpUrl) return null;
+      if (cdpUrl.startsWith('ws://') || cdpUrl.startsWith('wss://')) return cdpUrl;
+      // Server-relative path — convert to full WebSocket URL using current page's host
+      const wsProto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.host;
+      return `${wsProto}//${wsHost}${cdpUrl}`;
+    }
+
     async function runningMode(agId) {
       let lastStatus = null;
-      try { const d = await fetch(`${API}/session/cdp-url`).then(r => r.json()); if (d.cdp_url) { bpConnectedUrl = d.cdp_url; bpConnect(d.cdp_url); } } catch (e) { }
+      try { const d = await fetch(`${API}/session/cdp-url`).then(r => r.json()); if (d.cdp_url) { bpConnectedUrl = d.cdp_url; bpConnect(cdpUrlToWs(d.cdp_url)); } } catch (e) { }
       addMessage('<strong>Agent stream connected.</strong> Watching for activity…');
       setTyping(true);
       const sse = new EventSource(`${API}/agents/${agId}/stream`);
       sse.onmessage = function (event) {
         const data = JSON.parse(event.data);
         if (data.session_id) currentSessionId = data.session_id;
-        if (data.cdp_url && data.cdp_url !== bpConnectedUrl) { bpConnectedUrl = data.cdp_url; bpConnect(data.cdp_url); }
+        if (data.cdp_url && data.cdp_url !== bpConnectedUrl) { bpConnectedUrl = data.cdp_url; bpConnect(cdpUrlToWs(data.cdp_url)); }
         if (data.status !== lastStatus) {
           const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸', stopped: '⏹' };
           addMessage(`<strong>Status:</strong> ${icons[data.status] || ''} ${data.status}`);

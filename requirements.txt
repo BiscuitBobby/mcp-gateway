@@ -1,9 +1,16 @@
 fastapi
+uvicorn[standard]
+websockets
+
 browser-use
 playwright
+
 groq
 langchain-groq
+
 pydantic
-uvicorn
+
 fpdf
+
 ruff
+piper-tts

@@ -11,7 +11,7 @@ from schemas import (
     VulnerabilityReport,
 )
 from recon.interface_mapping import map_interface
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from probes.execute import run_all, run_one
 from probes.generate import generate_all
 from pydantic import BaseModel, HttpUrl
@@ -21,10 +21,13 @@ from recon.agent import run_goal
 from browser_use import Agent
 from routes.agents import AgentRecord, AgentStatus, registry
 from pathlib import Path
+from urllib.parse import urlparse
+import websockets
 import browser
 import asyncio
 import json
 import uuid
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +92,110 @@ async def start(body: StartRequest):
 
 @router.get("/cdp-url")
 async def get_cdp_url():
-    return {"cdp_url": getattr(browser.instance, "cdp_url", None)}
+    """Get the Chrome DevTools Protocol WebSocket URL for the current browser session."""
+    cdp_url = getattr(browser.instance, "cdp_url", None)
+    if cdp_url:
+        # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
+        cdp_url = re.sub(
+            r"^ws://(?:localhost|127\.0\.0\.1):(\d+)", r"/session/cdp-proxy/\1", cdp_url
+        )
+    return {"cdp_url": cdp_url}
+
+
+@router.websocket("/cdp-proxy/{path:path}")
+async def cdp_proxy(client_ws: WebSocket, path: str):
+    """Proxy WebSocket connections to the local Chromium CDP endpoint.
+    The path is expected to be: <port>/devtools/...
+    e.g. /session/cdp-proxy/9222/devtools/browser/<id>
+    """
+    await client_ws.accept()
+    cdp_url = getattr(browser.instance, "cdp_url", None)
+    if not cdp_url:
+        await client_ws.close(code=1011, reason="No browser session active")
+        return
+
+    # Validate that the requested port matches the actual CDP port (prevent SSRF)
+    parsed = urlparse(cdp_url)
+    expected_port = str(parsed.port) if parsed.port else None
+    request_port = path.split("/", 1)[0]
+    if not expected_port or request_port != expected_port:
+        await client_ws.close(code=1008, reason="Invalid CDP target")
+        return
+
+    target_url = f"ws://localhost:{path}"
+    try:
+        async with websockets.connect(
+            target_url,
+            open_timeout=10,
+            max_size=16 * 1024 * 1024,  # 16 MB — CDP can send large payloads
+        ) as cdp_ws:
+
+            async def client_to_cdp():
+                try:
+                    while True:
+                        msg = await client_ws.receive()
+                        if msg.get("text") is not None:
+                            await cdp_ws.send(msg["text"])
+                        elif msg.get("bytes") is not None:
+                            await cdp_ws.send(msg["bytes"])
+                        # {"type": "websocket.disconnect"} is handled by
+                        # FastAPI raising WebSocketDisconnect before we get here
+                except WebSocketDisconnect:
+                    logger.debug("Client disconnected from CDP proxy")
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    logger.warning(f"client→CDP relay error: {e}")
+
+            async def cdp_to_client():
+                try:
+                    async for message in cdp_ws:
+                        if isinstance(message, str):
+                            await client_ws.send_text(message)
+                        else:
+                            await client_ws.send_bytes(message)
+                except websockets.exceptions.ConnectionClosed:
+                    logger.debug("CDP WebSocket closed")
+                except asyncio.CancelledError:
+                    raise
+                except Exception as e:
+                    logger.warning(f"CDP→client relay error: {e}")
+
+            # Run both directions; when either finishes, cancel the other
+            tasks = [
+                asyncio.create_task(client_to_cdp(), name="client→cdp"),
+                asyncio.create_task(cdp_to_client(), name="cdp→client"),
+            ]
+            try:
+                _done, pending = await asyncio.wait(
+                    tasks, return_when=asyncio.FIRST_COMPLETED
+                )
+            finally:
+                for t in tasks:
+                    t.cancel()
+                await asyncio.gather(*tasks, return_exceptions=True)
+
+    except (
+        websockets.exceptions.InvalidURI,
+        websockets.exceptions.InvalidHandshake,
+    ) as e:
+        logger.warning(f"CDP proxy connection refused: {e}")
+        await _safe_close(client_ws, f"Cannot reach CDP: {e}")
+    except asyncio.TimeoutError:
+        logger.warning("CDP proxy upstream connection timed out")
+        await _safe_close(client_ws, "CDP connection timed out")
+    except Exception as e:
+        logger.warning(f"CDP proxy error: {e}")
+        await _safe_close(client_ws, str(e))
+
+
+async def _safe_close(ws: WebSocket, reason: str, code: int = 1011):
+    """Close a WebSocket, truncating the reason to the 123-byte protocol limit."""
+    try:
+        reason_bytes = reason.encode("utf-8")[:123]
+        await ws.close(code=code, reason=reason_bytes.decode("utf-8", errors="ignore"))
+    except Exception:
+        pass
 
 
 @router.post("/confirm")
@@ -125,9 +231,39 @@ async def find_chat():
 async def run_interface_mapping():
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    result = await map_interface()
-    save_recon_data("interface", result)
-    return safe_return(result)
+
+    agent_id = str(uuid.uuid4())
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    record = AgentRecord(
+        agent_id=agent_id, policies=["map-interface"], session_id=session_id
+    )
+    registry[agent_id] = record
+
+    async def bg_task():
+        record.status = AgentStatus.RUNNING
+        try:
+            result = await map_interface()
+            save_recon_data("interface", result)
+            record.result = json.dumps(safe_return(result))
+            record.status = AgentStatus.DONE
+        except asyncio.CancelledError:
+            record.status = AgentStatus.STOPPED
+            logger.info("Agent %s cancelled", agent_id)
+        except Exception as exc:
+            record.error = str(exc)
+            record.status = AgentStatus.ERROR
+
+    task = asyncio.ensure_future(bg_task())
+    record.task_handle = task
+    return record.to_dict()
+
+
+@router.get("/map-interface/{agent_id}")
+async def get_map_interface_status(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Not Found")
+    return record.to_dict()
 
 
 @router.post("/profile")

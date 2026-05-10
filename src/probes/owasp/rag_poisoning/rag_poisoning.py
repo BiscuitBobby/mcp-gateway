@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from browser_use import Agent
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
-from probes.owasp.rag_poisoning.generate_prompts import main as generate_prompts
+from probes.prompt_generator import generate_prompts as _generate_prompts
 from probes.owasp.rag_poisoning.generate_documents import main as generate_documents
 from probes.utils import load_prompts, default_logger
 
@@ -20,7 +20,13 @@ class RagPoisoningProbe(AttackProbe):
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_documents(goal=goal)
-        generate_prompts(goal=goal)
+        _generate_prompts(
+            "rag_poisoning",
+            goal=goal,
+            app_profile=getattr(session, "app_profile", None),
+            interface_map=getattr(session, "interface_map", None),
+            vulnerabilities=getattr(session, "vuln_report", None),
+        )
         prompts = load_prompts(PROMPTS_FILE)
         results: List[Dict[str, Any]] = []
 

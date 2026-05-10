@@ -158,7 +158,13 @@ def write_csv(payload: DocumentPayload) -> Path:
 
 def write_pdf(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.pdf"
-    paragraphs = [p for p in inject(payload.visible_content, payload.hidden_instruction).split("\n\n") if p.strip()]
+    paragraphs = [
+        p
+        for p in inject(payload.visible_content, payload.hidden_instruction).split(
+            "\n\n"
+        )
+        if p.strip()
+    ]
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", size=12)
@@ -178,7 +184,13 @@ def write_pdf(payload: DocumentPayload) -> Path:
 
 def write_docx(payload: DocumentPayload) -> Path:
     path = OUTPUT_DIR / f"{payload.name}.docx"
-    paragraphs = [p for p in inject(payload.visible_content, payload.hidden_instruction).split("\n\n") if p.strip()]
+    paragraphs = [
+        p
+        for p in inject(payload.visible_content, payload.hidden_instruction).split(
+            "\n\n"
+        )
+        if p.strip()
+    ]
     doc = Document()
     for para in paragraphs:
         p = doc.add_paragraph(para)

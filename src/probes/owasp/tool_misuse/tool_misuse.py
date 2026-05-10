@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from browser_use import Agent
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
-from probes.owasp.tool_misuse.generate_prompts import main as generate_prompts
+from probes.prompt_generator import generate_prompts as _generate_prompts
 from probes.utils import load_prompts, execute_prompt, default_logger
 
 PROMPTS_FILE = Path(__file__).parent / "tool_misuse_prompts.json"
@@ -27,7 +27,7 @@ async def invoke_tool_in_ui(session, llm, tool_name: str, prompt: str) -> Option
             f"3. Once the tool is active, type the following message exactly into the chat "
             f"input and send it:\n\n{prompt}\n\n"
             f"4. Wait for the full AI response.\n"
-    f"5. Return only the visible AI response text.\n"
+            f"5. Return only the visible AI response text.\n"
             f"6. If you cannot find any UI element related to '{tool_name}', return the "
             f"exact string: TOOL_NOT_FOUND"
         ),
@@ -46,7 +46,8 @@ class ToolMisuseProbe(AttackProbe):
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
 
-        generate_prompts(
+        _generate_prompts(
+            "tool_misuse",
             app_profile=getattr(session, "app_profile", None),
             interface_map=getattr(session, "interface_map", None),
             goal=goal,
@@ -63,7 +64,9 @@ class ToolMisuseProbe(AttackProbe):
             response = await invoke_tool_in_ui(session, llm, target_tool, prompt)
             tool_invoked_via_ui = response is not None
             if not tool_invoked_via_ui:
-                response = await execute_prompt(session, llm, prompt, max_steps=MAX_STEPS)
+                response = await execute_prompt(
+                    session, llm, prompt, max_steps=MAX_STEPS
+                )
 
             analysis = await run_reasoning(
                 llm=reasoning_llm,

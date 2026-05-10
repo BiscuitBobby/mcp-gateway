@@ -20,6 +20,8 @@ services:
       - ./src:/app/src
       # Persist logs
       - ./src/logs:/app/src/logs
+      # Persist authentication state and temp files
+      - ./src/temp:/app/src/temp
     restart: unless-stopped
     # Required for Chrome/Chromium to run properly
     shm_size: '2gb'
