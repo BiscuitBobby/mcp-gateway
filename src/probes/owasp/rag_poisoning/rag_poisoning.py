@@ -14,7 +14,7 @@ DOCS_DIR = Path(__file__).parent / "poisoned_docs"
 MAX_STEPS = 15
 
 
-class RagPoisoningProbe(AttackProbe):
+class RagPoisoning(AttackProbe):
     name = "rag_poisoning"
     owasp_category = "LLM09: Over-reliance (Indirect via RAG)"
 

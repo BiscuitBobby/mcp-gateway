@@ -50,6 +50,10 @@ def generate_prompts(
     schema_class = config["schema"]
     json_template = config["json_template"]
     output_file = _output_path(probe_name, config)
+    
+    print(f"[DEBUG] Generating prompts for probe: {probe_name}")
+    print(f"[DEBUG] Number of categories: {len(categories)}")
+    print(f"[DEBUG] Categories: {categories}")
 
     # Build the system prompt
     system_preamble = config.get(
@@ -104,11 +108,16 @@ def generate_prompts(
     # Fix common JSON errors: trailing commas before closing brackets/braces
     raw = re.sub(r",(\s*[}\]])", r"\1", raw)
 
+    print(f"[DEBUG] Raw LLM output length: {len(raw)} characters")
+    print(f"[DEBUG] Raw LLM output (first 500 chars): {raw[:500]}")
     logger.info("Raw %s model output: %s", probe_name, raw)
 
     # Parse & validate
     try:
         data = json.loads(raw)
+        print(f"[DEBUG] Parsed JSON type: {type(data)}")
+        print(f"[DEBUG] Parsed JSON keys: {data.keys() if isinstance(data, dict) else 'N/A'}")
+        
         if isinstance(data, list):
             items = []
             for entry in data:
@@ -117,15 +126,24 @@ def generate_prompts(
                 elif isinstance(entry, dict) and "category" in entry:
                     items.append(entry)
             data = {"prompts": items}
+        
+        print(f"[DEBUG] Data before validation: {len(data.get('prompts', []))} prompts")
         parsed = schema_class.model_validate(data)
         result = [p.model_dump() for p in parsed.prompts]
-    except Exception:
+        print(f"[DEBUG] Successfully parsed {len(result)} prompts")
+        print(f"[DEBUG] Expected {len(categories)} prompts, got {len(result)} prompts")
+        
+        if len(result) != len(categories):
+            print(f"[WARNING] Prompt count mismatch! Expected {len(categories)}, got {len(result)}")
+    except Exception as e:
+        print(f"[DEBUG] Failed to parse output: {e}")
         logger.exception("Failed to parse %s output: %s", probe_name, raw)
         result = []
 
     # Save prompts
     output_file.parent.mkdir(parents=True, exist_ok=True)
     output_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    print(f"[DEBUG] Saved {len(result)} prompts to {output_file}")
 
     # Post-generation media hooks
     if result and config.get("has_audio"):

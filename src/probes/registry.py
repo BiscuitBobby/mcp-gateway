@@ -1,61 +1,60 @@
-from pathlib import Path
-
 from dotenv import load_dotenv
-
-from probes.base import StandardProbe
 from probes.probe_configs import OWASP_PROBES, MITRE_PROBES
 
-# Custom probes with unique logic — kept as standalone files
-from probes.owasp.rag_poisoning.rag_poisoning import RagPoisoningProbe
-from probes.owasp.tool_misuse.tool_misuse import ToolMisuseProbe
+# OWASP probes
+from probes.owasp.prompt_injection.prompt_injection import PromptInjection
+from probes.owasp.sensitive_information_disclosure.sensitive_information_disclosure import (
+    SensitiveInformationDisclosure,
+)
+from probes.owasp.data_exfiltration.data_exfiltration import DataExfiltration
+from probes.owasp.excessive_agency.excessive_agency import ExcessiveAgency
+from probes.owasp.improper_output_handling.improper_output_handling import (
+    ImproperOutputHandling,
+)
+from probes.owasp.misinformation.misinformation import Misinformation
+from probes.owasp.rag_poisoning.rag_poisoning import RagPoisoning
+from probes.owasp.tool_misuse.tool_misuse import ToolMisuse
+
+# MITRE probes
+from probes.mitre.ai_attack_staging.attack_staging import AttackStaging
+from probes.mitre.collection.collection import Collection
+from probes.mitre.credential_extraction.credential_extraction import (
+    CredentialExtraction,
+)
+from probes.mitre.discovery.discovery import Discovery
+from probes.mitre.evasion_techniques.evasion_techniques import EvasionTechniques
+from probes.mitre.impact.impact import Impact
+from probes.mitre.lateral_movement.lateral_movement import LateralMovement
+from probes.mitre.reconnaissance.reconnaissance import Reconnaissance
+from probes.mitre.user_execution.user_execution import UserExecution
 
 load_dotenv()
 
-# ── Probe directory roots ─────────────────────────────────────
+# ── Probe instance mapping ────────────────────────────────────
 
-_PROBES_DIR = Path(__file__).parent
-_OWASP_DIR = _PROBES_DIR / "owasp"
-_MITRE_DIR = _PROBES_DIR / "mitre"
+# Map probe names to their class instances
+OWASP_PROBE_INSTANCES = {
+    "prompt_injection": PromptInjection(),
+    "sensitive_information_disclosure": SensitiveInformationDisclosure(),
+    "data_exfiltration": DataExfiltration(),
+    "excessive_agency": ExcessiveAgency(),
+    "improper_output_handling": ImproperOutputHandling(),
+    "misinformation": Misinformation(),
+    "rag_poisoning": RagPoisoning(),
+    "tool_misuse": ToolMisuse(),
+}
 
-# ── Dynamic StandardProbe factories ───────────────────────────
-
-
-def _make_owasp_probe(name: str, config: dict) -> StandardProbe:
-    """Create a StandardProbe instance for an OWASP probe."""
-    probe_dir = _OWASP_DIR / name
-    probe_dir.mkdir(parents=True, exist_ok=True)
-
-    cls = type(
-        f"{name.title().replace('_', '')}Probe",
-        (StandardProbe,),
-        {
-            "name": name,
-            "owasp_category": config["owasp_category"],
-            "record_type": config["record_type"],
-            "prompts_file": probe_dir / config["output_file"],
-        },
-    )
-    return cls()
-
-
-def _make_mitre_probe(name: str, config: dict) -> StandardProbe:
-    """Create a StandardProbe instance for a MITRE probe."""
-    dir_name = config.get("dir_name", name)
-    probe_dir = _MITRE_DIR / dir_name
-    probe_dir.mkdir(parents=True, exist_ok=True)
-
-    cls = type(
-        f"{name.title().replace('_', '')}Probe",
-        (StandardProbe,),
-        {
-            "name": name,
-            "mitre_category": config["mitre_category"],
-            "record_type": config["record_type"],
-            "prompts_file": probe_dir / config["output_file"],
-        },
-    )
-    return cls()
-
+MITRE_PROBE_INSTANCES = {
+    "attack_staging": AttackStaging(),
+    "collection": Collection(),
+    "credential_extraction": CredentialExtraction(),
+    "discovery": Discovery(),
+    "evasion_techniques": EvasionTechniques(),
+    "impact": Impact(),
+    "lateral_movement": LateralMovement(),
+    "reconnaissance": Reconnaissance(),
+    "user_execution": UserExecution(),
+}
 
 # ── Registries ─────────────────────────────────────────────────
 
@@ -71,16 +70,9 @@ def get_owasp_probes():
     _owasp_registry = {}
 
     for name, config in OWASP_PROBES.items():
-        if config.get("custom_probe"):
-            # Custom probes are imported directly
-            if name == "rag_poisoning":
-                instance = RagPoisoningProbe()
-            elif name == "tool_misuse":
-                instance = ToolMisuseProbe()
-            else:
-                continue
-        else:
-            instance = _make_owasp_probe(name, config)
+        instance = OWASP_PROBE_INSTANCES.get(name)
+        if instance is None:
+            continue
 
         _owasp_registry[name] = {
             "action": name,
@@ -101,7 +93,9 @@ def get_mitre_probes():
     _mitre_registry = {}
 
     for name, config in MITRE_PROBES.items():
-        instance = _make_mitre_probe(name, config)
+        instance = MITRE_PROBE_INSTANCES.get(name)
+        if instance is None:
+            continue
 
         _mitre_registry[name] = {
             "action": name,

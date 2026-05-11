@@ -40,7 +40,7 @@ async def invoke_tool_in_ui(session, llm, tool_name: str, prompt: str) -> Option
     return result
 
 
-class ToolMisuseProbe(AttackProbe):
+class ToolMisuse(AttackProbe):
     name = "tool_misuse"
     owasp_category = "LLM08: Excessive Agency"
 
