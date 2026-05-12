@@ -1,20 +1,15 @@
 import csv
 import json
-import os
 from pathlib import Path
 from typing import List
 
-import dotenv
 from fpdf import FPDF
 from docx import Document
 from docx.shared import RGBColor, Pt
-from groq import Groq
+from models.llm_clients import groq_client, GROQ_DOCUMENT_MODEL
 from schemas import DocumentPayload, DocumentPayloadList
 
-dotenv.load_dotenv()
-
 OUTPUT_DIR = Path(__file__).parent / "poisoned_docs"
-MODEL_NAME = "qwen/qwen3-32b"
 
 ATTACK_CATEGORIES = [
     "Direct corpus poisoning",
@@ -58,10 +53,8 @@ def inject(visible: str, instruction: str) -> str:
 def generate_payloads(
     app_profile=None, interface_map=None, goal=None, vulnerabilities=None
 ) -> List[DocumentPayload]:
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-    completion = client.chat.completions.create(
-        model=MODEL_NAME,
+    completion = groq_client.chat.completions.create(
+        model=GROQ_DOCUMENT_MODEL,
         reasoning_format="hidden",
         messages=[
             {

@@ -1,20 +1,13 @@
 import json
 import logging
-import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-import dotenv
-from groq import Groq
-
+from models.llm_clients import groq_client, GROQ_PROMPT_MODEL
 from probes.probe_configs import get_config
 
-dotenv.load_dotenv()
-
 logger = logging.getLogger(__name__)
-
-MODEL_NAME = "qwen/qwen3-32b"
 
 # ── Paths ──────────────────────────────────────────────────────
 
@@ -93,9 +86,8 @@ def generate_prompts(
         messages.append({"role": "user", "content": config["user_message"]})
 
     # Call LLM
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    completion = client.chat.completions.create(
-        model=MODEL_NAME,
+    completion = groq_client.chat.completions.create(
+        model=GROQ_PROMPT_MODEL,
         reasoning_format="hidden",
         messages=messages,
         response_format={"type": "json_object"},

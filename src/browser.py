@@ -72,29 +72,13 @@
 #     ready = False
 #     await instance.stop()
 
-from browser_use import BrowserSession, ChatOpenAI
-from dotenv import load_dotenv
+from browser_use import BrowserSession
+from models.llm_clients import browser_llm, BROWSER_STORAGE_STATE
 from pathlib import Path
 import json
-import os
 
-load_dotenv()
-
-api_key = os.getenv("NVIDIA_API_KEY")
-if not api_key:
-    raise EnvironmentError("NVIDIA_API_KEY is not set")
-
-# Use src/temp directory for storage state
-STORAGE_DIR = Path(__file__).parent / "temp"
-STORAGE_DIR.mkdir(exist_ok=True)  # Ensure directory exists
-STORAGE_STATE = str(STORAGE_DIR / "auth.json")
-
-llm = ChatOpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=api_key,
-    model="meta/llama-4-maverick-17b-128e-instruct",
-    temperature=0.2,
-)
+# Export llm for backward compatibility
+llm = browser_llm
 
 ready = False
 target_url = ""
@@ -132,15 +116,15 @@ async def start(url: str, name: str = ""):
 
     # Check if we have a saved auth state
     storage_state_arg = None
-    if Path(STORAGE_STATE).exists():
+    if Path(BROWSER_STORAGE_STATE).exists():
         try:
-            with open(STORAGE_STATE, "r") as f:
+            with open(BROWSER_STORAGE_STATE, "r") as f:
                 state = json.load(f)
                 if state.get("cookies"):
                     print(
                         f"✓ Loading saved authentication state with {len(state['cookies'])} cookies"
                     )
-                    storage_state_arg = STORAGE_STATE
+                    storage_state_arg = BROWSER_STORAGE_STATE
                 else:
                     print("⚠ Saved auth state has no cookies, starting fresh")
         except Exception as e:
@@ -176,12 +160,12 @@ async def confirm():
         await instance.start()
 
     # Export storage state (cookies, localStorage, etc.)
-    await instance.export_storage_state(STORAGE_STATE)
+    await instance.export_storage_state(BROWSER_STORAGE_STATE)
 
     # Verify the auth state was saved successfully
-    if Path(STORAGE_STATE).exists():
+    if Path(BROWSER_STORAGE_STATE).exists():
         try:
-            with open(STORAGE_STATE, "r") as f:
+            with open(BROWSER_STORAGE_STATE, "r") as f:
                 state = json.load(f)
                 # Check if we have cookies (indicates successful auth capture)
                 if state.get("cookies"):
@@ -196,7 +180,7 @@ async def confirm():
             print(f"⚠ Warning: Could not validate saved auth state: {e}")
             ready = False
     else:
-        print(f"⚠ Warning: Auth state file not created at {STORAGE_STATE}")
+        print(f"⚠ Warning: Auth state file not created at {BROWSER_STORAGE_STATE}")
         ready = False
 
 
@@ -210,10 +194,10 @@ async def clear_auth():
     """Clear saved authentication state"""
     global ready
     ready = False
-    if Path(STORAGE_STATE).exists():
+    if Path(BROWSER_STORAGE_STATE).exists():
         try:
-            Path(STORAGE_STATE).unlink()
-            print(f"✓ Cleared authentication state from {STORAGE_STATE}")
+            Path(BROWSER_STORAGE_STATE).unlink()
+            print(f"✓ Cleared authentication state from {BROWSER_STORAGE_STATE}")
         except Exception as e:
             print(f"⚠ Could not clear auth state: {e}")
     else:
