@@ -2016,9 +2016,26 @@
 
           addMessage('<strong>Interface mapping complete.</strong> Profiling target application…');
           btn.textContent = 'Profiling target…';
-          const pr = await fetch(`${API}/session/profile`, { method: 'POST' });
-          if (!pr.ok) throw new Error('profile: ' + await pr.text());
-          const profileData = await pr.json();
+          const profileStartRes = await fetch(`${API}/session/profile`, { method: 'POST' });
+          if (!profileStartRes.ok) throw new Error('profile: ' + await profileStartRes.text());
+          const profileAgent = await profileStartRes.json();
+
+          // Poll until profile completes (avoids timeout)
+          let profileData;
+          await (async () => {
+            while (true) {
+              await new Promise(r => setTimeout(r, 3000));
+              const poll = await fetch(`${API}/session/profile/${profileAgent.agent_id}`);
+              if (!poll.ok) throw new Error('profile poll: ' + await poll.text());
+              const state = await poll.json();
+              if (state.status === 'done') {
+                profileData = JSON.parse(state.result);
+                break;
+              }
+              if (state.status === 'error') throw new Error('profile: ' + (state.error || 'unknown error'));
+              if (state.status === 'stopped') throw new Error('profile was stopped');
+            }
+          })();
 
           addMessage('<strong>Profiling complete.</strong> Analyzing vulnerabilities…');
           btn.textContent = 'Analyzing vulnerabilities…';

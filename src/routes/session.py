@@ -270,12 +270,42 @@ async def get_map_interface_status(agent_id: str):
 async def run_usecase_identification():
     if not browser.ready:
         raise HTTPException(400, "Not authenticated")
-    full = await profile_target()
-    profile = full.to_agent_profile()
-    tools = full.to_tool_discovery()
-    save_recon_data("profile", profile)
-    save_recon_data("tools", tools)
-    return {"profile": safe_return(profile), "tools": safe_return(tools)}
+
+    agent_id = str(uuid.uuid4())
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    record = AgentRecord(agent_id=agent_id, policies=["profile"], session_id=session_id)
+    registry[agent_id] = record
+
+    async def bg_task():
+        record.status = AgentStatus.RUNNING
+        try:
+            full = await profile_target()
+            profile = full.to_agent_profile()
+            tools = full.to_tool_discovery()
+            save_recon_data("profile", profile)
+            save_recon_data("tools", tools)
+            record.result = json.dumps(
+                {"profile": safe_return(profile), "tools": safe_return(tools)}
+            )
+            record.status = AgentStatus.DONE
+        except asyncio.CancelledError:
+            record.status = AgentStatus.STOPPED
+            logger.info("Agent %s cancelled", agent_id)
+        except Exception as exc:
+            record.error = str(exc)
+            record.status = AgentStatus.ERROR
+
+    task = asyncio.ensure_future(bg_task())
+    record.task_handle = task
+    return record.to_dict()
+
+
+@router.get("/profile/{agent_id}")
+async def get_profile_status(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Not Found")
+    return record.to_dict()
 
 
 @router.post("/discover-tools")
