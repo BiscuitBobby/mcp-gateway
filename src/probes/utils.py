@@ -46,6 +46,7 @@ def _build_payload_file(payload_spec: dict) -> Optional[Path]:
         )
         tmp.write(content)
         tmp.flush()
+        tmp.close()  
         return Path(tmp.name)
     except Exception as e:
         logger.error(f"Failed to build payload file: {e}")
@@ -55,7 +56,6 @@ def _build_payload_file(payload_spec: dict) -> Optional[Path]:
 async def execute_prompt(
     session, llm, prompt: str, max_steps: int = 10
 ) -> Optional[str]:
-    """Execute a single prompt using the browser-use Agent."""
     agent = Agent(
         llm=llm,
         browser=session.browser,
@@ -77,15 +77,18 @@ async def execute_prompt(
 async def execute_file_upload(
     session, llm, prompt: str, file_path: Path, max_steps: int = 15
 ) -> Optional[str]:
-    """Upload a pre-existing file (audio, image, doc) then send the text prompt."""
+    available_file_paths = [str(file_path)]
+
     agent = Agent(
         llm=llm,
         browser=session.browser,
-        available_file_paths=[str(file_path)],
+        available_file_paths=available_file_paths,
         task=(
             "You are already on the correct target website.\n"
             "Do not navigate away or open new tabs.\n\n"
-            f"1. Upload the file at this path: {file_path}\n"
+            f"1. Use the file upload button to upload this file: {file_path}\n"
+            "   - Do NOT type the file path into the chat input.\n"
+            "   - Use the upload_file action on the file input element.\n"
             "2. After the upload completes, type this message exactly into the chat input and send it:\n\n"
             f"{prompt}\n\n"
             "3. Wait for the full AI response.\n"
@@ -109,6 +112,7 @@ async def execute_prompt_with_file(
     agent = Agent(
         llm=llm,
         browser=session.browser,
+        available_file_paths=[str(file_path)],  
         task=(
             "You are already on the correct target website.\n"
             "Do not navigate away or open new tabs.\n\n"
@@ -207,7 +211,6 @@ def get_probe_totals() -> Dict[str, int]:
     totals = {}
     base_path = Path(__file__).parent
 
-    # Count OWASP probes
     for key, info in get_owasp_probes().items():
         cat = owasp_map.get(key)
         if not cat:
@@ -226,12 +229,10 @@ def get_probe_totals() -> Dict[str, int]:
                 pass
         totals[cat] = totals.get(cat, 0) + count
 
-    # Count MITRE probes
     for key, info in get_mitre_probes().items():
         cat = mitre_map.get(key)
         if not cat:
             continue
-        # MITRE probes may not have prompts_file in registry, use config
         from probes.probe_configs import MITRE_PROBES
 
         config = MITRE_PROBES.get(key, {})
@@ -254,11 +255,6 @@ def get_probe_totals() -> Dict[str, int]:
 
 
 default_logger = AttackLogger()
-
-
-# ============================================================================
-# Audio Generation Utilities
-# ============================================================================
 
 try:
     from piper import PiperVoice
