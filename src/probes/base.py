@@ -11,16 +11,6 @@ from probes.utils import (
     default_logger,
 )
 
-# Global delivery settings — toggled before a scan run
-send_audio: bool = True
-send_images: bool = True
-
-
-def set_delivery_options(send_audio_flag: bool, send_images_flag: bool) -> None:
-    global send_audio, send_images
-    send_audio = send_audio_flag
-    send_images = send_images_flag
-
 
 class AttackProbe(ABC):
     name: str = "base_probe"
@@ -69,7 +59,7 @@ class StandardProbe(AttackProbe):
             audio_file = item.get("audio_file")
             image_file = item.get("image_file")
 
-            if send_audio and audio_file and Path(audio_file).exists():
+            if audio_file and Path(audio_file).exists():
                 response = await execute_file_upload(
                     session,
                     llm,
@@ -78,7 +68,7 @@ class StandardProbe(AttackProbe):
                     max_steps=self.max_steps,
                 )
                 delivery = "audio"
-            elif send_images and image_file and Path(image_file).exists():
+            elif image_file and Path(image_file).exists():
                 response = await execute_file_upload(
                     session,
                     llm,

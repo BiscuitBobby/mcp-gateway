@@ -93,8 +93,6 @@ async def run_probes(record: AgentRecord):
 
 class ScanRequest(BaseModel):
     policies: list[str]
-    send_audio: bool = True
-    send_images: bool = True
 
 
 @router.get("")
@@ -116,9 +114,6 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
         raise HTTPException(
             400, "Browser not ready. Call /session/start and /session/confirm first."
         )
-
-    from probes.base import set_delivery_options
-    set_delivery_options(send_audio=body.send_audio, send_images=body.send_images)
 
     agent_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")

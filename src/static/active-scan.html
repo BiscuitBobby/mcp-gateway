@@ -1911,27 +1911,15 @@
       if (hasProfile) {
         // Profile exists — default behaviour skips profiling, dropdown offers re-run
         document.querySelector('.chat-input-area').innerHTML = `
-          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
-            <div style="display:flex;gap:16px;align-items:center;padding:4px 2px;font-size:13px;color:var(--text-muted);">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="toggleAudio" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
-                Audio prompts
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="toggleImages" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
-                Image prompts
-              </label>
-            </div>
-            <div class="split-btn" style="flex:1;">
-              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
-              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div id="scanDropdown" class="dropdown-content">
-                <div class="dropdown-item" onclick="confirmAndLaunch(false)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                  Re-run Profiling &amp; Scan
-                </div>
+          <div class="split-btn" style="flex:1;">
+            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
+            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="scanDropdown" class="dropdown-content">
+              <div class="dropdown-item" onclick="confirmAndLaunch(false)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Re-run Profiling &amp; Scan
               </div>
             </div>
           </div>`;
@@ -1939,30 +1927,19 @@
       } else {
         // No profile — default runs profiling, dropdown offers skip
         document.querySelector('.chat-input-area').innerHTML = `
-          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
-            <div style="display:flex;gap:16px;align-items:center;padding:4px 2px;font-size:13px;color:var(--text-muted);">
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="toggleAudio" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
-                Audio prompts
-              </label>
-              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
-                <input type="checkbox" id="toggleImages" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
-                Image prompts
-              </label>
-            </div>
-            <div class="split-btn" style="flex:1;">
-              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
-              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-              </button>
-              <div id="scanDropdown" class="dropdown-content">
-                <div class="dropdown-item" onclick="confirmAndLaunch(true)">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-                  Start Scan without Profiling
-                </div>
+          <div class="split-btn" style="flex:1;">
+            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
+            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </button>
+            <div id="scanDropdown" class="dropdown-content">
+              <div class="dropdown-item" onclick="confirmAndLaunch(true)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                Start Scan without Profiling
               </div>
             </div>
           </div>`;
+      }
       }
 
       let _cdpTimer = null;
@@ -2085,15 +2062,13 @@
 
         let agent;
         const policyKeys = policies.split(',').map(s => s.trim()).filter(Boolean);
-        const sendAudio = document.getElementById('toggleAudio')?.checked ?? true;
-        const sendImages = document.getElementById('toggleImages')?.checked ?? true;
         if (goal) {
           addMessage(`<strong>Auth saved.</strong> Launching custom goal: ${goal}`);
           const gr = await fetch(`${API}/session/run-goal`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal: goal, policies: policyKeys }) });
           if (!gr.ok) throw new Error('run-goal: ' + await gr.text());
           agent = await gr.json();
         } else {
-          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys, send_audio: sendAudio, send_images: sendImages }) });
+          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
           if (!ar.ok) throw new Error('scan: ' + await ar.text());
           agent = await ar.json();
         }
