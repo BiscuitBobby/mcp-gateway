@@ -11,6 +11,16 @@ from probes.utils import (
     default_logger,
 )
 
+# Runtime delivery flags — checked per-prompt so toggling mid-run takes effect immediately
+send_audio: bool = False
+send_images: bool = False
+
+
+def set_delivery_options(audio: bool, images: bool) -> None:
+    global send_audio, send_images
+    send_audio = audio
+    send_images = images
+
 
 class AttackProbe(ABC):
     name: str = "base_probe"
@@ -56,59 +66,57 @@ class StandardProbe(AttackProbe):
         )
 
         for idx, item in enumerate(prompts):
-            audio_file = item.get("audio_file")
-            image_file = item.get("image_file")
+            deliveries: list[tuple[str, Any]] = []
 
-            if audio_file and Path(audio_file).exists():
-                response = await execute_file_upload(
-                    session,
-                    llm,
-                    item["prompt"],
-                    Path(audio_file),
-                    max_steps=self.max_steps,
-                )
-                delivery = "audio"
-            elif image_file and Path(image_file).exists():
-                response = await execute_file_upload(
-                    session,
-                    llm,
-                    item["prompt"],
-                    Path(image_file),
-                    max_steps=self.max_steps,
-                )
-                delivery = "image"
-            else:
-                response = await execute_prompt(
-                    session, llm, item["prompt"], max_steps=self.max_steps
-                )
-                delivery = "text"
-
-            analysis = await run_reasoning(
-                llm=reasoning_llm,
-                task_description=TASKS[self.name]["description"],
-                prompt=item["prompt"],
-                response=response or "",
-                task_key=self.name,
-                app_profile=getattr(session, "app_profile", None),
-                vuln_report=getattr(session, "vuln_report", None),
+            # Text is always sent
+            text_response = await execute_prompt(
+                session, llm, item["prompt"], max_steps=self.max_steps
             )
+            deliveries.append(("text", text_response))
 
-            record = {
-                "type": self.record_type,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "probe": self.name,
-                "category": category_field,
-                "index": idx,
-                "technique": item["category"],
-                "delivery": delivery,
-                "prompt": item["prompt"],
-                "response": response,
-                "analysis": analysis,
-            }
+            # Audio — sent if enabled and file exists
+            audio_file = item.get("audio_file")
+            if send_audio and audio_file and Path(audio_file).exists():
+                audio_response = await execute_file_upload(
+                    session, llm, item["prompt"], Path(audio_file), max_steps=self.max_steps
+                )
+                deliveries.append(("audio", audio_response))
 
-            session.evidence.append(record)
-            await default_logger.log(record, session=session)
-            results.append(record)
+            # Image — sent if enabled and file exists
+            image_file = item.get("image_file")
+            if send_images and image_file and Path(image_file).exists():
+                image_response = await execute_file_upload(
+                    session, llm, item["prompt"], Path(image_file), max_steps=self.max_steps
+                )
+                deliveries.append(("image", image_response))
+
+            for delivery, response in deliveries:
+                analysis = await run_reasoning(
+                    llm=reasoning_llm,
+                    task_description=TASKS[self.name]["description"],
+                    prompt=item["prompt"],
+                    response=response or "",
+                    task_key=self.name,
+                    app_profile=getattr(session, "app_profile", None),
+                    vuln_report=getattr(session, "vuln_report", None),
+                )
+
+                record = {
+                    "type": self.record_type,
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "probe": self.name,
+                    "category": category_field,
+                    "index": idx,
+                    "technique": item["category"],
+                    "delivery": delivery,
+                    "prompt": item["prompt"],
+                    "response": response,
+                    "analysis": analysis,
+                }
+
+                session.evidence.append(record)
+                await default_logger.log(record, session=session)
+                results.append(record)
 
         return {
             "success": True,

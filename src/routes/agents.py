@@ -93,6 +93,8 @@ async def run_probes(record: AgentRecord):
 
 class ScanRequest(BaseModel):
     policies: list[str]
+    send_audio: bool = False
+    send_images: bool = False
 
 
 @router.get("")
@@ -114,6 +116,9 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
         raise HTTPException(
             400, "Browser not ready. Call /session/start and /session/confirm first."
         )
+
+    from probes.base import set_delivery_options
+    set_delivery_options(body.send_audio, body.send_images)
 
     agent_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -192,6 +197,19 @@ async def resume_agent(agent_id: str):
     record.resume_event.set()
     logger.info("Agent %s resumed by request", agent_id)
     return record.to_dict()
+
+
+class DeliveryOptions(BaseModel):
+    send_audio: bool
+    send_images: bool
+
+
+@router.post("/delivery")
+async def set_delivery(body: DeliveryOptions):
+    """Update audio/image delivery flags at runtime — takes effect on the next prompt."""
+    from probes.base import set_delivery_options
+    set_delivery_options(body.send_audio, body.send_images)
+    return {"send_audio": body.send_audio, "send_images": body.send_images}
 
 
 @router.get("/{agent_id}/stream")

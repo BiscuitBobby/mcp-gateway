@@ -1466,6 +1466,17 @@
             <div class="scan-status">
               <div class="spinner"></div>Running Attack Patterns...
             </div>
+            <div style="display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;background:white;padding:6px 14px;border-radius:20px;border:1px solid var(--surface-border);box-shadow:var(--shadow-sm);">
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-muted);">
+                <input type="checkbox" id="headerToggleAudio" onchange="updateDelivery()" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                🔊 Audio
+              </label>
+              <span style="color:#e2e8f0;">|</span>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;color:var(--text-muted);">
+                <input type="checkbox" id="headerToggleImages" onchange="updateDelivery()" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                🖼 Image
+              </label>
+            </div>
             <button class="btn-discover" id="discoverToolsBtn" onclick="discoverTools()">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8" />
@@ -1557,7 +1568,7 @@
               </div>
             </div>
             <div class="chat-input-area"
-              style="padding:16px;border-top:1px solid var(--surface-border);background:#fff;display:flex;gap:8px;position:relative;z-index:99999;">
+              style="padding:16px;border-top:1px solid var(--surface-border);background:#fff;display:flex;flex-direction:column;gap:8px;position:relative;z-index:99999;">
               <input type="text" id="chatInput" placeholder="Send a message to the agent..."
                 style="flex:1;padding:10px 14px;border:1px solid var(--surface-border);border-radius:8px;font-family:inherit;font-size:14px;outline:none;"
                 onkeypress="if(event.key==='Enter') sendMessage()">
@@ -1911,15 +1922,28 @@
       if (hasProfile) {
         // Profile exists — default behaviour skips profiling, dropdown offers re-run
         document.querySelector('.chat-input-area').innerHTML = `
-          <div class="split-btn" style="flex:1;">
-            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
-            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div id="scanDropdown" class="dropdown-content">
-              <div class="dropdown-item" onclick="confirmAndLaunch(false)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                Re-run Profiling &amp; Scan
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+            <div style="display:flex;gap:14px;align-items:center;font-size:13px;font-weight:600;color:var(--text-muted);">
+              <span style="color:var(--text);">Optional:</span>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                <input type="checkbox" id="toggleAudio" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                Audio
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                <input type="checkbox" id="toggleImages" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                Image
+              </label>
+            </div>
+            <div class="split-btn" style="flex:1;">
+              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
+              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="scanDropdown" class="dropdown-content">
+                <div class="dropdown-item" onclick="confirmAndLaunch(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  Re-run Profiling &amp; Scan
+                </div>
               </div>
             </div>
           </div>`;
@@ -1927,15 +1951,28 @@
       } else {
         // No profile — default runs profiling, dropdown offers skip
         document.querySelector('.chat-input-area').innerHTML = `
-          <div class="split-btn" style="flex:1;">
-            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
-            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div id="scanDropdown" class="dropdown-content">
-              <div class="dropdown-item" onclick="confirmAndLaunch(true)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-                Start Scan without Profiling
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+            <div style="display:flex;gap:14px;align-items:center;font-size:13px;font-weight:600;color:var(--text-muted);">
+              <span style="color:var(--text);">Optional:</span>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                <input type="checkbox" id="toggleAudio" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                Audio
+              </label>
+              <label style="display:flex;align-items:center;gap:5px;cursor:pointer;">
+                <input type="checkbox" id="toggleImages" style="accent-color:var(--blue-600);width:13px;height:13px;">
+                Image
+              </label>
+            </div>
+            <div class="split-btn" style="flex:1;">
+              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
+              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="scanDropdown" class="dropdown-content">
+                <div class="dropdown-item" onclick="confirmAndLaunch(true)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                  Start Scan without Profiling
+                </div>
               </div>
             </div>
           </div>`;
@@ -1961,7 +1998,6 @@
       }
       pollCdp();
       window._stopCdpPoll = () => clearTimeout(_cdpTimer);
-    }
 
     window.toggleScanDropdown = function (e) {
       e.stopPropagation();
@@ -2062,13 +2098,20 @@
 
         let agent;
         const policyKeys = policies.split(',').map(s => s.trim()).filter(Boolean);
+        const sendAudio = document.getElementById('toggleAudio')?.checked ?? false;
+        const sendImages = document.getElementById('toggleImages')?.checked ?? false;
+        // Sync header toggles to match pre-scan selection
+        const ha = document.getElementById('headerToggleAudio');
+        const hi = document.getElementById('headerToggleImages');
+        if (ha) ha.checked = sendAudio;
+        if (hi) hi.checked = sendImages;
         if (goal) {
           addMessage(`<strong>Auth saved.</strong> Launching custom goal: ${goal}`);
           const gr = await fetch(`${API}/session/run-goal`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal: goal, policies: policyKeys }) });
           if (!gr.ok) throw new Error('run-goal: ' + await gr.text());
           agent = await gr.json();
         } else {
-          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
+          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys, send_audio: sendAudio, send_images: sendImages }) });
           if (!ar.ok) throw new Error('scan: ' + await ar.text());
           agent = await ar.json();
         }
@@ -2247,6 +2290,18 @@
         btn.innerHTML = originalContent;
         if (refreshBtn) refreshBtn.innerHTML = refreshOriginal;
       } finally { btn.disabled = false; if (refreshBtn) refreshBtn.disabled = false; }
+    }
+
+    async function updateDelivery() {
+      const audio = document.getElementById('headerToggleAudio')?.checked ?? false;
+      const images = document.getElementById('headerToggleImages')?.checked ?? false;
+      try {
+        await fetch(`${API}/agents/delivery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ send_audio: audio, send_images: images }),
+        });
+      } catch (e) { console.error('delivery update failed', e); }
     }
 
     async function stopScan() {
