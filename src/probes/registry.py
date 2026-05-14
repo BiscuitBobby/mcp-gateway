@@ -58,23 +58,23 @@ MITRE_PROBE_INSTANCES = {
 
 # ── Registries ─────────────────────────────────────────────────
 
-_owasp_registry = None
-_mitre_registry = None
+owasp_registry = None
+mitre_registry = None
 
 
 def get_owasp_probes():
-    global _owasp_registry
-    if _owasp_registry is not None:
-        return _owasp_registry
+    global owasp_registry
+    if owasp_registry is not None:
+        return owasp_registry
 
-    _owasp_registry = {}
+    owasp_registry = {}
 
     for name, config in OWASP_PROBES.items():
         instance = OWASP_PROBE_INSTANCES.get(name)
         if instance is None:
             continue
 
-        _owasp_registry[name] = {
+        owasp_registry[name] = {
             "action": name,
             "owasp": config["owasp_category"],
             "description": config.get("description", ""),
@@ -82,29 +82,29 @@ def get_owasp_probes():
             "instance": instance,
         }
 
-    return _owasp_registry
+    return owasp_registry
 
 
 def get_mitre_probes():
-    global _mitre_registry
-    if _mitre_registry is not None:
-        return _mitre_registry
+    global mitre_registry
+    if mitre_registry is not None:
+        return mitre_registry
 
-    _mitre_registry = {}
+    mitre_registry = {}
 
     for name, config in MITRE_PROBES.items():
         instance = MITRE_PROBE_INSTANCES.get(name)
         if instance is None:
             continue
 
-        _mitre_registry[name] = {
+        mitre_registry[name] = {
             "action": name,
             "mitre": config["mitre_category"],
             "description": config.get("description", ""),
             "instance": instance,
         }
 
-    return _mitre_registry
+    return mitre_registry
 
 
 def get_probes():

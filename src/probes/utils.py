@@ -11,6 +11,18 @@ from browser_use import Agent
 
 logger = logging.getLogger(__name__)
 
+# Tracks the currently running browser_use Agent so pause/resume can reach it
+current_agent: Optional[Agent] = None
+
+
+def set_current_agent(agent: Optional[Agent]) -> None:
+    global current_agent
+    current_agent = agent
+
+
+def get_current_agent() -> Optional[Agent]:
+    return current_agent
+
 
 def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
     """Load prompts from a JSON file, ensuring they have required fields."""
@@ -25,7 +37,7 @@ def load_prompts(prompts_file: Path) -> List[Dict[str, Any]]:
         return []
 
 
-def _build_payload_file(payload_spec: dict) -> Optional[Path]:
+def build_payload_file(payload_spec: dict) -> Optional[Path]:
     """
     Construct a temporary file from payload_spec.
     Expects at minimum: file_type, and one of: content, hidden_content, spoken_instruction.
@@ -70,7 +82,11 @@ async def execute_prompt(
         ),
         max_steps=max_steps,
     )
-    history = await agent.run()
+    set_current_agent(agent)
+    try:
+        history = await agent.run()
+    finally:
+        set_current_agent(None)
     return history.final_result() if history else None
 
 
@@ -96,7 +112,11 @@ async def execute_file_upload(
         ),
         max_steps=max_steps,
     )
-    history = await agent.run()
+    set_current_agent(agent)
+    try:
+        history = await agent.run()
+    finally:
+        set_current_agent(None)
     return history.final_result() if history else None
 
 
@@ -104,7 +124,7 @@ async def execute_prompt_with_file(
     session, llm, prompt: str, payload_spec: dict, max_steps: int = 10
 ) -> Optional[str]:
     """Execute a prompt that requires uploading a file payload first."""
-    file_path = _build_payload_file(payload_spec)
+    file_path = build_payload_file(payload_spec)
     if file_path is None:
         logger.warning("payload file construction failed, falling back to text-only")
         return await execute_prompt(session, llm, prompt, max_steps)
@@ -125,7 +145,11 @@ async def execute_prompt_with_file(
         ),
         max_steps=max_steps,
     )
-    history = await agent.run()
+    set_current_agent(agent)
+    try:
+        history = await agent.run()
+    finally:
+        set_current_agent(None)
 
     try:
         file_path.unlink()
@@ -138,13 +162,13 @@ async def execute_prompt_with_file(
 class AttackLogger:
     """Centralized logger for attack probe results with deduplication."""
 
-    _lock = asyncio.Lock()
-    _seen_hashes = set()
+    lock = asyncio.Lock()
+    seen_hashes = set()
 
     def __init__(self, path: Path = Path("logs/attack_log.json")):
         self.path = path
 
-    def _get_hash(self, record: dict) -> str:
+    def get_hash(self, record: dict) -> str:
         """Generate a hash for deduplication based on probe, technique, prompt, and response."""
         content = f"{record.get('probe')}|{record.get('technique')}|{record.get('prompt')}|{record.get('response')}"
         return str(hash(content))
@@ -161,17 +185,17 @@ class AttackLogger:
             self.path = Path(f"logs/attack_log_{session.session_id}.json")
 
         if deduplicate:
-            record_hash = self._get_hash(record)
-            async with self._lock:
-                if record_hash in self._seen_hashes:
+            record_hash = self.get_hash(record)
+            async with self.lock:
+                if record_hash in self.seen_hashes:
                     logger.debug(
                         f"Skipping duplicate log entry for {record.get('probe')}"
                     )
                     return
-                self._seen_hashes.add(record_hash)
+                self.seen_hashes.add(record_hash)
 
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        async with self._lock:
+        async with self.lock:
             with open(self.path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(record) + "\n")
 

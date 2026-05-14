@@ -24,6 +24,7 @@ router = APIRouter(prefix="/agents")
 class AgentStatus(str, Enum):
     IDLE = "idle"
     RUNNING = "running"
+    PAUSED = "paused"
     DONE = "done"
     ERROR = "error"
     STOPPED = "stopped"
@@ -40,6 +41,9 @@ class AgentRecord:
         self.created_at = datetime.utcnow().isoformat()
         # asyncio.Task handle — set after the task is scheduled so it can be cancelled
         self.task_handle: Optional[asyncio.Task] = None
+        # Event used to pause/resume execution between probes
+        self.resume_event: asyncio.Event = asyncio.Event()
+        self.resume_event.set()  # not paused by default
 
     def to_dict(self):
         raw_cdp = getattr(browser_mod.instance, "cdp_url", None)
@@ -72,10 +76,16 @@ async def run_probes(record: AgentRecord):
     all_results = []
     try:
         for action in record.policies:
+            # Wait here if paused (between probes)
+            await record.resume_event.wait()
+            # Re-check after resuming in case the task was stopped while paused
+            if record.status == AgentStatus.STOPPED:
+                break
             result = await run_one(action, session_id=record.session_id)
             all_results.append(result)
-        record.result = json.dumps(all_results)
-        record.status = AgentStatus.DONE
+        if record.status != AgentStatus.STOPPED:
+            record.result = json.dumps(all_results)
+            record.status = AgentStatus.DONE
     except Exception as exc:
         record.error = str(exc)
         record.status = AgentStatus.ERROR
@@ -83,6 +93,8 @@ async def run_probes(record: AgentRecord):
 
 class ScanRequest(BaseModel):
     policies: list[str]
+    send_audio: bool = True
+    send_images: bool = True
 
 
 @router.get("")
@@ -104,6 +116,10 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
         raise HTTPException(
             400, "Browser not ready. Call /session/start and /session/confirm first."
         )
+
+    from probes.base import set_delivery_options
+    set_delivery_options(send_audio=body.send_audio, send_images=body.send_images)
+
     agent_id = str(uuid.uuid4())
     session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     record = AgentRecord(
@@ -121,8 +137,17 @@ async def stop_agent(agent_id: str):
     record = registry.get(agent_id)
     if not record:
         raise HTTPException(404, "Agent not found")
-    if record.status not in (AgentStatus.IDLE, AgentStatus.RUNNING):
+    if record.status not in (AgentStatus.IDLE, AgentStatus.RUNNING, AgentStatus.PAUSED):
         return record.to_dict()
+
+    # Stop the browser_use agent if one is currently running
+    from probes.utils import get_current_agent
+    agent = get_current_agent()
+    if agent is not None:
+        agent.stop()
+
+    # Unblock the pause event so the task can proceed to cancellation
+    record.resume_event.set()
 
     if record.task_handle and not record.task_handle.done():
         record.task_handle.cancel()
@@ -133,6 +158,44 @@ async def stop_agent(agent_id: str):
 
     record.status = AgentStatus.STOPPED
     logger.info("Agent %s stopped by request", agent_id)
+    return record.to_dict()
+
+
+@router.post("/{agent_id}/pause")
+async def pause_agent(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Agent not found")
+    if record.status != AgentStatus.RUNNING:
+        return record.to_dict()
+
+    from probes.utils import get_current_agent
+    agent = get_current_agent()
+    if agent is not None:
+        agent.pause()
+
+    record.resume_event.clear()
+    record.status = AgentStatus.PAUSED
+    logger.info("Agent %s paused by request", agent_id)
+    return record.to_dict()
+
+
+@router.post("/{agent_id}/resume")
+async def resume_agent(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Agent not found")
+    if record.status != AgentStatus.PAUSED:
+        return record.to_dict()
+
+    from probes.utils import get_current_agent
+    agent = get_current_agent()
+    if agent is not None:
+        agent.resume()
+
+    record.status = AgentStatus.RUNNING
+    record.resume_event.set()
+    logger.info("Agent %s resumed by request", agent_id)
     return record.to_dict()
 
 

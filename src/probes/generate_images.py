@@ -14,7 +14,7 @@ BASE_IMAGE = Path(__file__).parent / "man.jpg"
 WB = (800, 2650, 4230, 4830)
 
 
-def _get_font(size: int) -> ImageFont.FreeTypeFont:
+def get_font(size: int) -> ImageFont.FreeTypeFont:
     for path in [
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -25,7 +25,7 @@ def _get_font(size: int) -> ImageFont.FreeTypeFont:
     return ImageFont.load_default()
 
 
-def _wrap(text: str, font, max_width: int) -> List[str]:
+def wrap(text: str, font, max_width: int) -> List[str]:
     draw = ImageDraw.Draw(Image.new("RGB", (1, 1)))
     lines, line = [], ""
     for word in text.split():
@@ -41,7 +41,7 @@ def _wrap(text: str, font, max_width: int) -> List[str]:
     return lines
 
 
-def _draw_prompt(base: Image.Image, category: str, prompt: str) -> Image.Image:
+def draw_prompt(base: Image.Image, category: str, prompt: str) -> Image.Image:
     img = base.copy()
     draw = ImageDraw.Draw(img)
     left, top, right, bottom = WB
@@ -52,16 +52,16 @@ def _draw_prompt(base: Image.Image, category: str, prompt: str) -> Image.Image:
     # Auto-fit font size
     size = 80
     for s in range(140, 50, -5):
-        font = _get_font(s)
-        lines = _wrap(prompt, font, box_w)
+        font = get_font(s)
+        lines = wrap(prompt, font, box_w)
         if s * 1.3 * len(lines) <= box_h * 0.78:
             size = s
             break
 
-    font = _get_font(size)
-    lines = _wrap(prompt, font, box_w)
-    cat_font = _get_font(max(50, size // 2))
-    cat_lines = _wrap(f"[ {category} ]", cat_font, box_w)
+    font = get_font(size)
+    lines = wrap(prompt, font, box_w)
+    cat_font = get_font(max(50, size // 2))
+    cat_lines = wrap(f"[ {category} ]", cat_font, box_w)
 
     total_h = (
         (len(cat_lines) * cat_font.size * 1.3)
@@ -84,7 +84,7 @@ def _draw_prompt(base: Image.Image, category: str, prompt: str) -> Image.Image:
     return img
 
 
-def _sanitize(name: str) -> str:
+def sanitize_name(name: str) -> str:
     name = name.lower()
     name = re.sub(r"[^\w\s-]", "", name)
     name = re.sub(r"\s+", "_", name.strip())
@@ -136,10 +136,10 @@ def generate_images(
     for idx, item in enumerate(prompts):
         item.pop("image_file", None)
         category = item.get("category", f"prompt_{idx}")
-        image_path = output_dir / f"{idx:02d}_{_sanitize(category)}.png"
+        image_path = output_dir / f"{idx:02d}_{sanitize_name(category)}.png"
 
         try:
-            img = _draw_prompt(base, category, item["prompt"])
+            img = draw_prompt(base, category, item["prompt"])
             img.save(str(image_path))
             item["image_file"] = str(image_path)
             logger.info("[images] Saved: %s", image_path)

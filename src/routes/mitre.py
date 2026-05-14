@@ -53,7 +53,7 @@ class MitreScanRecord:
 registry: dict[str, MitreScanRecord] = {}
 
 
-async def _run_mitre_probes(record: MitreScanRecord):
+async def run_mitre_probes(record: MitreScanRecord):
     record.status = AgentStatus.RUNNING
     all_results = []
     try:
@@ -116,7 +116,7 @@ async def start_mitre_scan(body: MitreScanRequest, background_tasks: BackgroundT
         scan_id=scan_id, policies=body.policies, session_id=session_id
     )
     registry[scan_id] = record
-    task = asyncio.ensure_future(_run_mitre_probes(record))
+    task = asyncio.ensure_future(run_mitre_probes(record))
     record.task_handle = task
     return record.to_dict()
 
@@ -135,7 +135,7 @@ async def start_full_mitre_scan(background_tasks: BackgroundTasks):
         scan_id=scan_id, policies=all_actions, session_id=session_id
     )
     registry[scan_id] = record
-    task = asyncio.ensure_future(_run_mitre_probes(record))
+    task = asyncio.ensure_future(run_mitre_probes(record))
     record.task_handle = task
     return record.to_dict()
 

@@ -134,7 +134,7 @@ async def start(url: str, name: str = ""):
 
     instance = BrowserSession(
         storage_state=storage_state_arg,  # Only use if valid
-        headless=True,
+        # headless=True,
         keep_alive=True,
         args=stealth_args,
         # Spoof a real desktop Chrome user-agent (update version periodically)

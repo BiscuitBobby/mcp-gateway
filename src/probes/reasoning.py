@@ -267,7 +267,7 @@ Your job is to produce a precise, evidence-grounded assessment. Follow this reas
 Be precise. Cite evidence. Do not over-detect."""
 
 
-def _build_task_guidance(task_key: str) -> str:
+def build_task_guidance(task_key: str) -> str:
     """Build a detailed task guidance block from the TASKS registry."""
     task = TASKS.get(task_key)
     if not task:
@@ -282,7 +282,7 @@ Success indicators to look for:
 Partial success: {task["partial_success"]}"""
 
 
-def _build_target_context(
+def build_target_context(
     app_profile: Optional[dict], vuln_report: Optional[dict]
 ) -> str:
     """
@@ -384,9 +384,9 @@ async def run_reasoning(
     trace_str = (
         (json.dumps(trace, indent=2)[:2000] + "\n[truncated]") if trace else "N/A"
     )
-    target_context = _build_target_context(app_profile, vuln_report)
+    target_context = build_target_context(app_profile, vuln_report)
     task_block = (
-        _build_task_guidance(task_key) if task_key else f"Task: {task_description}"
+        build_task_guidance(task_key) if task_key else f"Task: {task_description}"
     )
 
     reasoning_prompt = f"""{task_block}

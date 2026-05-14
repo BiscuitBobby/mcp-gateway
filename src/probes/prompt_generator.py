@@ -11,14 +11,14 @@ logger = logging.getLogger(__name__)
 
 # ── Paths ──────────────────────────────────────────────────────
 
-_PROBES_DIR = Path(__file__).parent
+PROBES_DIR = Path(__file__).parent
 
 
-def _output_path(probe_name: str, config: dict) -> Path:
+def output_path(probe_name: str, config: dict) -> Path:
     """Resolve the output JSON path for a probe."""
     framework = config["framework"]
     dir_name = config.get("dir_name", probe_name)
-    return _PROBES_DIR / framework / dir_name / config["output_file"]
+    return PROBES_DIR / framework / dir_name / config["output_file"]
 
 
 # ── Core generator ─────────────────────────────────────────────
@@ -42,7 +42,7 @@ def generate_prompts(
     categories = config["categories"]
     schema_class = config["schema"]
     json_template = config["json_template"]
-    output_file = _output_path(probe_name, config)
+    output_file = output_path(probe_name, config)
     
     print(f"[DEBUG] Generating prompts for probe: {probe_name}")
     print(f"[DEBUG] Number of categories: {len(categories)}")

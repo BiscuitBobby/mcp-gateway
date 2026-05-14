@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Optional
 from browser_use import Agent
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
-from probes.prompt_generator import generate_prompts as _generate_prompts
+from probes.prompt_generator import generate_prompts as generate_rag_prompts
 from probes.owasp.rag_poisoning.generate_documents import main as generate_documents
 from probes.utils import load_prompts, default_logger
 
@@ -20,7 +20,7 @@ class RagPoisoning(AttackProbe):
 
     async def run(self, session, llm, goal: str = "") -> Dict[str, Any]:
         generate_documents(goal=goal)
-        _generate_prompts(
+        generate_rag_prompts(
             "rag_poisoning",
             goal=goal,
             app_profile=getattr(session, "app_profile", None),
@@ -35,7 +35,7 @@ class RagPoisoning(AttackProbe):
             file_type = item.get("file_type", "txt")
 
             if delivery == "upload":
-                doc_path = self._find_doc(file_type)
+                doc_path = self.find_doc(file_type)
                 response = await self.execute_upload(
                     session, llm, item["prompt"], doc_path
                 )
@@ -70,7 +70,7 @@ class RagPoisoning(AttackProbe):
 
         return {"success": True, "probe": self.name, "results": results}
 
-    def _find_doc(self, file_type: str) -> Optional[Path]:
+    def find_doc(self, file_type: str) -> Optional[Path]:
         ext = file_type.lstrip(".")
         docs = list(DOCS_DIR.glob(f"*.{ext}"))
         return docs[0] if docs else None

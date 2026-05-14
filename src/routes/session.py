@@ -167,7 +167,7 @@ async def cdp_proxy(client_ws: WebSocket, path: str):
                 asyncio.create_task(cdp_to_client(), name="cdp→client"),
             ]
             try:
-                _done, pending = await asyncio.wait(
+                done, pending = await asyncio.wait(
                     tasks, return_when=asyncio.FIRST_COMPLETED
                 )
             finally:
@@ -180,16 +180,16 @@ async def cdp_proxy(client_ws: WebSocket, path: str):
         websockets.exceptions.InvalidHandshake,
     ) as e:
         logger.warning(f"CDP proxy connection refused: {e}")
-        await _safe_close(client_ws, f"Cannot reach CDP: {e}")
+        await safe_close(client_ws, f"Cannot reach CDP: {e}")
     except asyncio.TimeoutError:
         logger.warning("CDP proxy upstream connection timed out")
-        await _safe_close(client_ws, "CDP connection timed out")
+        await safe_close(client_ws, "CDP connection timed out")
     except Exception as e:
         logger.warning(f"CDP proxy error: {e}")
-        await _safe_close(client_ws, str(e))
+        await safe_close(client_ws, str(e))
 
 
-async def _safe_close(ws: WebSocket, reason: str, code: int = 1011):
+async def safe_close(ws: WebSocket, reason: str, code: int = 1011):
     """Close a WebSocket, truncating the reason to the 123-byte protocol limit."""
     try:
         reason_bytes = reason.encode("utf-8")[:123]

@@ -1474,6 +1474,7 @@
               Discover Tools
             </button>
             <button class="btn-outline" onclick="stopScan()">Stop Scan &amp; View Dashboard</button>
+            <button class="btn-outline" id="pauseResumeBtn" onclick="togglePause()" style="color:var(--blue-600);">⏸ Pause</button>
           </div>
         </header>
 
@@ -1910,15 +1911,27 @@
       if (hasProfile) {
         // Profile exists — default behaviour skips profiling, dropdown offers re-run
         document.querySelector('.chat-input-area').innerHTML = `
-          <div class="split-btn" style="flex:1;">
-            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
-            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div id="scanDropdown" class="dropdown-content">
-              <div class="dropdown-item" onclick="confirmAndLaunch(false)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-                Re-run Profiling &amp; Scan
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+            <div style="display:flex;gap:16px;align-items:center;padding:4px 2px;font-size:13px;color:var(--text-muted);">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+                <input type="checkbox" id="toggleAudio" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
+                Audio prompts
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+                <input type="checkbox" id="toggleImages" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
+                Image prompts
+              </label>
+            </div>
+            <div class="split-btn" style="flex:1;">
+              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(true)">✓ Begin Scan</button>
+              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="scanDropdown" class="dropdown-content">
+                <div class="dropdown-item" onclick="confirmAndLaunch(false)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                  Re-run Profiling &amp; Scan
+                </div>
               </div>
             </div>
           </div>`;
@@ -1926,15 +1939,27 @@
       } else {
         // No profile — default runs profiling, dropdown offers skip
         document.querySelector('.chat-input-area').innerHTML = `
-          <div class="split-btn" style="flex:1;">
-            <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
-            <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </button>
-            <div id="scanDropdown" class="dropdown-content">
-              <div class="dropdown-item" onclick="confirmAndLaunch(true)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
-                Start Scan without Profiling
+          <div style="display:flex;flex-direction:column;gap:8px;flex:1;">
+            <div style="display:flex;gap:16px;align-items:center;padding:4px 2px;font-size:13px;color:var(--text-muted);">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+                <input type="checkbox" id="toggleAudio" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
+                Audio prompts
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;">
+                <input type="checkbox" id="toggleImages" checked style="accent-color:var(--blue-600);width:14px;height:14px;">
+                Image prompts
+              </label>
+            </div>
+            <div class="split-btn" style="flex:1;">
+              <button id="confirmBtn" class="split-btn-main" onclick="confirmAndLaunch(false)">✓ Begin Scan</button>
+              <button class="split-btn-drop" onclick="toggleScanDropdown(event)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div id="scanDropdown" class="dropdown-content">
+                <div class="dropdown-item" onclick="confirmAndLaunch(true)">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>
+                  Start Scan without Profiling
+                </div>
               </div>
             </div>
           </div>`;
@@ -2060,13 +2085,15 @@
 
         let agent;
         const policyKeys = policies.split(',').map(s => s.trim()).filter(Boolean);
+        const sendAudio = document.getElementById('toggleAudio')?.checked ?? true;
+        const sendImages = document.getElementById('toggleImages')?.checked ?? true;
         if (goal) {
           addMessage(`<strong>Auth saved.</strong> Launching custom goal: ${goal}`);
           const gr = await fetch(`${API}/session/run-goal`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ goal: goal, policies: policyKeys }) });
           if (!gr.ok) throw new Error('run-goal: ' + await gr.text());
           agent = await gr.json();
         } else {
-          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys }) });
+          const ar = await fetch(`${API}/agents/scan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ policies: policyKeys, send_audio: sendAudio, send_images: sendImages }) });
           if (!ar.ok) throw new Error('scan: ' + await ar.text());
           agent = await ar.json();
         }
@@ -2105,16 +2132,28 @@
         if (data.session_id) currentSessionId = data.session_id;
         if (data.cdp_url && data.cdp_url !== bpConnectedUrl) { bpConnectedUrl = data.cdp_url; bpConnect(cdpUrlToWs(data.cdp_url)); }
         if (data.status !== lastStatus) {
-          const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸', stopped: '⏹' };
+          const icons = { running: '🔍', done: '✅', error: '❌', idle: '⏸', stopped: '⏹', paused: '⏸' };
           addMessage(`<strong>Status:</strong> ${icons[data.status] || ''} ${data.status}`);
           lastStatus = data.status;
           const spin = data.status === 'running' ? '<div class="spinner"></div> ' : '';
           document.querySelector('.scan-status').innerHTML = `${spin}${data.status}`;
         }
-        if (data.status === 'running') setTyping(true);
+        if (data.status === 'running') {
+          setTyping(true);
+          const btn = document.getElementById('pauseResumeBtn');
+          if (btn) { btn.textContent = '⏸ Pause'; btn.style.color = 'var(--blue-600)'; }
+        }
+        if (data.status === 'paused') {
+          setTyping(false);
+          document.querySelector('.scan-status').innerHTML = '⏸ Scan Paused';
+          const btn = document.getElementById('pauseResumeBtn');
+          if (btn) { btn.textContent = '▶ Resume'; btn.style.color = 'var(--green-500)'; }
+        }
         if (data.status === 'stopped') {
           setTyping(false);
           window.toggleDiscoveryButtons(false);
+          const btn = document.getElementById('pauseResumeBtn');
+          if (btn) btn.style.display = 'none';
           sse.close();
           document.querySelector('.scan-status').innerHTML = '⏹ Scan Stopped';
           addMessage('<strong>Scan stopped.</strong> Redirecting to dashboard…', 'success');
@@ -2123,12 +2162,16 @@
         if (data.status === 'done') {
           setTyping(false);
           window.toggleDiscoveryButtons(false);
+          const btn = document.getElementById('pauseResumeBtn');
+          if (btn) btn.style.display = 'none';
           if (data.result) addMessage(formatScanResult(data.result), 'finding');
           sse.close(); document.querySelector('.scan-status').innerHTML = '✅ Scan Completed'; showChatInput();
         }
         if (data.status === 'error') {
           setTyping(false);
           window.toggleDiscoveryButtons(false);
+          const btn = document.getElementById('pauseResumeBtn');
+          if (btn) btn.style.display = 'none';
           if (data.error) addMessage(`<strong>Error:</strong> ${data.error}`, 'critical');
           sse.close(); document.querySelector('.scan-status').innerHTML = '❌ Scan Failed'; showChatInput();
         }
@@ -2240,6 +2283,28 @@
       let url = 'dashboard.html';
       if (currentSessionId) url += `?session=${currentSessionId}`;
       window.location.href = url;
+    }
+
+    let _isPaused = false;
+    async function togglePause() {
+      const agId = agentId || (new URLSearchParams(window.location.search)).get('agent_id') || '';
+      if (!agId) return;
+      const btn = document.getElementById('pauseResumeBtn');
+      try {
+        if (!_isPaused) {
+          await fetch(`${API}/agents/${agId}/pause`, { method: 'POST' });
+          _isPaused = true;
+          if (btn) { btn.textContent = '▶ Resume'; btn.style.color = 'var(--green-500)'; }
+          document.querySelector('.scan-status').innerHTML = '⏸ Scan Paused';
+          addMessage('<strong>Scan paused.</strong> Click Resume to continue.');
+        } else {
+          await fetch(`${API}/agents/${agId}/resume`, { method: 'POST' });
+          _isPaused = false;
+          if (btn) { btn.textContent = '⏸ Pause'; btn.style.color = 'var(--blue-600)'; }
+          document.querySelector('.scan-status').innerHTML = '<div class="spinner"></div> Running Attack Patterns...';
+          addMessage('<strong>Scan resumed.</strong>');
+        }
+      } catch (e) { console.error('pause/resume failed', e); }
     }
 
     window.addEventListener('resize', () => {

@@ -12,7 +12,7 @@ from probes.registry import get_owasp_probes, get_mitre_probes
 logger = logging.getLogger(__name__)
 
 
-def _load_session_log(key: str, session_id: str) -> Optional[dict]:
+def load_session_log(key: str, session_id: str) -> Optional[dict]:
     """Load a recon artefact saved by the session route, if it exists."""
     p = Path("logs") / f"{key}_{session_id}.json"
     if not p.exists():
@@ -41,11 +41,11 @@ class ProbeSession:
 
         # Recon artefacts — loaded from disk if available so every probe and
         # the reasoning layer can access target context without extra plumbing.
-        self.app_profile: Optional[dict] = _load_session_log("profile", self.session_id)
-        self.vuln_report: Optional[dict] = _load_session_log(
+        self.app_profile: Optional[dict] = load_session_log("profile", self.session_id)
+        self.vuln_report: Optional[dict] = load_session_log(
             "vulnerabilities", self.session_id
         )
-        self.interface_map: Optional[dict] = _load_session_log(
+        self.interface_map: Optional[dict] = load_session_log(
             "interface", self.session_id
         )
 
