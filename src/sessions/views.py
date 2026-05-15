@@ -34,18 +34,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/session")
 
 
-class StartRequest(BaseModel):
-    url: HttpUrl
-    name: Optional[str] = None
-
-
-class GenerateRequest(BaseModel):
-    profile: Optional[AgentProfile] = None
-    interface: Optional[InterfaceMap] = None
-    goal: Optional[str] = None
-    vulnerabilities: Optional[Any] = None
-
-
 def safe_return(result):
     if hasattr(result, "model_dump"):
         return result.model_dump()
