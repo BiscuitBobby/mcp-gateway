@@ -48,13 +48,20 @@ class ToolMisuse(AttackProbe):
 
         _generate_prompts(
             "tool_misuse",
+            session_id=getattr(session, "session_id", None),
             app_profile=getattr(session, "app_profile", None),
             interface_map=getattr(session, "interface_map", None),
             goal=goal,
             vulnerabilities=getattr(session, "vulnerabilities", None),
         )
 
-        prompts = load_prompts(PROMPTS_FILE)
+        from probes.prompt_generator import session_output_path, static_output_path, get_config
+        sid = getattr(session, "session_id", None)
+        if sid:
+            prompts_path = session_output_path("tool_misuse", sid)
+        else:
+            prompts_path = PROMPTS_FILE
+        prompts = load_prompts(prompts_path)
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):

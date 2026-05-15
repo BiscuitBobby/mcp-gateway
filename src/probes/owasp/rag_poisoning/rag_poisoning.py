@@ -22,12 +22,19 @@ class RagPoisoning(AttackProbe):
         generate_documents(goal=goal)
         generate_rag_prompts(
             "rag_poisoning",
+            session_id=getattr(session, "session_id", None),
             goal=goal,
             app_profile=getattr(session, "app_profile", None),
             interface_map=getattr(session, "interface_map", None),
             vulnerabilities=getattr(session, "vuln_report", None),
         )
-        prompts = load_prompts(PROMPTS_FILE)
+        from probes.prompt_generator import session_output_path
+        sid = getattr(session, "session_id", None)
+        if sid:
+            prompts_path = session_output_path("rag_poisoning", sid)
+        else:
+            prompts_path = PROMPTS_FILE
+        prompts = load_prompts(prompts_path)
         results: List[Dict[str, Any]] = []
 
         for idx, item in enumerate(prompts):

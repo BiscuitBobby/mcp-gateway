@@ -50,6 +50,7 @@ class StandardProbe(AttackProbe):
 
         prompts = generate_prompts(
             self.name,
+            session_id=getattr(session, "session_id", None),
             goal=goal,
             app_profile=getattr(session, "app_profile", None),
             interface_map=getattr(session, "interface_map", None),

@@ -49,8 +49,6 @@ class AgentRecord:
         raw_cdp = getattr(browser_mod.instance, "cdp_url", None)
         # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
         if raw_cdp:
-            import re
-
             raw_cdp = re.sub(
                 r"^ws://(?:localhost|127\.0\.0\.1):(\d+)",
                 r"/session/cdp-proxy/\1",
@@ -97,17 +95,16 @@ class ScanRequest(BaseModel):
     send_images: bool = False
 
 
+class DeliveryOptions(BaseModel):
+    send_audio: bool
+    send_images: bool
+
+
+# ── Static / non-parameterised routes first so they are never shadowed ────────
+
 @router.get("")
 async def list_agents():
     return [r.to_dict() for r in registry.values()]
-
-
-@router.get("/{agent_id}")
-async def get_agent(agent_id: str):
-    record = registry.get(agent_id)
-    if not record:
-        raise HTTPException(404, "Agent not found")
-    return record.to_dict()
 
 
 @router.post("/scan", status_code=201)
@@ -129,6 +126,43 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
     # Schedule as a real asyncio Task so it can be cancelled via /stop
     task = asyncio.ensure_future(run_probes(record))
     record.task_handle = task
+    return record.to_dict()
+
+
+@router.get("/delivery")
+async def get_delivery():
+    """Return current audio/image delivery flag state."""
+    from probes.base import send_audio, send_images
+    return {"send_audio": send_audio, "send_images": send_images}
+
+
+@router.post("/delivery")
+async def set_delivery(body: DeliveryOptions):
+    """Update audio/image delivery flags at runtime — takes effect on the next prompt."""
+    from probes.base import set_delivery_options
+    set_delivery_options(body.send_audio, body.send_images)
+    return {"send_audio": body.send_audio, "send_images": body.send_images}
+
+
+@router.get("/cdp-url")
+async def get_cdp_url():
+    """Get the Chrome DevTools Protocol WebSocket URL for the current browser session."""
+    cdp_url = getattr(browser_mod.instance, "cdp_url", None)
+    if cdp_url:
+        # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
+        cdp_url = re.sub(
+            r"^ws://(?:localhost|127\.0\.0\.1):(\d+)", r"/session/cdp-proxy/\1", cdp_url
+        )
+    return {"cdp_url": cdp_url}
+
+
+# ── Parameterised routes ──────────────────────────────────────────────────────
+
+@router.get("/{agent_id}")
+async def get_agent(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Agent not found")
     return record.to_dict()
 
 
@@ -199,19 +233,6 @@ async def resume_agent(agent_id: str):
     return record.to_dict()
 
 
-class DeliveryOptions(BaseModel):
-    send_audio: bool
-    send_images: bool
-
-
-@router.post("/delivery")
-async def set_delivery(body: DeliveryOptions):
-    """Update audio/image delivery flags at runtime — takes effect on the next prompt."""
-    from probes.base import set_delivery_options
-    set_delivery_options(body.send_audio, body.send_images)
-    return {"send_audio": body.send_audio, "send_images": body.send_images}
-
-
 @router.get("/{agent_id}/stream")
 async def stream_agent(agent_id: str):
     if agent_id not in registry:
@@ -239,15 +260,3 @@ async def delete_agent(agent_id: str):
     if not record:
         raise HTTPException(404, "Agent not found")
     return {"agent_id": agent_id, "message": "removed"}
-
-
-@router.get("/cdp-url")
-async def get_cdp_url():
-    """Get the Chrome DevTools Protocol WebSocket URL for the current browser session."""
-    cdp_url = getattr(browser_mod.instance, "cdp_url", None)
-    if cdp_url:
-        # Rewrite internal ws://localhost:PORT/... to a server-relative proxy path
-        cdp_url = re.sub(
-            r"^ws://(?:localhost|127\.0\.0\.1):(\d+)", r"/session/cdp-proxy/\1", cdp_url
-        )
-    return {"cdp_url": cdp_url}

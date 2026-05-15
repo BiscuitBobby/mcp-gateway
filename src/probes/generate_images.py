@@ -116,7 +116,6 @@ def generate_images(
             raise ValueError(
                 "Either output_dir or both probe_name and framework must be provided"
             )
-
         base_dir = Path(__file__).parent / framework / probe_name
         output_dir = base_dir / f"{probe_name}_images"
     if not BASE_IMAGE.exists():

@@ -13,9 +13,25 @@ logger = logging.getLogger(__name__)
 
 PROBES_DIR = Path(__file__).parent
 
+# Root for all session-scoped temp data — lives inside the probes package
+# so it stays co-located with the static prompt files.
+TEMP_ROOT = Path(__file__).parent / "temp"
 
-def output_path(probe_name: str, config: dict) -> Path:
-    """Resolve the output JSON path for a probe."""
+
+def session_attacks_dir(session_id: str) -> Path:
+    """Return (and create) the per-session attacks directory."""
+    d = TEMP_ROOT / session_id / "attacks"
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def session_output_path(probe_name: str, session_id: str) -> Path:
+    """Resolve the session-scoped output JSON path for a probe."""
+    return session_attacks_dir(session_id) / f"{probe_name}_prompts.json"
+
+
+def static_output_path(probe_name: str, config: dict) -> Path:
+    """Resolve the static (source-tree) output JSON path — used as a fallback."""
     framework = config["framework"]
     dir_name = config.get("dir_name", probe_name)
     return PROBES_DIR / framework / dir_name / config["output_file"]
@@ -27,6 +43,7 @@ def output_path(probe_name: str, config: dict) -> Path:
 def generate_prompts(
     probe_name: str,
     *,
+    session_id: Optional[str] = None,
     app_profile: Optional[dict] = None,
     interface_map: Optional[dict] = None,
     goal: Optional[str] = None,
@@ -35,19 +52,33 @@ def generate_prompts(
     """
     Generate adversarial prompts for a given probe.
 
-    This replaces all per-probe generate_prompts.py files. The probe's
-    categories, schema, and output path are looked up from probe_configs.
+    When *session_id* is provided the generated prompts (and any associated
+    audio/image files) are written to ``temp/<session_id>/attacks/`` so that
+    concurrent or sequential scans never overwrite each other's prompts.
+
+    When *session_id* is omitted the legacy static source-tree path is used
+    (kept for backward-compat with direct callers that don't have a session).
     """
     config = get_config(probe_name)
     categories = config["categories"]
     schema_class = config["schema"]
     json_template = config["json_template"]
-    output_file = output_path(probe_name, config)
-    
+
+    # Choose output location: session-scoped temp dir or static source tree
+    if session_id:
+        output_file = session_output_path(probe_name, session_id)
+        # Audio/image assets live alongside the prompts file
+        media_dir = output_file.parent / probe_name
+    else:
+        output_file = static_output_path(probe_name, config)
+        framework = config["framework"]
+        dir_name = config.get("dir_name", probe_name)
+        media_dir = PROBES_DIR / framework / dir_name / f"{probe_name}_audio"
+
     print(f"[DEBUG] Generating prompts for probe: {probe_name}")
     print(f"[DEBUG] Number of categories: {len(categories)}")
     print(f"[DEBUG] Categories: {categories}")
-
+    print(f"[DEBUG] Output path: {output_file}")
     # Build the system prompt
     system_preamble = config.get(
         "system_preamble", "You are a red-team prompt generator.\n"
@@ -142,18 +173,19 @@ def generate_prompts(
         try:
             framework = config["framework"]
             if framework == "owasp":
-                audio_dir = output_file.parent / f"{probe_name}_audio"
+                audio_dir = media_dir / "audio"
                 from probes.utils import generate_audio
-
-                result = generate_audio(
-                    prompts=result, output_dir=audio_dir, voice="danny"
-                )
+                result = generate_audio(prompts=result, output_dir=audio_dir, voice="danny")
             else:
-                from probes.mitre.generate_audio_prompts import generate_audio
-
-                result = generate_audio(
-                    result, probe_name=config.get("dir_name", probe_name)
-                )
+                if session_id:
+                    # Session-scoped: write audio into the temp dir
+                    audio_dir = media_dir / "audio"
+                    from probes.utils import generate_audio as _gen_audio
+                    result = _gen_audio(prompts=result, output_dir=audio_dir, voice="danny")
+                else:
+                    # Static fallback: use the MITRE wrapper (writes to source tree)
+                    from probes.mitre.generate_audio_prompts import generate_audio
+                    result = generate_audio(result, probe_name=config.get("dir_name", probe_name))
             output_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
         except Exception:
             logger.exception("Failed to generate audio for %s", probe_name)
@@ -161,12 +193,13 @@ def generate_prompts(
     if result and config.get("has_images"):
         try:
             from probes.generate_images import generate_images
-
             framework = config["framework"]
+            image_dir = media_dir / "images" if session_id else None
             result = generate_images(
                 result,
-                probe_name=config.get("dir_name", probe_name),
-                framework=framework,
+                output_dir=image_dir,
+                probe_name=config.get("dir_name", probe_name) if not image_dir else None,
+                framework=framework if not image_dir else None,
             )
             output_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
         except Exception:

@@ -5,3 +5,5 @@ __pycache__/
 src/temp/auth.json
 src/temp/auth.json.bak
 logs/
+src/temp/*/attacks/
+src/probes/temp/
