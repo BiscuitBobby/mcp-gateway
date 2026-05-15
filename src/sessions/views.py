@@ -10,6 +10,7 @@ from schemas import (
     AnalyseRequest,
     VulnerabilityReport,
 )
+from sessions.models import StartRequest, GenerateRequest
 from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from probes.execute import run_all, run_one
@@ -19,7 +20,7 @@ from probes.registry import get_probes
 from probes.utils import get_probe_totals
 from recon.agent import run_goal
 from browser_use import Agent
-from routes.agents import AgentRecord, AgentStatus, registry
+from agents.models import AgentRecord, AgentStatus, registry
 from pathlib import Path
 from urllib.parse import urlparse
 import websockets

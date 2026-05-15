@@ -1,10 +1,10 @@
-from __future__ import annotations
 from typing import Any, Literal, Optional
 from enum import Enum
 from datetime import datetime
 from pydantic import (
     BaseModel,
     Field,
+    HttpUrl,
     model_validator,
     ConfigDict,
     field_validator,
@@ -285,6 +285,21 @@ class FullProfile(BaseModel):
             can_call_apis=self.can_call_apis,
             notes=self.notes,
         )
+
+
+class PotentialVulnerability(BaseModel):
+    probe: str
+    finding: str
+    severity: str
+    evidence: str
+    attack_surface: str
+    trust_boundary_violation: str
+
+
+class VulnerabilityReport(BaseModel):
+    potential_vulnerabilities: list[PotentialVulnerability]
+    severity_summary: dict[str, int]
+    recommended_probe_order: list[str] = []
 
 
 # goal
@@ -600,21 +615,6 @@ class LogEntry(BaseModel):
     input: Optional[Any] = None
     output: Optional[Any] = None
     metadata: dict[str, Any] = Field(default_factory=dict)
-
-
-class PotentialVulnerability(BaseModel):
-    probe: str
-    finding: str
-    severity: str
-    evidence: str
-    attack_surface: str
-    trust_boundary_violation: str
-
-
-class VulnerabilityReport(BaseModel):
-    potential_vulnerabilities: list[PotentialVulnerability]
-    severity_summary: dict[str, int]
-    recommended_probe_order: list[str] = []
 
 
 class AnalyseRequest(BaseModel):
