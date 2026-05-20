@@ -304,6 +304,14 @@ async def get_profile_status(agent_id: str):
     return record.to_dict()
 
 
+@router.get("/discover-tools")
+async def get_tool_discovery():
+    cached = load_log("tools")
+    if cached:
+        return cached
+    raise HTTPException(404, "Not Found")
+
+
 @router.post("/discover-tools")
 async def run_tool_discovery():
     cached = load_log("tools")
@@ -343,14 +351,6 @@ async def run_tool_discovery():
 
     task = asyncio.ensure_future(bg_task())
     record.task_handle = task
-    return record.to_dict()
-
-
-@router.get("/status/{agent_id}")
-async def get_agent_status(agent_id: str):
-    record = registry.get(agent_id)
-    if not record:
-        raise HTTPException(404, "Not Found")
     return record.to_dict()
 
 
