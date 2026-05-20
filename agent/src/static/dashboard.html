@@ -1,0 +1,2253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scan Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #f0f0f0;
+      --surface: #ffffff;
+      --text: #111111;
+      --muted: #666666; /* Slightly darker for better contrast with bigger text */
+      --blue: #3b82f6;
+      --blue-dark: #2563eb;
+      --radius: 16px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.10), 0 1.5px 4px rgba(0, 0, 0, 0.06);
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+
+      --surface-hover: #fcfcfd;
+      --border: #e2e8f0;
+      --muted-dark: #475569;
+      --brand: #3b82f6;
+      --brand-hover: #2563eb;
+
+      --red-500: #ef4444;
+      --red-600: #dc2626;
+      --red-glow: rgba(239, 68, 68, 0.15);
+      --orange-500: #f97316;
+      --orange-600: #ea580c;
+      --yellow-500: #eab308;
+      --green-600: #16a34a;
+      --blue-500: #3b82f6;
+
+      --mono: 'DM Sans', monospace; /* Fallback for now */
+      --sans: 'DM Sans', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-size: 15px; /* Increased base font size */
+    }
+
+    /* ─── App shell ─── */
+    .app-shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+    /* ─── Sidebar ─── */
+    .global-sidebar {
+      width: 68px;
+      min-height: 100vh;
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 0 24px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-right: 1px solid rgba(226, 232, 240, 0.7);
+      gap: 6px;
+      transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .sidebar-logo {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--blue), #6366f1);
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(59,130,246,0.35);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .sidebar-logo:hover { transform: scale(1.1); box-shadow: 0 6px 24px rgba(59,130,246,0.5); }
+    .sidebar-logo svg { width: 18px; height: 18px; color: white; }
+
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 8px; }
+
+    .sidebar-link {
+      position: relative;
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--muted);
+      text-decoration: none;
+      transition: all 0.2s;
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .sidebar-link:hover { background: rgba(59, 130, 246, 0.08); color: var(--blue); border-color: rgba(59, 130, 246, 0.1); }
+    .sidebar-link.active { background: rgba(59, 130, 246, 0.08); color: var(--blue); border-color: rgba(59, 130, 246, 0.1); }
+    .sidebar-link.active::before {
+      content: '';
+      position: absolute;
+      left: -8px; top: 50%;
+      transform: translateY(-50%);
+      width: 3px; height: 18px;
+      background: var(--blue);
+      border-radius: 0 3px 3px 0;
+    }
+    .sidebar-link svg { width: 20px; height: 20px; }
+
+    .sidebar-tooltip {
+      position: absolute;
+      left: 56px; top: 50%;
+      transform: translateY(-50%) translateX(-4px);
+      background: #1e293b;
+      color: var(--surface);
+      padding: 6px 12px; /* Increased padding */
+      border-radius: 8px;
+      font-size: 13px; /* Increased font size */
+      font-weight: 600;
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s, transform 0.15s;
+      z-index: 200;
+      border: 1px solid var(--border);
+    }
+    .sidebar-link:hover .sidebar-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+    .sidebar-divider { width: 24px; height: 1px; background: var(--border); margin: 6px 0; }
+
+    /* ─── Main ─── */
+    .app-main { flex: 1; margin-left: 68px; }
+
+    .container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 32px 140px; /* Increased padding */
+    }
+
+    /* ─── Header ─── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 40px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .breadcrumbs {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px; /* Increased font size */
+      font-weight: 500;
+    }
+    .breadcrumbs a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .breadcrumbs a:hover { color: var(--text); }
+    .breadcrumbs .slash { color: var(--border); }
+    .breadcrumbs .current { color: var(--text); font-weight: 600; }
+
+    .header-actions { display: flex; gap: 14px; align-items: center; }
+
+    .scan-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px; /* Increased font size */
+      color: var(--muted);
+      font-family: var(--sans);
+      background: var(--surface);
+      padding: 8px 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .scan-badge .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--green-600);
+      box-shadow: 0 0 6px var(--green-600);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px; /* Increased padding */
+      border-radius: 12px;
+      font-size: 14px; /* Increased font size */
+      font-weight: 600;
+      font-family: var(--sans);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid;
+    }
+    .btn svg { width: 16px; height: 16px; }
+
+    .btn-ghost {
+      background: var(--surface);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .btn-ghost:hover { background: var(--surface-hover); border-color: #cbd5e1; color: var(--text); }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--text), #334155);
+      border-color: transparent;
+      color: white;
+      box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(15, 23, 42, 0.3); }
+
+    /* ─── Section label ─── */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px; /* Increased font size */
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+    .section-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── Cards ─── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-shadow: var(--shadow-sm);
+    }
+    .card:hover { 
+      border-color: #cbd5e1;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ────────────────────────────────────────
+       HERO ROW
+    ──────────────────────────────────────── */
+    .hero-row {
+      display: grid;
+      grid-template-columns: 360px 1fr; /* Increased width for risk card */
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    /* Risk score card - REVERTED STYLE */
+    .risk-card {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: linear-gradient(135deg, #ffffff 0%, #fef2f2 100%);
+      border: 1px solid #fecaca;
+      border-radius: var(--radius);
+      padding: 32px;
+      overflow: hidden;
+    }
+    .risk-card::before {
+      content: '';
+      position: absolute;
+      top: 0; right: 0;
+      width: 200px; height: 200px;
+      background: radial-gradient(circle, var(--red-glow) 0%, transparent 70%);
+      transform: translate(30%, -30%);
+      pointer-events: none;
+    }
+
+    .risk-pill {
+      display: inline-flex;
+      align-items: center;
+      background: white;
+      color: var(--red-600);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px; /* Increased font size */
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+      width: max-content;
+      border: 1px solid #fca5a5;
+      box-shadow: 0 4px 10px rgba(239, 68, 68, 0.1);
+      gap: 8px;
+    }
+    .risk-pill .pulse {
+      display: block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--red-500);
+      box-shadow: 0 0 8px var(--red-500);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.8); }
+    }
+
+    .risk-number {
+      font-size: 80px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 12px;
+      letter-spacing: -3px;
+      background: linear-gradient(135deg, var(--text) 20%, var(--red-600) 100%);
+      background-clip: text;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: baseline;
+      gap: 4px;
+    }
+    .risk-number sub {
+      font-size: 32px;
+      color: var(--muted);
+      -webkit-text-fill-color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+    .risk-desc {
+      color: var(--muted);
+      font-size: 15px; /* Increased font size */
+      font-weight: 400;
+      line-height: 1.6;
+      max-width: 95%;
+    }
+
+    /* Stats panel (right of risk card) */
+    .stats-panel {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      gap: 24px;
+    }
+
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s;
+    }
+    .stat-card:hover { border-color: #cbd5e1; }
+
+    .stat-card-label {
+      font-size: 13px; /* Increased font size */
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+
+    .stat-card-value {
+      font-size: 48px; /* Increased font size */
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+    }
+    .stat-card-value.danger { color: var(--red-600); }
+    .stat-card-value.success { color: var(--green-600); }
+
+    /* ────────────────────────────────────────
+       VULN CATEGORIES
+    ──────────────────────────────────────── */
+    .vuln-row {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .vuln-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      transition: border-color 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .vuln-card:hover { border-color: #cbd5e1; background: var(--surface-hover); }
+
+    .vuln-header { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    .vuln-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .vuln-icon svg { width: 18px; height: 18px; }
+
+    .vuln-count {
+      font-size: 36px; /* Increased font size */
+      font-weight: 700;
+      line-height: 1;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 2px;
+    }
+    .vuln-count sub {
+      font-size: 14px;
+      color: var(--muted);
+      font-weight: 500;
+      letter-spacing: 0;
+    }
+
+    .vuln-name {
+      font-size: 15px; /* Increased font size */
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.3;
+    }
+
+    .vuln-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .vuln-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0;
+      transition: width 1.5s cubic-bezier(0.16,1,0.3,1);
+    }
+
+    .vuln-link {
+      font-size: 13px; /* Increased font size */
+      font-weight: 600;
+      color: var(--muted);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+      pointer-events: none; /* Prevent link from interfering with card click */
+    }
+    .vuln-link:hover { color: var(--blue-600); }
+
+    /* ────────────────────────────────────────
+       CHARTS ROW
+    ──────────────────────────────────────── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card-title {
+      font-size: 16px; /* Increased font size */
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .card-title svg { width: 20px; height: 20px; }
+    .card-title .badge {
+      margin-left: auto;
+      font-size: 12px; /* Increased font size */
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.1);
+      color: var(--blue-600);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      font-weight: 600;
+    }
+
+    /* Bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 12px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 130px 1fr 80px; /* Increased column widths */
+      align-items: center;
+      gap: 16px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      transition: background 0.15s;
+    }
+    .bar-row:hover { background: var(--surface-hover); }
+
+    .bar-meta { }
+    .bar-code {
+      font-size: 12px; /* Increased font size */
+      font-weight: 600;
+      color: var(--blue-600);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .bar-name {
+      font-size: 14px; /* Increased font size */
+      color: var(--muted);
+      line-height: 1.3;
+    }
+
+    .bar-track {
+      height: 8px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill-total {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: rgba(71, 85, 105, 0.4);
+      border-radius: 99px;
+      width: 0;
+      transition: width 1.4s cubic-bezier(0.16,1,0.3,1) 0.1s;
+    }
+    .bar-fill-success {
+      position: absolute;
+      inset: 0 auto 0 0;
+      background: var(--red-600);
+      border-radius: 99px;
+      width: 0;
+      transition: width 1.4s cubic-bezier(0.16,1,0.3,1) 0.3s;
+      box-shadow: 0 0 8px var(--red-glow);
+    }
+
+    .bar-vals {
+      font-size: 13px; /* Increased font size */
+      color: var(--muted);
+      text-align: right;
+    }
+    .bar-vals .v-hit { color: var(--text); font-weight: 700; }
+
+    /* ────────────────────────────────────────
+       COMPLIANCE ROW
+    ──────────────────────────────────────── */
+    .compliance-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .compliance-item {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px;
+      transition: border-color 0.2s;
+    }
+    .compliance-item:hover { border-color: #cbd5e1; }
+
+    .comp-ring-wrap { position: relative; width: 72px; height: 72px; flex-shrink: 0; }
+    .comp-ring-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+    .comp-ring-bg { fill: none; stroke: var(--border); stroke-width: 6; }
+    .comp-ring-val {
+      fill: none;
+      stroke-width: 6;
+      stroke-linecap: round;
+      stroke-dasharray: 157;
+      stroke-dashoffset: 157;
+      transition: stroke-dashoffset 2s cubic-bezier(0.16,1,0.3,1) 0.3s;
+    }
+    .comp-ring-center {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px; /* Increased font size */
+      font-weight: 700;
+    }
+
+    .comp-info h4 {
+      font-size: 16px; /* Increased font size */
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .comp-info p { font-size: 14px; color: var(--muted); line-height: 1.5; /* Increased font size */ }
+
+    .comp-bar-track {
+      margin-top: 12px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+    .comp-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      width: 0;
+      transition: width 1.5s cubic-bezier(0.16,1,0.3,1) 0.4s;
+    }
+
+    /* ────────────────────────────────────────
+       RECOMMENDATIONS
+    ──────────────────────────────────────── */
+    .recs-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .recs-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 24px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .recs-title {
+      font-size: 16px; /* Increased font size */
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .recs-title svg { width: 20px; height: 20px; color: var(--orange-500); }
+
+    .toggle-group {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 6px;
+      gap: 6px;
+    }
+    .toggle-btn {
+      background: transparent;
+      border: none;
+      color: var(--muted);
+      padding: 8px 16px;
+      font-size: 14px; /* Increased font size */
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: var(--sans);
+      transition: all 0.2s;
+    }
+    .toggle-btn.active {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .rec-list {
+      list-style: none;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1px;
+      background: var(--border);
+    }
+
+    .rec-item {
+      background: var(--surface);
+      padding: 24px 28px;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+    }
+    .rec-item:hover { background: var(--surface-hover); }
+    .rec-item:first-child { border-radius: 0 0 0 var(--radius); }
+    .rec-item:last-child { border-radius: 0 0 var(--radius) 0; }
+
+    .rec-item::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: var(--blue-500);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .rec-item:nth-child(even)::before { background: var(--orange-500); }
+    .rec-item.expanded::before { opacity: 1; }
+
+    .rec-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+
+    .rec-content h4 {
+      font-size: 16px; /* Increased font size */
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .rec-summary {
+      font-size: 14px; /* Increased font size */
+      color: var(--muted);
+      line-height: 1.6;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .rec-item.expanded .rec-summary { display: none; }
+
+    .btn-resolve {
+      background: var(--bg);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-size: 13px; /* Increased font size */
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--sans);
+      white-space: nowrap;
+      transition: all 0.2s;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn-resolve:hover { background: rgba(22, 163, 74, 0.1); border-color: var(--green-600); color: var(--green-600); }
+
+    .rec-body {
+      display: none;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 14px; /* Increased font size */
+      color: var(--text);
+      line-height: 1.7;
+    }
+    .rec-item.expanded .rec-body { display: block; animation: fadeIn 0.25s ease; }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Markdown */
+    .markdown-content h1,.markdown-content h2,.markdown-content h3 {
+      font-size: 15px; font-weight: 700; margin-bottom: 10px; color: var(--text); /* Increased font size */
+    }
+    .markdown-content p { margin-bottom: 12px; }
+    .markdown-content p:last-child { margin-bottom: 0; }
+    .markdown-content ul,.markdown-content ol { margin-left: 20px; margin-bottom: 12px; }
+    .markdown-content code {
+      background: var(--bg);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 13px; /* Increased font size */
+      color: var(--orange-600);
+      border: 1px solid var(--border);
+    }
+    .markdown-content strong { font-weight: 700; color: var(--text); }
+
+    /* ─── Stagger animations ─── */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) forwards;
+    }
+    @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── SVG defs ─── */
+    .svg-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+
+    /* ─── Modal ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(12px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.active { display: flex; animation: fadeIn 0.2s ease; }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      max-width: 860px;
+      width: 100%;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.3);
+      animation: slideUp 0.3s cubic-bezier(0.16,1,0.3,1);
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-title-group { display: flex; align-items: center; gap: 16px; }
+    .modal-icon {
+      width: 48px; height: 48px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(135deg, var(--red-500), var(--red-600));
+      box-shadow: 0 4px 14px var(--red-glow);
+    }
+    .modal-icon svg { width: 24px; height: 24px; color: white; }
+    .modal-title-text h2 { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+    .modal-title-text p { font-size: 14px; color: var(--muted); /* Increased font size */ }
+
+    .modal-close {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      color: var(--muted);
+    }
+    .modal-close:hover { background: var(--surface-hover); color: var(--text); border-color: #cbd5e1; }
+    .modal-close svg { width: 20px; height: 20px; }
+
+    .modal-body { padding: 32px; overflow-y: auto; flex: 1; }
+
+    .modal-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .modal-stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+    }
+    .modal-stat-value { font-size: 32px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+    .modal-stat-value.red { color: var(--red-600); }
+    .modal-stat-value.green { color: var(--green-600); }
+    .modal-stat-label { font-size: 13px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; /* Increased font size */ }
+
+    .modal-section { margin-bottom: 28px; }
+    .modal-section:last-child { margin-bottom: 0; }
+    .modal-section-title {
+      font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--muted); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; /* Increased font size */
+    }
+    .modal-section-title svg { width: 16px; height: 16px; color: var(--blue-500); }
+
+    .modal-description {
+      font-size: 14px; color: var(--text); line-height: 1.7; /* Increased font size */
+      padding: 16px 20px;
+      background: var(--bg);
+      border-radius: 12px;
+      border-left: 3px solid var(--blue-500);
+    }
+
+    .modal-attacks-list { display: flex; flex-direction: column; gap: 12px; }
+    .modal-attack-item {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .modal-attack-item:hover { border-color: #cbd5e1; box-shadow: var(--shadow-sm); }
+    .modal-attack-item.expanded { border-color: var(--blue-500); }
+
+    .modal-attack-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
+    .modal-attack-prompt { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; line-height: 1.5; /* Increased font size */ }
+    .modal-attack-prompt.truncated { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .modal-attack-badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; /* Increased font size */ }
+    .modal-attack-badge.success { background: #fee2e2; color: var(--red-600); }
+    .modal-attack-badge.failed { background: #d1fae5; color: var(--green-600); }
+
+    .modal-attack-meta { font-size: 13px; color: var(--muted); line-height: 1.6; /* Increased font size */ }
+    .modal-attack-meta.truncated { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .expand-indicator {
+      position: absolute; bottom: 10px; right: 12px;
+      font-size: 12px; color: var(--blue-600); font-weight: 600; /* Increased font size */
+      display: flex; align-items: center; gap: 4px;
+      opacity: 0.8;
+    }
+    .modal-attack-item:hover .expand-indicator { opacity: 1; }
+    .modal-attack-item.expanded .expand-indicator { display: none; }
+
+    .modal-attack-full {
+      display: none; margin-top: 16px; padding-top: 16px;
+      border-top: 1px dashed var(--border);
+    }
+    .modal-attack-item.expanded .modal-attack-full { display: block; animation: fadeIn 0.25s ease; }
+
+    .modal-attack-section { margin-bottom: 16px; }
+    .modal-attack-section:last-child { margin-bottom: 0; }
+    .modal-attack-section-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; /* Increased font size */
+    }
+    .modal-attack-section-title svg { width: 14px; height: 14px; color: var(--blue-500); }
+    .modal-attack-section-content {
+      font-size: 13px; color: var(--text); line-height: 1.6; /* Increased font size */
+      background: var(--surface);
+      padding: 12px 16px;
+      border-radius: 10px;
+      border-left: 3px solid var(--blue-500);
+    }
+    .modal-attack-section-content code {
+      background: var(--bg); padding: 2px 6px; border-radius: 4px;
+      font-family: var(--mono); font-size: 12px; color: var(--orange-600); /* Increased font size */
+    }
+
+    /* Rec list connector for full-width grid */
+    .rec-item:nth-child(2n+1):last-child { grid-column: 1 / -1; }
+  </style>
+</head>
+
+<body>
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <nav class="global-sidebar">
+    <div class="sidebar-logo" onclick="window.location.href='index.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+      </svg>
+    </div>
+    <div class="sidebar-nav">
+      <a href="index.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="sidebar-tooltip">Main Page</span>
+      </a>
+      <a href="active-scans.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        <span class="sidebar-tooltip">Active Scans</span>
+      </a>
+      <a href="dashboard.html" class="sidebar-link active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>
+        <span class="sidebar-tooltip">Scan Stats</span>
+      </a>
+      <div class="sidebar-divider"></div>
+      <a href="policies.html" class="sidebar-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 2v4"/><path d="M12 18v4"/><path d="M6 12h12"/></svg>
+        <span class="sidebar-tooltip">Policies</span>
+      </a>
+    </div>
+  </nav>
+
+  <div class="app-main">
+
+    <!-- SVG Gradients -->
+    <svg class="svg-defs">
+      <defs>
+        <linearGradient id="gradRed" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#ef4444"/>
+          <stop offset="100%" stop-color="#dc2626"/>
+        </linearGradient>
+        <linearGradient id="gradGreen" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#10b981"/>
+          <stop offset="100%" stop-color="#059669"/>
+        </linearGradient>
+        <linearGradient id="gradOrange" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#f97316"/>
+          <stop offset="100%" stop-color="#ea580c"/>
+        </linearGradient>
+        <linearGradient id="gradBlue" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#3b82f6"/>
+          <stop offset="100%" stop-color="#2563eb"/>
+        </linearGradient>
+      </defs>
+    </svg>
+
+    <div class="container">
+
+      <!-- HEADER -->
+      <header class="fade-up" style="animation-delay:0s">
+        <div class="breadcrumbs">
+          <a href="index.html">Scans</a>
+          <span class="slash">/</span>
+          <span class="current" id="targetNameDisplay">Customer Support Chatbot</span>
+        </div>
+        <div class="header-actions">
+          <div class="scan-badge">
+            <span class="dot"></span>
+            <span id="scanTimeDisplay">Today, 09:14 AM</span>
+          </div>
+          <button id="exportPdfBtn" class="btn btn-ghost">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span class="export-label">Export PDF</span>
+          </button>
+          <button class="btn btn-primary">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/></svg>
+            Re-run Scan
+          </button>
+        </div>
+      </header>
+
+      <!-- HERO ROW -->
+      <div class="section-label fade-up" style="animation-delay:.05s">Overview</div>
+      <div class="hero-row fade-up" style="animation-delay:.1s; margin-bottom:20px;">
+
+        <!-- Risk Score - REVERTED STYLE -->
+        <div class="risk-card">
+          <div class="risk-pill">
+            <span class="pulse"></span>
+            Critical Risk
+          </div>
+          <div class="risk-number">90<sub>/100</sub></div>
+          <p class="risk-desc">High severity profile. Generated from a comprehensive scan using automated attacks and dynamic adversarial probes.</p>
+        </div>
+
+        <!-- Stats 2×2 -->
+        <div class="stats-panel">
+          <div class="stat-card">
+            <div class="stat-card-label">Risk Score</div>
+            <div class="stat-card-value" id="mainRiskScore">87</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Total Attacks</div>
+            <div class="stat-card-value">1,600</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Bypassed</div>
+            <div class="stat-card-value danger">1,395</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-card-label">Blocked</div>
+            <div class="stat-card-value success">205</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- VULN CATEGORIES -->
+      <div class="section-label fade-up" style="animation-delay:.15s">Vulnerable Categories</div>
+      <div class="vuln-row fade-up" style="animation-delay:.2s">
+
+        <div class="vuln-card" data-probe="prompt_injection">
+          <div class="vuln-header">
+            <div class="vuln-icon" style="background:rgba(239,68,68,0.12); color:var(--red-600)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+          </div>
+          <div class="vuln-count semi-gauge-center" style="color:var(--red-600)">80<sub class="vuln-total">/0</sub></div>
+          <div class="vuln-name">Prompt Injection</div>
+          <div class="vuln-bar-track">
+            <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="80"></div>
+          </div>
+          <a href="#" class="vuln-link details-link" data-probe="prompt_injection">Details →</a>
+        </div>
+
+        <div class="vuln-card" data-probe="jailbreak">
+          <div class="vuln-header">
+            <div class="vuln-icon" style="background:rgba(239,68,68,0.12); color:var(--red-600)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+          </div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
+          <div class="vuln-name">Jailbreak</div>
+          <div class="vuln-bar-track">
+            <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="0"></div>
+          </div>
+          <a href="#" class="vuln-link details-link" data-probe="prompt_injection">Details →</a>
+        </div>
+
+        <div class="vuln-card" data-probe="misinformation">
+          <div class="vuln-header">
+            <div class="vuln-icon" style="background:rgba(249,115,22,0.12); color:var(--orange-600)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+          </div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
+          <div class="vuln-name">Hallucinations</div>
+          <div class="vuln-bar-track">
+            <div class="vuln-bar-fill semi-gauge-value" style="background:var(--orange-600)" data-value="0"></div>
+          </div>
+          <a href="#" class="vuln-link details-link" data-probe="misinformation">Details →</a>
+        </div>
+
+        <div class="vuln-card" data-probe="bias">
+          <div class="vuln-header">
+            <div class="vuln-icon" style="background:rgba(239,68,68,0.12); color:var(--red-600)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/><line x1="18" y1="20" x2="18" y2="10"/></svg>
+            </div>
+          </div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
+          <div class="vuln-name">Bias (Unfairness)</div>
+          <div class="vuln-bar-track">
+            <div class="vuln-bar-fill semi-gauge-value" style="background:var(--red-600)" data-value="0"></div>
+          </div>
+          <a href="#" class="vuln-link details-link" data-probe="bias">Details →</a>
+        </div>
+
+        <div class="vuln-card" data-probe="tool_misuse">
+          <div class="vuln-header">
+            <div class="vuln-icon" style="background:rgba(249,115,22,0.12); color:var(--orange-600)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            </div>
+          </div>
+          <div class="vuln-count semi-gauge-center">0<sub class="vuln-total">/0</sub></div>
+          <div class="vuln-name">Tool Misuse</div>
+          <div class="vuln-bar-track">
+            <div class="vuln-bar-fill semi-gauge-value" style="background:var(--orange-600)" data-value="0"></div>
+          </div>
+          <a href="#" class="vuln-link details-link" data-probe="tool_misuse">Details →</a>
+        </div>
+
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="section-label fade-up" style="animation-delay:.25s">Attack Coverage</div>
+      <div class="charts-row fade-up" style="animation-delay:.3s">
+
+        <!-- OWASP -->
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            OWASP Top 10 for LLMs
+            <span class="badge">Hits / Total</span>
+          </div>
+          <div class="bar-chart">
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM01</span><span class="bar-name">Prompt Injection</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM02</span><span class="bar-name">Insecure Output Handling</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM04</span><span class="bar-name">Misinformation</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM06</span><span class="bar-name">Sensitive Data Disclosure</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM07</span><span class="bar-name">Insecure Plugin Design</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM08</span><span class="bar-name">Excessive Agency</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row"><div class="bar-meta"><span class="bar-code">LLM09</span><span class="bar-name">Over-reliance</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+          </div>
+        </div>
+
+        <!-- MITRE ATLAS -->
+        <div class="card">
+          <div class="card-title">
+            <svg viewBox="0 0 200 200" fill="none" stroke="currentColor" stroke-width="18"><path d="M100 20 L180 180 L20 180 Z" stroke-linejoin="miter"/></svg>
+            MITRE ATLAS Adversarial Tactics
+            <span class="badge">Hits / Total</span>
+          </div>
+          <div class="bar-chart" id="mitre-chart">
+            <div class="bar-row" data-mitre="Reconnaissance"><div class="bar-meta"><span class="bar-code">AML.TA0002</span><span class="bar-name">Reconnaissance</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="AI Attack Staging"><div class="bar-meta"><span class="bar-code">AML.TA0001</span><span class="bar-name">AI Attack Staging</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Initial Access"><div class="bar-meta"><span class="bar-code">AML.TA0004</span><span class="bar-name">Initial Access</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Discovery"><div class="bar-meta"><span class="bar-code">AML.TA0008</span><span class="bar-name">Discovery</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Collection"><div class="bar-meta"><span class="bar-code">AML.TA0009</span><span class="bar-name">Collection</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Credential Access"><div class="bar-meta"><span class="bar-code">AML.TA0013</span><span class="bar-name">Credential Access</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Exfiltration"><div class="bar-meta"><span class="bar-code">AML.TA0010</span><span class="bar-name">Exfiltration</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Defense Evasion"><div class="bar-meta"><span class="bar-code">AML.TA0007</span><span class="bar-name">Defense Evasion</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+            <div class="bar-row" data-mitre="Impact"><div class="bar-meta"><span class="bar-code">AML.TA0011</span><span class="bar-name">Impact</span></div><div class="bar-track"><div class="bar-fill-total" data-pct="0"></div><div class="bar-fill-success" data-pct="0"></div></div><div class="bar-vals"><span class="v-hit">0</span> / <span class="total">0</span></div></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COMPLIANCE ROW -->
+      <div class="section-label fade-up" style="animation-delay:.35s">Compliance Readiness</div>
+      <div class="compliance-row fade-up" style="animation-delay:.4s">
+
+        <div class="compliance-item">
+          <div class="comp-ring-wrap">
+            <svg class="comp-ring-svg" viewBox="0 0 56 56">
+              <circle class="comp-ring-bg" cx="28" cy="28" r="25"/>
+              <circle class="comp-ring-val" stroke="url(#gradGreen)" cx="28" cy="28" r="25" data-value="87" data-full="157"/>
+            </svg>
+            <div class="comp-ring-center" style="color:var(--green-600)">87%</div>
+          </div>
+          <div class="comp-info" style="flex:1">
+            <h4>OWASP Top 10 for LLMs</h4>
+            <p>Moderate readiness — 13 controls fail.</p>
+            <div class="comp-bar-track">
+              <div class="comp-bar-fill" style="background:var(--green-600); width:87%"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="compliance-item">
+          <div class="comp-ring-wrap">
+            <svg class="comp-ring-svg" viewBox="0 0 56 56">
+              <circle class="comp-ring-bg" cx="28" cy="28" r="25"/>
+              <circle class="comp-ring-val" stroke="url(#gradRed)" cx="28" cy="28" r="25" data-value="24" data-full="157"/>
+            </svg>
+            <div class="comp-ring-center" style="color:var(--red-600)">24%</div>
+          </div>
+          <div class="comp-info" style="flex:1">
+            <h4>MITRE ATLAS</h4>
+            <p>Poor readiness — critical mitigation required.</p>
+            <div class="comp-bar-track">
+              <div class="comp-bar-fill" style="background:var(--red-600); width:24%"></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RECOMMENDATIONS -->
+      <div class="section-label fade-up" style="animation-delay:.45s">Recommendations</div>
+      <div class="recs-panel fade-up" style="animation-delay:.5s">
+        <div class="recs-header">
+          <div class="recs-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Actionable Recommendations
+          </div>
+          <div class="toggle-group">
+            <button class="toggle-btn active">Unresolved (12)</button>
+            <button class="toggle-btn">Resolved (4)</button>
+          </div>
+        </div>
+
+        <ul class="rec-list">
+          <li class="rec-item" onclick="this.classList.toggle('expanded')">
+            <div class="rec-head">
+              <div class="rec-content">
+                <h4>Implement Input Sanitization &amp; Boundary Guardrails</h4>
+                <p class="rec-summary">Enforce strict lexical filtering before prompt enters context window.</p>
+              </div>
+              <button class="btn-resolve" onclick="event.stopPropagation();this.textContent='Noted ✓';this.style.color='var(--green-600)'">Review Fix</button>
+            </div>
+            <div class="rec-body markdown-content">
+              <p>Enforce strict lexical filtering before the prompt enters the context window. Consider evaluating input length, character encodings, and potential malicious payloads.</p>
+              <ul><li>Limit token count.</li><li>Scan for injection syntax.</li></ul>
+            </div>
+          </li>
+          <li class="rec-item" onclick="this.classList.toggle('expanded')">
+            <div class="rec-head">
+              <div class="rec-content">
+                <h4>Deploy Content Moderation API</h4>
+                <p class="rec-summary">Scan outputs for NSFW, hate speech, and sensitive data leakage.</p>
+              </div>
+              <button class="btn-resolve" onclick="event.stopPropagation();this.textContent='Noted ✓';this.style.color='var(--green-600)'">Review Fix</button>
+            </div>
+            <div class="rec-body markdown-content">
+              <p>Scan outputs for NSFW, hate speech, and sensitive data leakage using an external moderation API before returning the response to the user.</p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+    </div><!-- /container -->
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="vulnModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div class="modal-title-group">
+            <div class="modal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            </div>
+            <div class="modal-title-text">
+              <h2 id="modalTitle">Vulnerability Details</h2>
+              <p id="modalSubtitle">Attack analysis and results</p>
+            </div>
+          </div>
+          <button class="modal-close" onclick="closeModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="modal-stats">
+            <div class="modal-stat-card"><div class="modal-stat-value" id="modalTotalAttacks">0</div><div class="modal-stat-label">Total Attacks</div></div>
+            <div class="modal-stat-card"><div class="modal-stat-value red" id="modalSuccessful">0</div><div class="modal-stat-label">Successful</div></div>
+            <div class="modal-stat-card"><div class="modal-stat-value green" id="modalBlocked">0</div><div class="modal-stat-label">Blocked</div></div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Description</div>
+            <div class="modal-description" id="modalDescription">Loading vulnerability information...</div>
+          </div>
+          <div class="modal-section">
+            <div class="modal-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Recent Attack Samples</div>
+            <div class="modal-attacks-list" id="modalAttacksList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /app-main -->
+</div><!-- /app-shell -->
+
+<script>
+  const API = window.location.origin;
+  let allResults = [];
+
+  // ── Animate vuln bar fills ──
+  function animateVulnBars() {
+    document.querySelectorAll('.vuln-bar-fill').forEach(el => {
+      const val = parseInt(el.getAttribute('data-value')) || 0;
+      el.style.width = val + '%';
+    });
+    // Compliance rings
+    document.querySelectorAll('.comp-ring-val').forEach(r => {
+      const val = parseInt(r.getAttribute('data-value'));
+      const full = parseFloat(r.getAttribute('data-full'));
+      r.style.strokeDashoffset = full - (full * val / 100);
+    });
+    // Bar charts
+    document.querySelectorAll('.bar-fill-total').forEach(b => { b.style.width = b.getAttribute('data-pct') + '%'; });
+    document.querySelectorAll('.bar-fill-success').forEach(b => { b.style.width = b.getAttribute('data-pct') + '%'; });
+  }
+
+  async function loadResults() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sessionId = urlParams.get('session');
+    let url = `${API}/session/results`;
+    if (sessionId) url += `?session_id=${sessionId}`;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      const { rows, totals } = data;
+      applyResults(rows || [], totals || {});
+    } catch (e) { console.error('[Dashboard] Error:', e); }
+  }
+
+  const isViolation = r => {
+    if (r.violation === true || r.violation === 'True') return true;
+    if (r.analysis && r.analysis.analysis && (r.analysis.analysis.violation === true || r.analysis.analysis.violation === 'True')) return true;
+    if (r.violation_detected === true || r.violation_detected === 'True') return true;
+    return false;
+  };
+  const isDetected = r => {
+    if (r.detected === true || r.detected === 'True') return true;
+    if (r.analysis && (r.analysis.detected === true || r.analysis.detected === 'True')) return true;
+    return false;
+  };
+
+  const mitreMap = {
+    reconnaissance:'Reconnaissance', attack_staging:'Attack Staging', user_execution:'User Execution',
+    discovery:'Discovery', collection:'Collection', credential_extraction:'Credential Access',
+    lateral_movement:'Lateral Movement', evasion_techniques:'Defense Evasion', impact:'Impact'
+  };
+  let mitreTotals = {}, mitreHits = {};
+
+  function applyResults(rows, totals = {}) {
+    allResults = rows;
+    const total = rows.length;
+    const violationCount = rows.filter(isViolation).length;
+    const blocked = total - violationCount;
+    const riskScore = total > 0 ? Math.round((violationCount / total) * 100) : 0;
+
+    // Target name
+    if (rows.length > 0) {
+      const targetName = rows[0].target_name || rows[0].name || 'Target';
+      const el = document.getElementById('targetNameDisplay');
+      if (el) el.textContent = targetName;
+      document.title = `${targetName} — Scan Dashboard`;
+    }
+
+    // Risk card
+    const riskBig = document.querySelector('.risk-number');
+    if (riskBig) riskBig.innerHTML = `${riskScore}<sub>/100</sub>`;
+    const riskPill = document.querySelector('.risk-pill');
+    if (riskPill) {
+      const level = riskScore >= 75 ? 'Critical Risk' : riskScore >= 50 ? 'High Risk' : riskScore >= 25 ? 'Medium Risk' : 'Low Risk';
+      riskPill.innerHTML = `<span class="pulse"></span>${level}`;
+    }
+
+    // Stat cards
+    const mainScore = document.getElementById('mainRiskScore');
+    if (mainScore) mainScore.textContent = riskScore;
+    const statVals = document.querySelectorAll('.stat-card-value');
+    if (statVals[0]) statVals[0].textContent = riskScore;
+    if (statVals[1]) statVals[1].textContent = total.toLocaleString();
+    if (statVals[2]) statVals[2].textContent = violationCount.toLocaleString();
+    if (statVals[3]) statVals[3].textContent = blocked.toLocaleString();
+
+    // Scan time
+    const timestamps = rows.map(r => r.timestamp).filter(Boolean).sort();
+    if (timestamps.length) {
+      const latest = new Date(timestamps[timestamps.length - 1]);
+      const el = document.getElementById('scanTimeDisplay');
+      if (el) el.textContent = `${latest.toLocaleDateString()} ${latest.toLocaleTimeString()}`;
+    }
+
+    // Per-probe breakdown
+    const probeCounts = {}, probeDetected = {};
+    rows.forEach(r => {
+      const probe = r.probe || r.type || 'unknown';
+      probeCounts[probe] = (probeCounts[probe] || 0) + 1;
+      if (isViolation(r)) probeDetected[probe] = (probeDetected[probe] || 0) + 1;
+    });
+
+    // Vuln cards
+    document.querySelectorAll('.vuln-card').forEach(card => {
+      const name = card.querySelector('.vuln-name').textContent.toLowerCase();
+      let probe = 'unknown';
+      if (name.includes('jailbreak')) probe = 'prompt_injection';
+      else if (name.includes('hallucination')) probe = 'misinformation';
+      else if (name.includes('bias')) probe = 'bias';
+      else if (name.includes('tool')) probe = 'tool_misuse';
+      const count = probeCounts[probe] || 0;
+      const detected = probeDetected[probe] || 0;
+      const pct = count > 0 ? Math.round((detected / count) * 100) : 0;
+      const barEl = card.querySelector('.vuln-bar-fill');
+      const countEl = card.querySelector('.semi-gauge-center');
+      const totalEl = countEl ? countEl.querySelector('.vuln-total') : null;
+      if (barEl) barEl.setAttribute('data-value', pct);
+      if (countEl) countEl.childNodes[0].textContent = detected;
+      if (totalEl) totalEl.textContent = `/${count}`;
+    });
+
+    // OWASP
+    const owaspMap = {
+      prompt_injection:'LLM01', sensitive_information_disclosure:'LLM02', improper_output_handling:'LLM02',
+      misinformation:'LLM04', data_exfiltration:'LLM06', tool_abuse:'LLM07', excessivity:'LLM08',
+      excessive_agency:'LLM08', tool_misuse:'LLM08', rag_poisoning:'LLM09'
+    };
+    const owaspTotals = {}, owaspHits = {};
+    rows.forEach(r => {
+      const probe = r.probe || r.type || '';
+      const cat = owaspMap[probe];
+      if (!cat) return;
+      owaspTotals[cat] = (owaspTotals[cat] || 0) + 1;
+      if (isViolation(r)) owaspHits[cat] = (owaspHits[cat] || 0) + 1;
+    });
+
+    // MITRE
+    mitreTotals = {}; mitreHits = {};
+    rows.forEach(r => {
+      const probe = r.probe || r.type || '';
+      const cat = mitreMap[probe];
+      if (!cat) return;
+      mitreTotals[cat] = (mitreTotals[cat] || 0) + 1;
+      if (isViolation(r)) mitreHits[cat] = (mitreHits[cat] || 0) + 1;
+    });
+
+    // Update OWASP bars (new HTML uses bar-code spans)
+    document.querySelectorAll('.charts-row .bar-row').forEach(row => {
+      const code = row.querySelector('.bar-code')?.textContent?.trim();
+      if (!code || code.startsWith('AML')) return;
+      const h = owaspHits[code] || 0;
+      const t = owaspTotals[code] || 0;
+      updateBarRow(row, h, t);
+    });
+
+    // Update MITRE bars
+    document.querySelectorAll('#mitre-chart .bar-row').forEach(row => {
+      const cat = row.getAttribute('data-mitre');
+      if (!cat) return;
+      const h = mitreHits[cat] || 0;
+      const t = mitreTotals[cat] || 0;
+      updateBarRow(row, h, t);
+    });
+
+    // Calculate compliance readiness from coverage data
+    const owaspTotal = Object.values(owaspTotals).reduce((a, b) => a + b, 0);
+    const owaspHitsTotal = Object.values(owaspHits).reduce((a, b) => a + b, 0);
+    const owaspCompliance = owaspTotal > 0 ? Math.round((1 - (owaspHitsTotal / owaspTotal)) * 100) : 100;
+
+    const mitreTotal = Object.values(mitreTotals).reduce((a, b) => a + b, 0);
+    const mitreHitsTotal = Object.values(mitreHits).reduce((a, b) => a + b, 0);
+    const mitreCompliance = mitreTotal > 0 ? Math.round((1 - (mitreHitsTotal / mitreTotal)) * 100) : 100;
+
+    // Update OWASP compliance card
+    const owaspCompCard = document.querySelectorAll('.compliance-item')[0];
+    if (owaspCompCard) {
+      const ring = owaspCompCard.querySelector('.comp-ring-val');
+      const center = owaspCompCard.querySelector('.comp-ring-center');
+      const bar = owaspCompCard.querySelector('.comp-bar-fill');
+      const desc = owaspCompCard.querySelector('p');
+      
+      if (ring) ring.setAttribute('data-value', owaspCompliance);
+      if (center) {
+        center.textContent = owaspCompliance + '%';
+        const color = owaspCompliance >= 70 ? 'var(--green-600)' : owaspCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        center.style.color = color;
+      }
+      if (bar) {
+        bar.style.width = owaspCompliance + '%';
+        const bgColor = owaspCompliance >= 70 ? 'var(--green-600)' : owaspCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        bar.style.background = bgColor;
+      }
+      if (desc) {
+        const failCount = Object.keys(owaspHits).filter(k => owaspHits[k] > 0).length;
+        const level = owaspCompliance >= 70 ? 'Good' : owaspCompliance >= 40 ? 'Moderate' : 'Poor';
+        desc.textContent = `${level} readiness — ${failCount} categories with vulnerabilities.`;
+      }
+      
+      // Update ring stroke color
+      if (ring) {
+        const gradient = owaspCompliance >= 70 ? 'url(#gradGreen)' : owaspCompliance >= 40 ? 'url(#gradOrange)' : 'url(#gradRed)';
+        ring.setAttribute('stroke', gradient);
+      }
+    }
+
+    // Update MITRE compliance card
+    const mitreCompCard = document.querySelectorAll('.compliance-item')[1];
+    if (mitreCompCard) {
+      const ring = mitreCompCard.querySelector('.comp-ring-val');
+      const center = mitreCompCard.querySelector('.comp-ring-center');
+      const bar = mitreCompCard.querySelector('.comp-bar-fill');
+      const desc = mitreCompCard.querySelector('p');
+      
+      if (ring) ring.setAttribute('data-value', mitreCompliance);
+      if (center) {
+        center.textContent = mitreCompliance + '%';
+        const color = mitreCompliance >= 70 ? 'var(--green-600)' : mitreCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        center.style.color = color;
+      }
+      if (bar) {
+        bar.style.width = mitreCompliance + '%';
+        const bgColor = mitreCompliance >= 70 ? 'var(--green-600)' : mitreCompliance >= 40 ? 'var(--orange-600)' : 'var(--red-600)';
+        bar.style.background = bgColor;
+      }
+      if (desc) {
+        const failCount = Object.keys(mitreHits).filter(k => mitreHits[k] > 0).length;
+        const level = mitreCompliance >= 70 ? 'Good' : mitreCompliance >= 40 ? 'Moderate' : 'Poor';
+        desc.textContent = `${level} readiness — ${failCount} tactics with vulnerabilities.`;
+      }
+      
+      // Update ring stroke color
+      if (ring) {
+        const gradient = mitreCompliance >= 70 ? 'url(#gradGreen)' : mitreCompliance >= 40 ? 'url(#gradOrange)' : 'url(#gradRed)';
+        ring.setAttribute('stroke', gradient);
+      }
+    }
+
+    // Recommendations
+    const failing = rows.filter(isViolation);
+    if (failing.length > 0) {
+      const recList = document.querySelector('.rec-list');
+      if (recList) {
+        const seen = new Set();
+        const items = [];
+        failing.forEach(r => {
+          const probe = r.probe || r.type || 'unknown';
+          if (seen.has(probe)) return;
+          seen.add(probe);
+          let reasoning = '';
+          if (r.analysis) reasoning = r.analysis.reasoning || (r.analysis.analysis && r.analysis.analysis.evidence) || '';
+          if (!reasoning && r.reasoning) reasoning = r.reasoning;
+          const rawMd = reasoning || 'Vulnerability detected — review probe evidence.';
+          const parsedMd = typeof marked !== 'undefined' ? marked.parse(String(rawMd)) : rawMd;
+          const summary = String(rawMd).replace(/[#*`_>]/g, '').slice(0, 110) + '...';
+          items.push(`
+            <li class="rec-item" onclick="this.classList.toggle('expanded')">
+              <div class="rec-head">
+                <div class="rec-content">
+                  <h4>${probeLabel(probe)}</h4>
+                  <p class="rec-summary">${summary}</p>
+                </div>
+                <button class="btn-resolve" onclick="event.stopPropagation();this.textContent='Noted ✓';this.style.color='var(--green-600)'">Review Fix</button>
+              </div>
+              <div class="rec-body markdown-content">${parsedMd}</div>
+            </li>`);
+        });
+        recList.innerHTML = items.slice(0, 8).join('');
+        const toggles = document.querySelectorAll('.toggle-btn');
+        if (toggles[0]) toggles[0].textContent = `Unresolved (${items.length})`;
+      }
+    }
+
+    animateVulnBars();
+  }
+
+  function updateBarRow(row, h, t) {
+    const totalEl = row.querySelector('.bar-vals .total');
+    const valEl = row.querySelector('.bar-vals .v-hit');
+    const fillTotal = row.querySelector('.bar-fill-total');
+    const fillSuccess = row.querySelector('.bar-fill-success');
+    if (totalEl) totalEl.textContent = t;
+    if (valEl) valEl.textContent = h;
+    if (t > 0) {
+      const tp = Math.min(100, Math.round((t / 30) * 100));
+      const hp = Math.min(tp, Math.round((h / t) * tp));
+      if (fillTotal) fillTotal.setAttribute('data-pct', tp);
+      if (fillSuccess) fillSuccess.setAttribute('data-pct', hp);
+    }
+  }
+
+  function probeLabel(probe) {
+    const labels = {
+      prompt_injection:'Prompt Injection', sensitive_information_disclosure:'Sensitive Info Disclosure',
+      misinformation:'Misinformation', improper_output_handling:'Improper Output Handling',
+      data_exfiltration:'Data Exfiltration', excessive_agency:'Excessive Agency',
+      rag_poisoning:'RAG Poisoning', tool_abuse:'Tool Abuse', tool_misuse:'Tool Misuse'
+    };
+    return labels[probe] || probe.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // ── Modal ──
+  function openModal(probeName) {
+    const modal = document.getElementById('vulnModal');
+    const filtered = allResults.filter(r => {
+      const rp = (r.probe || r.type || '').toLowerCase();
+      return rp === probeName.toLowerCase()
+        || (probeName === 'prompt_injection' && rp.includes('injection'))
+        || (probeName === 'misinformation' && (rp.includes('misinformation') || rp.includes('hallucination')));
+    });
+    const total = filtered.length;
+    const successful = filtered.filter(isViolation).length;
+    const blocked = total - successful;
+
+    document.getElementById('modalTitle').textContent = probeLabel(probeName);
+    document.getElementById('modalSubtitle').textContent = `${total} attacks analyzed`;
+    document.getElementById('modalTotalAttacks').textContent = total;
+    document.getElementById('modalSuccessful').textContent = successful;
+    document.getElementById('modalBlocked').textContent = blocked;
+
+    const descriptions = {
+      prompt_injection: 'Prompt injection attacks attempt to manipulate the AI system by injecting malicious instructions into user inputs. These attacks can bypass safety controls and cause the model to perform unintended actions.',
+      misinformation: 'Misinformation and hallucination attacks test whether the AI generates false or misleading information. This includes fabricated facts, incorrect data, and unreliable responses.',
+      bias: 'Bias testing evaluates whether the AI system exhibits unfair treatment or discrimination based on protected characteristics such as race, gender, or other demographic factors.',
+      tool_misuse: 'Tool misuse attacks test whether the AI can be manipulated to use its available tools in unintended or harmful ways, potentially leading to unauthorized actions.',
+    };
+    document.getElementById('modalDescription').textContent = descriptions[probeName] || 'Detailed analysis of this vulnerability category.';
+
+    const attacksList = document.getElementById('modalAttacksList');
+    const samples = filtered.slice(0, 10);
+    if (samples.length === 0) {
+      attacksList.innerHTML = '<div style="text-align:center;color:var(--muted);padding:20px;font-size:14px;">No attacks recorded for this category yet.</div>';
+    } else {
+      attacksList.innerHTML = samples.map((attack) => {
+        const isSuccess = isViolation(attack);
+        const prompt = attack.prompt || attack.input || 'No prompt available';
+        const response = attack.response || attack.output || '';
+        const reasoning = attack.reasoning || (attack.analysis && attack.analysis.reasoning) || '';
+        const evidence = attack.analysis && attack.analysis.analysis && attack.analysis.analysis.evidence || '';
+        const promptPreview = prompt.length > 150 ? prompt.substring(0, 150) + '...' : prompt;
+        const metaText = reasoning || evidence || response || 'No additional details available';
+        const metaPreview = metaText.length > 180 ? metaText.substring(0, 180) + '...' : metaText;
+        const promptHtml = typeof marked !== 'undefined' ? marked.parse(prompt) : escapeHtml(prompt);
+        const responseHtml = response ? (typeof marked !== 'undefined' ? marked.parse(response) : escapeHtml(response)) : '';
+        const reasoningHtml = reasoning ? (typeof marked !== 'undefined' ? marked.parse(reasoning) : escapeHtml(reasoning)) : '';
+        const evidenceHtml = evidence ? (typeof marked !== 'undefined' ? marked.parse(evidence) : escapeHtml(evidence)) : '';
+        return `
+          <div class="modal-attack-item" onclick="toggleAttackExpand(this)">
+            <div class="modal-attack-header">
+              <div class="modal-attack-prompt truncated">${escapeHtml(promptPreview)}</div>
+              <div class="modal-attack-badge ${isSuccess ? 'success' : 'failed'}">${isSuccess ? 'Bypassed' : 'Blocked'}</div>
+            </div>
+            <div class="modal-attack-meta truncated">${escapeHtml(metaPreview)}</div>
+            <div class="expand-indicator">Expand <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+            <div class="modal-attack-full">
+              <div class="modal-attack-section"><div class="modal-attack-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Full Prompt</div><div class="modal-attack-section-content">${promptHtml}</div></div>
+              ${responseHtml ? `<div class="modal-attack-section"><div class="modal-attack-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>Response</div><div class="modal-attack-section-content">${responseHtml}</div></div>` : ''}
+              ${reasoningHtml ? `<div class="modal-attack-section"><div class="modal-attack-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Analysis</div><div class="modal-attack-section-content">${reasoningHtml}</div></div>` : ''}
+              ${evidenceHtml ? `<div class="modal-attack-section"><div class="modal-attack-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Evidence</div><div class="modal-attack-section-content">${evidenceHtml}</div></div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    document.getElementById('vulnModal').classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  function toggleAttackExpand(el) {
+    if (event.target.closest('.modal-attack-badge')) return;
+    el.classList.toggle('expanded');
+    const prompt = el.querySelector('.modal-attack-prompt');
+    const meta = el.querySelector('.modal-attack-meta');
+    if (el.classList.contains('expanded')) {
+      prompt.classList.remove('truncated');
+      meta.classList.remove('truncated');
+    } else {
+      prompt.classList.add('truncated');
+      meta.classList.add('truncated');
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  document.getElementById('vulnModal').addEventListener('click', e => { if (e.target.id === 'vulnModal') closeModal(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(animateVulnBars, 200);
+    loadResults();
+
+    // Toggle
+    document.querySelectorAll('.toggle-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        document.querySelectorAll('.toggle-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        const list = document.querySelector('.rec-list');
+        list.style.opacity = e.target.innerText.includes('Resolved') ? '0.35' : '1';
+        list.style.filter = e.target.innerText.includes('Resolved') ? 'grayscale(1)' : 'none';
+        list.style.transition = 'opacity 0.3s, filter 0.3s';
+      });
+    });
+
+    // Re-run
+    document.querySelector('.btn-primary').addEventListener('click', () => { window.location.href = 'index.html'; });
+
+    // Export
+    document.getElementById('exportPdfBtn').addEventListener('click', exportPDF);
+
+    // Details links
+    document.querySelectorAll('.details-link').forEach(link => {
+      link.addEventListener('click', e => {
+        e.preventDefault();
+        e.stopPropagation(); // Prevent double-triggering
+        const probe = e.currentTarget.getAttribute('data-probe');
+        if (probe) openModal(probe);
+      });
+    });
+
+    // Make entire vuln cards clickable
+    document.querySelectorAll('.vuln-card').forEach(card => {
+      card.addEventListener('click', e => {
+        const probe = card.getAttribute('data-probe');
+        if (probe) openModal(probe);
+      });
+    });
+  });
+
+  // ── PDF Export (Professional Document Format) ──
+  async function exportPDF() {
+    const btn = document.getElementById('exportPdfBtn');
+    const labelEl = btn.querySelector('.export-label');
+    const origLabel = labelEl.textContent;
+    btn.disabled = true; btn.style.opacity = '0.5';
+    labelEl.textContent = 'Generating…';
+    try {
+      if (!window.jspdf && !window.jsPDF) throw new Error('jsPDF not loaded');
+      const jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+      const targetName = document.getElementById('targetNameDisplay')?.textContent?.trim() || 'Unknown Target';
+      const scanTimeRaw = document.getElementById('scanTimeDisplay')?.textContent?.trim() || '—';
+      const riskScore = document.querySelector('.risk-number')?.textContent?.replace('/100','').trim() || '0';
+      const riskLevel = document.querySelector('.risk-pill')?.textContent?.trim().replace(/\s+/g, ' ') || 'Unknown';
+      const statVals = document.querySelectorAll('.stat-card-value');
+      const totalAtks = statVals[1]?.textContent?.trim().replace(/,/g, '') || '0';
+      const bypasses = statVals[2]?.textContent?.trim().replace(/,/g, '') || '0';
+      const blocked = statVals[3]?.textContent?.trim().replace(/,/g, '') || '0';
+
+      // Extract ALL vulnerability categories (including 0s)
+      const vulnCategories = [
+        'Prompt Injection', 'Jailbreak', 'Hallucinations', 'Bias (Unfairness)', 'Tool Misuse'
+      ];
+      const vulnData = [];
+      vulnCategories.forEach(catName => {
+        const card = Array.from(document.querySelectorAll('.vuln-card')).find(c => 
+          c.querySelector('.vuln-name')?.textContent?.trim() === catName
+        );
+        let detected = '0', total = '0';
+        if (card) {
+          const countEl = card.querySelector('.semi-gauge-center');
+          if (countEl) {
+            const fullText = countEl.textContent.trim();
+            const match = fullText.match(/^(\d+)\/(\d+)$/);
+            if (match) {
+              detected = match[1];
+              total = match[2];
+            }
+          }
+        }
+        vulnData.push({ title: catName, detected, total });
+      });
+
+      // Extract ALL OWASP categories (including 0s)
+      const owaspCategories = [
+        { code: 'LLM01', name: 'Prompt Injection' },
+        { code: 'LLM02', name: 'Insecure Output Handling' },
+        { code: 'LLM03', name: 'Training Data Poisoning' },
+        { code: 'LLM04', name: 'Model Denial of Service' },
+        { code: 'LLM05', name: 'Supply Chain Vulnerabilities' },
+        { code: 'LLM06', name: 'Sensitive Information Disclosure' },
+        { code: 'LLM07', name: 'Insecure Plugin Design' },
+        { code: 'LLM08', name: 'Excessive Agency' },
+        { code: 'LLM09', name: 'Overreliance' },
+        { code: 'LLM10', name: 'Model Theft' }
+      ];
+      const owaspData = [];
+      owaspCategories.forEach(cat => {
+        const row = Array.from(document.querySelectorAll('.charts-row .bar-row')).find(r => 
+          r.querySelector('.bar-code')?.textContent?.trim() === cat.code
+        );
+        let hits = '0', total = '0';
+        if (row) {
+          hits = row.querySelector('.v-hit')?.textContent?.trim() || '0';
+          total = row.querySelector('.total')?.textContent?.trim() || '0';
+        }
+        owaspData.push({ code: cat.code, name: cat.name, hits, total });
+      });
+
+      // Extract ALL MITRE tactics (including 0s)
+      const mitreCategories = [
+        { code: 'AML.TA0002', name: 'Reconnaissance' },
+        { code: 'AML.TA0001', name: 'AI Attack Staging' },
+        { code: 'AML.TA0004', name: 'Initial Access' },
+        { code: 'AML.TA0008', name: 'Discovery' },
+        { code: 'AML.TA0009', name: 'Collection' },
+        { code: 'AML.TA0013', name: 'Credential Access' },
+        { code: 'AML.TA0010', name: 'Exfiltration' },
+        { code: 'AML.TA0007', name: 'Defense Evasion' },
+        { code: 'AML.TA0011', name: 'Impact' }
+      ];
+      const mitreData = [];
+      mitreCategories.forEach(cat => {
+        const row = Array.from(document.querySelectorAll('#mitre-chart .bar-row')).find(r => 
+          r.querySelector('.bar-code')?.textContent?.trim() === cat.code
+        );
+        let hits = '0', total = '0';
+        if (row) {
+          hits = row.querySelector('.v-hit')?.textContent?.trim() || '0';
+          total = row.querySelector('.total')?.textContent?.trim() || '0';
+        }
+        mitreData.push({ code: cat.code, category: cat.name, hits, total });
+      });
+
+      // Extract compliance data
+      const compData = [];
+      document.querySelectorAll('.compliance-item').forEach(card => {
+        const name = card.querySelector('h4')?.textContent?.trim() || '';
+        const desc = card.querySelector('p')?.textContent?.trim() || '';
+        const pct = card.querySelector('.comp-ring-center')?.textContent?.trim() || '—';
+        if (name) compData.push({ name, desc, pct });
+      });
+
+      // Extract recommendations
+      const recData = [];
+      document.querySelectorAll('.rec-item').forEach(item => {
+        const title = item.querySelector('h4')?.textContent?.trim() || '';
+        const body = item.querySelector('.rec-body')?.innerText?.trim() || '';
+        const summary = item.querySelector('.rec-summary')?.textContent?.trim() || '';
+        if (title) recData.push({ title, body: body || summary });
+      });
+
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = pdf.internal.pageSize.getWidth(), pageH = pdf.internal.pageSize.getHeight();
+      const ML = 20, MR = 20, MT = 20, contentW = pageW - ML - MR;
+      let y = MT;
+      const scoreNum = parseInt(riskScore) || 0;
+      const riskRgb = scoreNum >= 75 ? [220,38,38] : scoreNum >= 50 ? [234,88,12] : scoreNum >= 25 ? [234,179,8] : [16,185,129];
+
+      const newPage = () => { drawFooter(); pdf.addPage(); y = MT; };
+      const ensureSpace = n => { if (y + n > pageH - 25) newPage(); };
+      const drawFooter = () => {
+        const pg = pdf.internal.getCurrentPageInfo().pageNumber;
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(120,130,150);
+        pdf.setDrawColor(200,210,220); pdf.line(ML, pageH-15, pageW-MR, pageH-15);
+        pdf.text(`AI Security Assessment Report — ${targetName}`, ML, pageH-9);
+        pdf.text(`Page ${pg}`, pageW-MR, pageH-9, {align:'right'});
+      };
+
+      // ═══════════════════════════════════════════════════════════════
+      // COVER PAGE
+      // ═══════════════════════════════════════════════════════════════
+      pdf.setFillColor(15,23,42); pdf.rect(0,0,pageW,pageH,'F');
+      
+      // Title
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(28); pdf.setTextColor(255,255,255);
+      pdf.text('AI Security Assessment', pageW/2, 80, {align:'center'});
+      pdf.setFontSize(18); pdf.setTextColor(148,163,184);
+      pdf.text('Red Team Penetration Test Report', pageW/2, 95, {align:'center'});
+      
+      // Target info box
+      pdf.setFillColor(30,41,59); pdf.roundedRect(ML+20, 115, contentW-40, 50, 4, 4, 'F');
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(148,163,184);
+      pdf.text('TARGET SYSTEM', pageW/2, 125, {align:'center'});
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(255,255,255);
+      pdf.text(targetName, pageW/2, 135, {align:'center'});
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(148,163,184);
+      pdf.text(`Scan Date: ${scanTimeRaw}`, pageW/2, 145, {align:'center'});
+      pdf.text(`Report Generated: ${new Date().toLocaleString()}`, pageW/2, 153, {align:'center'});
+      
+      // Risk score badge
+      pdf.setFillColor(...riskRgb); 
+      pdf.roundedRect(pageW/2-30, 185, 60, 30, 4, 4, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(32); pdf.setTextColor(255,255,255);
+      pdf.text(riskScore, pageW/2, 205, {align:'center'});
+      pdf.setFontSize(12);
+      pdf.text(riskLevel.toUpperCase(), pageW/2, 213, {align:'center'});
+      
+      // Classification
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(239,68,68);
+      pdf.text('CONFIDENTIAL — INTERNAL USE ONLY', pageW/2, pageH-20, {align:'center'});
+
+      // ═══════════════════════════════════════════════════════════════
+      // EXECUTIVE SUMMARY
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(20); pdf.setTextColor(15,23,42);
+      pdf.text('Executive Summary', ML, y);
+      y += 12;
+      
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 10;
+      
+      // Summary text
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const summaryText = `This report presents the findings of a comprehensive AI security assessment conducted on ${targetName}. The evaluation employed automated adversarial testing techniques to identify vulnerabilities across multiple attack vectors including prompt injection, jailbreaking, hallucination induction, bias exploitation, and tool misuse.`;
+      const summaryLines = pdf.splitTextToSize(summaryText, contentW);
+      pdf.text(summaryLines, ML, y);
+      y += summaryLines.length * 5 + 8;
+      
+      // Key Findings Box
+      pdf.setFillColor(241,245,249); pdf.setDrawColor(203,213,225);
+      pdf.roundedRect(ML, y, contentW, 45, 3, 3, 'FD');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+      pdf.text('Key Findings', ML+5, y+7);
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      pdf.text(`• Total Attack Vectors Tested: ${totalAtks}`, ML+5, y+15);
+      pdf.text(`• Successful Bypasses: ${bypasses} (${totalAtks > 0 ? Math.round((parseInt(bypasses)/parseInt(totalAtks))*100) : 0}%)`, ML+5, y+22);
+      pdf.text(`• Blocked Attacks: ${blocked} (${totalAtks > 0 ? Math.round((parseInt(blocked)/parseInt(totalAtks))*100) : 0}%)`, ML+5, y+29);
+      pdf.text(`• Overall Risk Score: ${riskScore}/100 (${riskLevel})`, ML+5, y+36);
+      y += 52;
+      
+      // Risk Assessment
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(15,23,42);
+      pdf.text('Risk Assessment', ML, y);
+      y += 8;
+      
+      let riskAssessment = '';
+      if (scoreNum >= 75) {
+        riskAssessment = 'CRITICAL: The system exhibits severe vulnerabilities that pose immediate security risks. Multiple attack vectors successfully bypassed security controls. Immediate remediation is required before production deployment.';
+      } else if (scoreNum >= 50) {
+        riskAssessment = 'HIGH: Significant security weaknesses were identified. The system is vulnerable to several attack types. Comprehensive security hardening is strongly recommended.';
+      } else if (scoreNum >= 25) {
+        riskAssessment = 'MEDIUM: Moderate security concerns exist. While basic protections are in place, improvements are needed to meet enterprise security standards.';
+      } else {
+        riskAssessment = 'LOW: The system demonstrates strong security posture with minimal vulnerabilities. Continue monitoring and periodic reassessment.';
+      }
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const riskLines = pdf.splitTextToSize(riskAssessment, contentW);
+      pdf.text(riskLines, ML, y);
+      y += riskLines.length * 5 + 10;
+
+      // ═══════════════════════════════════════════════════════════════
+      // VULNERABILITY BREAKDOWN
+      // ═══════════════════════════════════════════════════════════════
+      ensureSpace(60);
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('Vulnerability Category Analysis', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      vulnData.forEach((vuln, idx) => {
+        ensureSpace(25);
+        const detected = parseInt(vuln.detected) || 0;
+        const total = parseInt(vuln.total) || 0;
+        const rate = total > 0 ? Math.round((detected/total)*100) : 0;
+        const statusColor = detected > 0 ? riskRgb : [16,185,129];
+        
+        // Category box
+        pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+        pdf.roundedRect(ML, y, contentW, 20, 2, 2, 'FD');
+        
+        // Category name
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+        pdf.text(`${idx+1}. ${vuln.title}`, ML+4, y+7);
+        
+        // Stats
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(...statusColor);
+        pdf.text(`${detected}/${total}`, pageW-MR-30, y+7);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(100,116,139);
+        pdf.text(`(${rate}%)`, pageW-MR-30, y+13);
+        
+        // Progress bar
+        const barX = ML+4, barY = y+12, barW = contentW-40, barH = 4;
+        pdf.setFillColor(226,232,240); pdf.roundedRect(barX, barY, barW, barH, 2, 2, 'F');
+        if (rate > 0) {
+          pdf.setFillColor(...statusColor); 
+          pdf.roundedRect(barX, barY, barW*(rate/100), barH, 2, 2, 'F');
+        }
+        
+        y += 24;
+      });
+
+
+      // ═══════════════════════════════════════════════════════════════
+      // OWASP TOP 10 FOR LLMs
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('OWASP Top 10 for LLMs Coverage', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+      const owaspIntro = 'Assessment coverage mapped to OWASP Top 10 for Large Language Model Applications security risks.';
+      pdf.text(pdf.splitTextToSize(owaspIntro, contentW), ML, y);
+      y += 10;
+      
+      // Table header
+      pdf.setFillColor(241,245,249); pdf.rect(ML, y, contentW, 8, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(51,65,85);
+      pdf.text('Code', ML+2, y+5.5);
+      pdf.text('Vulnerability Category', ML+20, y+5.5);
+      pdf.text('Tested', ML+110, y+5.5);
+      pdf.text('Bypassed', ML+130, y+5.5);
+      pdf.text('Rate', ML+155, y+5.5);
+      y += 8;
+      
+      owaspData.forEach((item, idx) => {
+        ensureSpace(7);
+        if (idx % 2 === 0) {
+          pdf.setFillColor(249,250,251); pdf.rect(ML, y, contentW, 7, 'F');
+        }
+        
+        const hits = parseInt(item.hits) || 0;
+        const total = parseInt(item.total) || 0;
+        const rate = total > 0 ? Math.round((hits/total)*100) : 0;
+        const statusColor = hits > 0 ? riskRgb : [100,116,139];
+        
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); pdf.setTextColor(59,130,246);
+        pdf.text(item.code, ML+2, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(51,65,85);
+        const catName = pdf.splitTextToSize(item.name, 85);
+        pdf.text(catName[0], ML+20, y+5);
+        pdf.setTextColor(71,85,105);
+        pdf.text(String(total), ML+110, y+5);
+        pdf.setFont('helvetica','bold'); pdf.setTextColor(...statusColor);
+        pdf.text(String(hits), ML+130, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
+        pdf.text(`${rate}%`, ML+155, y+5);
+        
+        y += 7;
+      });
+
+      // ═══════════════════════════════════════════════════════════════
+      // MITRE ATLAS
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('MITRE ATLAS Adversarial Tactics', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 8;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+      const mitreIntro = 'Coverage analysis mapped to MITRE ATLAS (Adversarial Threat Landscape for Artificial-Intelligence Systems) framework.';
+      pdf.text(pdf.splitTextToSize(mitreIntro, contentW), ML, y);
+      y += 10;
+      
+      // Table header
+      pdf.setFillColor(241,245,249); pdf.rect(ML, y, contentW, 8, 'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(51,65,85);
+      pdf.text('Tactic ID', ML+2, y+5.5);
+      pdf.text('Tactic Name', ML+30, y+5.5);
+      pdf.text('Tested', ML+110, y+5.5);
+      pdf.text('Bypassed', ML+130, y+5.5);
+      pdf.text('Rate', ML+155, y+5.5);
+      y += 8;
+      
+      mitreData.forEach((item, idx) => {
+        ensureSpace(7);
+        if (idx % 2 === 0) {
+          pdf.setFillColor(249,250,251); pdf.rect(ML, y, contentW, 7, 'F');
+        }
+        
+        const hits = parseInt(item.hits) || 0;
+        const total = parseInt(item.total) || 0;
+        const rate = total > 0 ? Math.round((hits/total)*100) : 0;
+        const statusColor = hits > 0 ? riskRgb : [100,116,139];
+        
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(59,130,246);
+        pdf.text(item.code, ML+2, y+5);
+        pdf.setTextColor(51,65,85);
+        const tacticName = pdf.splitTextToSize(item.category, 75);
+        pdf.text(tacticName[0], ML+30, y+5);
+        pdf.setTextColor(71,85,105);
+        pdf.text(String(total), ML+110, y+5);
+        pdf.setFont('helvetica','bold'); pdf.setTextColor(...statusColor);
+        pdf.text(String(hits), ML+130, y+5);
+        pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
+        pdf.text(`${rate}%`, ML+155, y+5);
+        
+        y += 7;
+      });
+
+      // ═══════════════════════════════════════════════════════════════
+      // COMPLIANCE READINESS
+      // ═══════════════════════════════════════════════════════════════
+      if (compData.length > 0) {
+        ensureSpace(50);
+        y += 10;
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+        pdf.text('Compliance & Standards Readiness', ML, y);
+        y += 10;
+        pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+        pdf.line(ML, y, pageW-MR, y);
+        y += 10;
+        
+        compData.forEach(comp => {
+          ensureSpace(30);
+          const pct = parseInt(comp.pct) || 0;
+          const compColor = pct >= 70 ? [16,185,129] : pct >= 40 ? [234,88,12] : [220,38,38];
+          
+          pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+          pdf.roundedRect(ML, y, contentW, 25, 3, 3, 'FD');
+          
+          // Score circle
+          pdf.setFillColor(...compColor);
+          pdf.circle(ML+15, y+12.5, 8, 'F');
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(12); pdf.setTextColor(255,255,255);
+          pdf.text(`${pct}%`, ML+15, y+14.5, {align:'center'});
+          
+          // Framework name
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(15,23,42);
+          pdf.text(comp.name, ML+28, y+10);
+          
+          // Description
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+          const descLines = pdf.splitTextToSize(comp.desc, contentW-35);
+          pdf.text(descLines, ML+28, y+16);
+          
+          y += 30;
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // RECOMMENDATIONS
+      // ═══════════════════════════════════════════════════════════════
+      if (recData.length > 0) {
+        newPage();
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+        pdf.text('Security Recommendations', ML, y);
+        y += 10;
+        pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+        pdf.line(ML, y, pageW-MR, y);
+        y += 10;
+        
+        recData.forEach((rec, idx) => {
+          const cleanBody = rec.body
+            .replace(/<[^>]+>/g, '')
+            .replace(/\*\*([^*]+)\*\*/g, '$1')
+            .replace(/\*([^*]+)\*/g, '$1')
+            .replace(/`([^`]+)`/g, '$1')
+            .replace(/#+\s/g, '')
+            .replace(/\n+/g, ' ')
+            .trim();
+          
+          const bodyLines = pdf.splitTextToSize(cleanBody, contentW-8);
+          const recHeight = 15 + Math.min(bodyLines.length, 8) * 4.5;
+          
+          ensureSpace(recHeight);
+          
+          // Priority badge color
+          const priorityColor = idx < 3 ? [220,38,38] : idx < 6 ? [234,88,12] : [59,130,246];
+          
+          pdf.setFillColor(249,250,251); pdf.setDrawColor(229,231,235);
+          pdf.roundedRect(ML, y, contentW, recHeight, 3, 3, 'FD');
+          
+          // Priority indicator
+          pdf.setFillColor(...priorityColor);
+          pdf.rect(ML, y, 3, recHeight, 'F');
+          
+          // Number (without circle)
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(...priorityColor);
+          pdf.text(`${idx+1}.`, ML+6, y+9);
+          
+          // Title
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(10); pdf.setTextColor(15,23,42);
+          const titleLines = pdf.splitTextToSize(rec.title, contentW-25);
+          pdf.text(titleLines, ML+14, y+9);
+          
+          // Body
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(9); pdf.setTextColor(71,85,105);
+          pdf.text(bodyLines.slice(0, 8), ML+6, y+9+titleLines.length*4.5);
+          
+          y += recHeight + 4;
+        });
+      }
+
+      // ═══════════════════════════════════════════════════════════════
+      // CONCLUSION
+      // ═══════════════════════════════════════════════════════════════
+      newPage();
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(16); pdf.setTextColor(15,23,42);
+      pdf.text('Conclusion', ML, y);
+      y += 10;
+      pdf.setDrawColor(59,130,246); pdf.setLineWidth(0.5);
+      pdf.line(ML, y, pageW-MR, y);
+      y += 10;
+      
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(10); pdf.setTextColor(51,65,85);
+      const conclusion = `This comprehensive security assessment of ${targetName} has identified ${bypasses} successful attack vectors out of ${totalAtks} total tests, resulting in a risk score of ${riskScore}/100. ${scoreNum >= 50 ? 'Immediate action is recommended to address the identified vulnerabilities before production deployment.' : 'The system demonstrates reasonable security controls, though continued monitoring and improvement are advised.'}\n\nThis assessment should be repeated periodically as the system evolves and new attack vectors emerge. Regular security testing is essential for maintaining a robust AI security posture.`;
+      
+      const conclusionLines = pdf.splitTextToSize(conclusion, contentW);
+      pdf.text(conclusionLines, ML, y);
+      y += conclusionLines.length * 5 + 15;
+      
+      // Disclaimer
+      pdf.setFillColor(254,243,199); pdf.setDrawColor(251,191,36);
+      pdf.roundedRect(ML, y, contentW, 25, 3, 3, 'FD');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(146,64,14);
+      pdf.text('DISCLAIMER', ML+4, y+6);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(120,53,15);
+      const disclaimer = 'This report is based on automated testing and may not identify all potential vulnerabilities. Manual security review and additional testing methods are recommended for comprehensive security assurance.';
+      const disclaimerLines = pdf.splitTextToSize(disclaimer, contentW-8);
+      pdf.text(disclaimerLines, ML+4, y+12);
+
+      drawFooter();
+      pdf.setProperties({ 
+        title: `AI Security Assessment - ${targetName}`, 
+        subject: 'Red Team Penetration Test Report', 
+        author: 'AI Security Assessment Platform',
+        creator: 'Red-Teaming Agent Dashboard' 
+      });
+      
+      const slug = targetName.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+      const dateSlug = new Date().toISOString().split('T')[0];
+      pdf.save(`security-assessment-${slug}-${dateSlug}.pdf`);
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      alert('PDF export failed. Check the console for details.');
+    } finally {
+      btn.disabled = false; btn.style.opacity = '';
+      labelEl.textContent = origLabel;
+    }
+  }
+</script>
+
+</div>
+</body>
+</html>

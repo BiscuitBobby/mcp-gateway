@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Active Scans</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --surface: rgba(255, 255, 255, 0.85);
+      --surface-border: rgba(226, 232, 240, 0.8);
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --brand: #3b82f6;
+      --brand-hover: #2563eb;
+      --border: #e2e8f0;
+      --radius: 20px;
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.025);
+      --shadow-md: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.02);
+      --transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; background-color: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+      background: radial-gradient(circle at 15% 50%, rgba(59, 130, 246, 0.04) 0%, transparent 40%),
+                  radial-gradient(circle at 85% 30%, rgba(139, 92, 246, 0.03) 0%, transparent 40%),
+                  radial-gradient(circle at 50% 100%, rgba(16, 185, 129, 0.02) 0%, transparent 40%);
+    }
+    body::after {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.6;
+      background-image: linear-gradient(rgba(226, 232, 240, 0.4) 1px, transparent 1px),
+                        linear-gradient(90deg, rgba(226, 232, 240, 0.4) 1px, transparent 1px);
+      background-size: 32px 32px;
+      mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+      -webkit-mask-image: radial-gradient(ellipse at center, black 40%, transparent 80%);
+    }
+    .app-shell { display: flex; min-height: 100vh; }
+    
+    /* GLOBAL SIDEBAR CSS (Minified for brevity) */
+    .global-sidebar { width: 68px; min-height: 100vh; position: fixed; top: 0; left: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; padding: 20px 0 24px; background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-right: 1px solid rgba(226, 232, 240, 0.7); gap: 6px; }
+    .sidebar-logo { width: 38px; height: 38px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3); flex-shrink: 0; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+    .sidebar-logo:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+    .sidebar-logo svg { width: 20px; height: 20px; color: white; }
+    .sidebar-nav { display: flex; flex-direction: column; gap: 4px; width: 100%; padding: 0 10px; }
+    .sidebar-link { position: relative; width: 48px; height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; color: #94a3b8; text-decoration: none; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer; border: 1px solid transparent; overflow: hidden; }
+    .sidebar-link:hover { background: rgba(59, 130, 246, 0.06); color: #3b82f6; border-color: rgba(59, 130, 246, 0.1); transform: scale(1.05); }
+    .sidebar-link.active { background: linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(99, 102, 241, 0.08)); color: #3b82f6; border-color: rgba(59, 130, 246, 0.2); box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1); }
+    .sidebar-link.active::before { content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%); width: 3px; height: 20px; background: linear-gradient(180deg, #3b82f6, #6366f1); border-radius: 0 3px 3px 0; }
+    .sidebar-link svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .sidebar-tooltip { position: absolute; left: 64px; top: 50%; transform: translateY(-50%) translateX(-4px); background: #0f172a; color: white; padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s, transform 0.2s; z-index: 200; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); }
+    .sidebar-tooltip::before { content: ''; position: absolute; left: -4px; top: 50%; transform: translateY(-50%) rotate(45deg); width: 8px; height: 8px; background: #0f172a; }
+    .sidebar-link:hover .sidebar-tooltip { opacity: 1; transform: translateY(-50%) translateX(0); }
+    .sidebar-divider { width: 28px; height: 1px; background: #e2e8f0; margin: 8px 0; flex-shrink: 0; }
+    .app-main { flex: 1; margin-left: 68px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 40px 32px 120px; width: 100%; }
+    
+    .page-header h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; color: var(--text); }
+    .page-header p { font-size: 15px; color: var(--text-muted); line-height: 1.5; margin-bottom: 32px; }
+
+    /* Scan List CSS */
+    .scans-section { background: var(--surface); border: 1px solid var(--surface-border); border-radius: var(--radius); backdrop-filter: blur(20px); padding: 40px; box-shadow: var(--shadow-sm); }
+    .scans-grid { display: flex; flex-direction: column; gap: 12px; }
+    .scan-card {
+      display: grid; grid-template-columns: 48px 1fr auto; grid-template-rows: auto auto;
+      grid-template-areas: "thumb title arrow" "thumb desc arrow";
+      align-items: center; column-gap: 16px; row-gap: 2px; cursor: pointer; transition: all 0.2s ease;
+      border-radius: 12px; padding: 16px 20px; background: #fff; border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); position: relative;
+    }
+    .scan-card::after { content: '→'; grid-area: arrow; font-size: 18px; color: #94a3b8; font-weight: 600; transition: transform 0.2s, color 0.2s; }
+    .scan-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06); border-color: #cbd5e1; }
+    .scan-card:hover::after { transform: translateX(4px); color: var(--brand); }
+    .scan-thumb { grid-area: thumb; width: 48px; height: 48px; border-radius: 10px; margin: 0; transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .scan-card:hover .scan-thumb { transform: scale(1.05); }
+    .scan-title { grid-area: title; font-size: 15px; font-weight: 600; color: var(--text); padding: 0; margin: 0; align-self: end; }
+    .scan-desc { grid-area: desc; font-size: 13.5px; color: var(--text-muted); line-height: 1.4; padding: 0; margin: 0; align-self: start; }
+    
+    @keyframes fadeSlideUp { to { opacity: 1; transform: translateY(0); } }
+    .animate-up { opacity: 0; transform: translateY(20px); animation: fadeSlideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <nav class="global-sidebar">
+      <div class="sidebar-logo" onclick="window.location.href='index.html'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+        </svg>
+      </div>
+      <div class="sidebar-nav">
+        <a href="index.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+          <span class="sidebar-tooltip">Main Page</span>
+        </a>
+        <a href="active-scans.html" class="sidebar-link active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span class="sidebar-tooltip">Active Scans</span>
+        </a>
+        <a href="dashboard.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+          </svg>
+          <span class="sidebar-tooltip">Scan Stats</span>
+        </a>
+        <div class="sidebar-divider"></div>
+        <a href="policies.html" class="sidebar-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M12 2v4"/>
+            <path d="M12 18v4"/>
+            <path d="M6 12h12"/>
+          </svg>
+          <span class="sidebar-tooltip">Policies</span>
+        </a>
+      </div>
+    </nav>
+    <div class="app-main">
+      <div class="container animate-up">
+        <div class="page-header">
+          <h1>Currently Active Scans</h1>
+          <p>Monitor your actively running AI evaluations and security tests.</p>
+        </div>
+        
+        <section class="scans-section">
+          <div class="scans-grid" id="active-scans-grid">
+            <div style="padding: 20px; color: var(--text-muted); text-align: center;">Loading active scans...</div>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Use same origin for API calls (works for both local and deployed)
+    const API = window.location.origin;
+
+    async function loadActiveScans() {
+      const container = document.getElementById('active-scans-grid');
+      try {
+        const resp = await fetch(`${API}/agents`);
+        if (!resp.ok) throw new Error('API error');
+        
+        let agents = await resp.json();
+        
+        // Filter to running/idle only (actively doing something or waiting)
+        agents = agents.filter(a => a.status === 'running' || a.status === 'idle');
+        
+        // Sort by newest first
+        agents.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+
+        let html = '';
+        
+        agents.forEach(agent => {
+          const thumb = 'https://picsum.photos/seed/' + agent.agent_id + '/100';
+          const policiesList = agent.policies ? agent.policies.join(', ') : 'Custom Goal';
+          const statusColor = agent.status === 'running' ? '#10b981' : '#f59e0b';
+          
+          let dateStr = 'Unknown';
+          if(agent.created_at) {
+            dateStr = new Date(agent.created_at).toLocaleString(undefined, {
+              dateStyle: 'short', timeStyle: 'short'
+            });
+          }
+          
+          html += `
+            <div class="scan-card" onclick="window.location.href='active-scan.html?agent_id=${agent.agent_id}'">
+              <img src="${thumb}" class="scan-thumb" />
+              <h3 class="scan-title">Agent: ${agent.agent_id.substring(0,8)}... <span style="font-size:11px;color:${statusColor};border:1px solid ${statusColor};padding:2px 6px;border-radius:10px;margin-left:6px;">${agent.status.toUpperCase()}</span></h3>
+              <p class="scan-desc">Policies: ${policiesList}<br><span style="opacity:0.7">Started: ${dateStr}</span></p>
+            </div>`;
+        });
+        
+        if (agents.length === 0) {
+          html = `<div style="padding: 20px; color: var(--text-muted); text-align: center;">No active scans properly running.</div>`;
+        }
+        
+        container.innerHTML = html;
+      } catch(e) {
+        console.error(e);
+        container.innerHTML = `<div style="padding: 20px; color: #ef4444; text-align: center;">Failed to load active scans. Is the server running?</div>`;
+      }
+    }
+    
+    document.addEventListener('DOMContentLoaded', loadActiveScans);
+    // Poll every 3 seconds
+    setInterval(loadActiveScans, 3000);
+  </script>
+</body>
+</html>

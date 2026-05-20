@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-redteam-platform
+    ports:
+      - "8000:8000"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - BROWSER_USE_API=${BROWSER_USE_API}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      # Mount source code for development (optional - comment out for production)
+      - ./src:/app/src
+      # Persist logs
+      - ./src/logs:/app/src/logs
+      # Persist authentication state and temp files
+      - ./src/temp:/app/src/temp
+    restart: unless-stopped
+    # Required for Chrome/Chromium to run properly
+    shm_size: '2gb'
+    security_opt:
+      - seccomp:unconfined
+    # Optional: limit resources
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '2'
+    #       memory: 4G

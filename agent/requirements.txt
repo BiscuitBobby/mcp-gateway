@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+websockets
+
+browser-use
+playwright
+
+groq
+langchain-groq
+
+pydantic
+
+fpdf
+
+ruff
+piper-tts
