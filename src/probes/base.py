@@ -79,7 +79,11 @@ class StandardProbe(AttackProbe):
             audio_file = item.get("audio_file")
             if send_audio and audio_file and Path(audio_file).exists():
                 audio_response = await execute_file_upload(
-                    session, llm, item["prompt"], Path(audio_file), max_steps=self.max_steps
+                    session,
+                    llm,
+                    item["prompt"],
+                    Path(audio_file),
+                    max_steps=self.max_steps,
                 )
                 deliveries.append(("audio", audio_response))
 
@@ -87,7 +91,11 @@ class StandardProbe(AttackProbe):
             image_file = item.get("image_file")
             if send_images and image_file and Path(image_file).exists():
                 image_response = await execute_file_upload(
-                    session, llm, item["prompt"], Path(image_file), max_steps=self.max_steps
+                    session,
+                    llm,
+                    item["prompt"],
+                    Path(image_file),
+                    max_steps=self.max_steps,
                 )
                 deliveries.append(("image", image_response))
 

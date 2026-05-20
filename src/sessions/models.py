@@ -620,7 +620,6 @@ class LogEntry(BaseModel):
 class AnalyseRequest(BaseModel):
     profile: Optional[AgentProfile] = None
     interface: Optional[InterfaceMap] = None
-    
 
 
 class StartRequest(BaseModel):
@@ -633,4 +632,3 @@ class GenerateRequest(BaseModel):
     interface: Optional[InterfaceMap] = None
     goal: Optional[str] = None
     vulnerabilities: Optional[Any] = None
-

@@ -86,4 +86,3 @@ class ScanRequest(BaseModel):
 class DeliveryOptions(BaseModel):
     send_audio: bool
     send_images: bool
-    

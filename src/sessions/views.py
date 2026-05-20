@@ -15,7 +15,6 @@ from recon.interface_mapping import map_interface
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 from probes.execute import run_all, run_one
 from probes.generate import generate_all
-from pydantic import BaseModel, HttpUrl
 from probes.registry import get_probes
 from probes.utils import get_probe_totals
 from recon.agent import run_goal
@@ -231,6 +230,10 @@ async def run_interface_mapping():
     async def bg_task():
         record.status = AgentStatus.RUNNING
         try:
+            # Honour a pause that arrived before execution started
+            await record.resume_event.wait()
+            if record.status == AgentStatus.STOPPED:
+                return
             result = await map_interface()
             save_recon_data("interface", result)
             record.result = json.dumps(safe_return(result))
@@ -268,6 +271,10 @@ async def run_usecase_identification():
     async def bg_task():
         record.status = AgentStatus.RUNNING
         try:
+            # Honour a pause that arrived before execution started
+            await record.resume_event.wait()
+            if record.status == AgentStatus.STOPPED:
+                return
             full = await profile_target()
             profile = full.to_agent_profile()
             tools = full.to_tool_discovery()
@@ -302,14 +309,49 @@ async def run_tool_discovery():
     cached = load_log("tools")
     if cached:
         return cached
-    # if not browser.ready:
-    #     raise HTTPException(400, "Not authenticated")
-    full = await profile_target()
-    profile = full.to_agent_profile()
-    tools = full.to_tool_discovery()
-    save_recon_data("profile", profile)
-    save_recon_data("tools", tools)
-    return safe_return(tools)
+
+    if not browser.ready:
+        await browser.confirm()
+
+    agent_id = str(uuid.uuid4())
+    session_id = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    record = AgentRecord(
+        agent_id=agent_id, policies=["discover-tools"], session_id=session_id
+    )
+    registry[agent_id] = record
+
+    async def bg_task():
+        record.status = AgentStatus.RUNNING
+        try:
+            # Honour a pause that arrived before execution started
+            await record.resume_event.wait()
+            if record.status == AgentStatus.STOPPED:
+                return
+            full = await profile_target()
+            profile = full.to_agent_profile()
+            tools = full.to_tool_discovery()
+            save_recon_data("profile", profile)
+            save_recon_data("tools", tools)
+            record.result = json.dumps(safe_return(tools))
+            record.status = AgentStatus.DONE
+        except asyncio.CancelledError:
+            record.status = AgentStatus.STOPPED
+            logger.info("Agent %s cancelled", agent_id)
+        except Exception as exc:
+            record.error = str(exc)
+            record.status = AgentStatus.ERROR
+
+    task = asyncio.ensure_future(bg_task())
+    record.task_handle = task
+    return record.to_dict()
+
+
+@router.get("/status/{agent_id}")
+async def get_agent_status(agent_id: str):
+    record = registry.get(agent_id)
+    if not record:
+        raise HTTPException(404, "Not Found")
+    return record.to_dict()
 
 
 @router.post("/generate-payloads")

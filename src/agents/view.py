@@ -5,9 +5,15 @@ from fastapi import (
 )
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
-from agents.models import AgentRecord, AgentStatus, registry, run_probes, ScanRequest, DeliveryOptions
+from agents.models import (
+    AgentRecord,
+    AgentStatus,
+    registry,
+    run_probes,
+    ScanRequest,
+    DeliveryOptions,
+)
 import browser as browser_mod
-from typing import Optional
 import asyncio
 import logging
 import uuid
@@ -19,6 +25,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/agents")
 
 # ── Static / non-parameterised routes first so they are never shadowed ────────
+
 
 @router.get("")
 async def list_agents():
@@ -33,6 +40,7 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
         )
 
     from probes.base import set_delivery_options
+
     set_delivery_options(body.send_audio, body.send_images)
 
     agent_id = str(uuid.uuid4())
@@ -51,6 +59,7 @@ async def scan_policies(body: ScanRequest, background_tasks: BackgroundTasks):
 async def get_delivery():
     """Return current audio/image delivery flag state."""
     from probes.base import send_audio, send_images
+
     return {"send_audio": send_audio, "send_images": send_images}
 
 
@@ -58,6 +67,7 @@ async def get_delivery():
 async def set_delivery(body: DeliveryOptions):
     """Update audio/image delivery flags at runtime — takes effect on the next prompt."""
     from probes.base import set_delivery_options
+
     set_delivery_options(body.send_audio, body.send_images)
     return {"send_audio": body.send_audio, "send_images": body.send_images}
 
@@ -75,6 +85,7 @@ async def get_cdp_url():
 
 
 # ── Parameterised routes ──────────────────────────────────────────────────────
+
 
 @router.get("/{agent_id}")
 async def get_agent(agent_id: str):
@@ -94,6 +105,7 @@ async def stop_agent(agent_id: str):
 
     # Stop the browser_use agent if one is currently running
     from probes.utils import get_current_agent
+
     agent = get_current_agent()
     if agent is not None:
         agent.stop()
@@ -119,12 +131,40 @@ async def pause_agent(agent_id: str):
     if not record:
         raise HTTPException(404, "Agent not found")
     if record.status != AgentStatus.RUNNING:
+        logger.warning(
+            "Pause ignored because agent is not RUNNING: id=%s status=%s",
+            agent_id,
+            record.status,
+        )
         return record.to_dict()
 
     from probes.utils import get_current_agent
+
     agent = get_current_agent()
-    if agent is not None:
-        agent.pause()
+
+    logger.info(
+        "Current runtime agent object: %s (type=%s)",
+        agent,
+        type(agent).__name__ if agent else None,
+    )
+
+    if agent is None:
+        logger.warning(
+            "get_current_agent() returned None for id=%s — "
+            "no agent mid-run; pause will take effect before the next probe",
+            agent_id,
+        )
+    else:
+        logger.info(
+            "Calling pause() on runtime agent for id=%s",
+            agent_id,
+        )
+
+        try:
+            agent.pause()
+            logger.info("pause() completed successfully")
+        except Exception:
+            logger.exception("pause() raised exception")
 
     record.resume_event.clear()
     record.status = AgentStatus.PAUSED
@@ -141,6 +181,7 @@ async def resume_agent(agent_id: str):
         return record.to_dict()
 
     from probes.utils import get_current_agent
+
     agent = get_current_agent()
     if agent is not None:
         agent.resume()

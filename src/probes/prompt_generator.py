@@ -139,8 +139,10 @@ def generate_prompts(
     try:
         data = json.loads(raw)
         print(f"[DEBUG] Parsed JSON type: {type(data)}")
-        print(f"[DEBUG] Parsed JSON keys: {data.keys() if isinstance(data, dict) else 'N/A'}")
-        
+        print(
+            f"[DEBUG] Parsed JSON keys: {data.keys() if isinstance(data, dict) else 'N/A'}"
+        )
+
         if isinstance(data, list):
             items = []
             for entry in data:
@@ -149,15 +151,17 @@ def generate_prompts(
                 elif isinstance(entry, dict) and "category" in entry:
                     items.append(entry)
             data = {"prompts": items}
-        
+
         print(f"[DEBUG] Data before validation: {len(data.get('prompts', []))} prompts")
         parsed = schema_class.model_validate(data)
         result = [p.model_dump() for p in parsed.prompts]
         print(f"[DEBUG] Successfully parsed {len(result)} prompts")
         print(f"[DEBUG] Expected {len(categories)} prompts, got {len(result)} prompts")
-        
+
         if len(result) != len(categories):
-            print(f"[WARNING] Prompt count mismatch! Expected {len(categories)}, got {len(result)}")
+            print(
+                f"[WARNING] Prompt count mismatch! Expected {len(categories)}, got {len(result)}"
+            )
     except Exception as e:
         print(f"[DEBUG] Failed to parse output: {e}")
         logger.exception("Failed to parse %s output: %s", probe_name, raw)
@@ -175,17 +179,26 @@ def generate_prompts(
             if framework == "owasp":
                 audio_dir = media_dir / "audio"
                 from probes.utils import generate_audio
-                result = generate_audio(prompts=result, output_dir=audio_dir, voice="danny")
+
+                result = generate_audio(
+                    prompts=result, output_dir=audio_dir, voice="danny"
+                )
             else:
                 if session_id:
                     # Session-scoped: write audio into the temp dir
                     audio_dir = media_dir / "audio"
                     from probes.utils import generate_audio as _gen_audio
-                    result = _gen_audio(prompts=result, output_dir=audio_dir, voice="danny")
+
+                    result = _gen_audio(
+                        prompts=result, output_dir=audio_dir, voice="danny"
+                    )
                 else:
                     # Static fallback: use the MITRE wrapper (writes to source tree)
                     from probes.mitre.generate_audio_prompts import generate_audio
-                    result = generate_audio(result, probe_name=config.get("dir_name", probe_name))
+
+                    result = generate_audio(
+                        result, probe_name=config.get("dir_name", probe_name)
+                    )
             output_file.write_text(json.dumps(result, indent=2), encoding="utf-8")
         except Exception:
             logger.exception("Failed to generate audio for %s", probe_name)
@@ -193,12 +206,15 @@ def generate_prompts(
     if result and config.get("has_images"):
         try:
             from probes.generate_images import generate_images
+
             framework = config["framework"]
             image_dir = media_dir / "images" if session_id else None
             result = generate_images(
                 result,
                 output_dir=image_dir,
-                probe_name=config.get("dir_name", probe_name) if not image_dir else None,
+                probe_name=config.get("dir_name", probe_name)
+                if not image_dir
+                else None,
                 framework=framework if not image_dir else None,
             )
             output_file.write_text(json.dumps(result, indent=2), encoding="utf-8")

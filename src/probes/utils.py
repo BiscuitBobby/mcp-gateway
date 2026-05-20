@@ -58,7 +58,7 @@ def build_payload_file(payload_spec: dict) -> Optional[Path]:
         )
         tmp.write(content)
         tmp.flush()
-        tmp.close()  
+        tmp.close()
         return Path(tmp.name)
     except Exception as e:
         logger.error(f"Failed to build payload file: {e}")
@@ -132,7 +132,7 @@ async def execute_prompt_with_file(
     agent = Agent(
         llm=llm,
         browser=session.browser,
-        available_file_paths=[str(file_path)],  
+        available_file_paths=[str(file_path)],
         task=(
             "You are already on the correct target website.\n"
             "Do not navigate away or open new tabs.\n\n"

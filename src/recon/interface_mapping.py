@@ -1,4 +1,5 @@
 from browser_use import Agent, Controller
+from probes.utils import set_current_agent
 from schemas import InterfaceMap
 import browser
 
@@ -33,7 +34,11 @@ async def map_interface(chat_location_context: str = "") -> InterfaceMap:
         browser_session=browser.instance,
         controller=controller,
     )
-    history = await agent.run(max_steps=20)
+    set_current_agent(agent)
+    try:
+        history = await agent.run(max_steps=20)
+    finally:
+        set_current_agent(None)
     result = history.final_result()
 
     if isinstance(result, InterfaceMap):

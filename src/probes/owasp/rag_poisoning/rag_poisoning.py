@@ -7,7 +7,7 @@ from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.prompt_generator import generate_prompts as generate_rag_prompts
 from probes.owasp.rag_poisoning.generate_documents import main as generate_documents
-from probes.utils import load_prompts, default_logger
+from probes.utils import load_prompts, default_logger, set_current_agent
 
 PROMPTS_FILE = Path(__file__).parent / "rag_poisoning_prompts.json"
 DOCS_DIR = Path(__file__).parent / "poisoned_docs"
@@ -29,6 +29,7 @@ class RagPoisoning(AttackProbe):
             vulnerabilities=getattr(session, "vuln_report", None),
         )
         from probes.prompt_generator import session_output_path
+
         sid = getattr(session, "session_id", None)
         if sid:
             prompts_path = session_output_path("rag_poisoning", sid)
@@ -88,7 +89,7 @@ class RagPoisoning(AttackProbe):
         if doc_path is None:
             return None
         all_docs = [str(p) for p in DOCS_DIR.iterdir() if p.is_file()]
-        history = await Agent(
+        agent = Agent(
             llm=llm,
             browser=session.browser,
             available_file_paths=all_docs,
@@ -102,11 +103,16 @@ class RagPoisoning(AttackProbe):
                 "4. Return only the visible AI response text."
             ),
             max_steps=MAX_STEPS,
-        ).run()
+        )
+        set_current_agent(agent)
+        try:
+            history = await agent.run()
+        finally:
+            set_current_agent(None)
         return history.final_result() if history else None
 
     async def execute_url(self, session, llm, prompt: str) -> Optional[str]:
-        history = await Agent(
+        agent = Agent(
             llm=llm,
             browser=session.browser,
             task=(
@@ -119,5 +125,10 @@ class RagPoisoning(AttackProbe):
                 f"Message:\n{prompt}"
             ),
             max_steps=MAX_STEPS,
-        ).run()
+        )
+        set_current_agent(agent)
+        try:
+            history = await agent.run()
+        finally:
+            set_current_agent(None)
         return history.final_result() if history else None

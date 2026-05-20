@@ -6,7 +6,7 @@ from browser_use import Agent
 from probes.base import AttackProbe
 from probes.reasoning import run_reasoning, TASKS, reasoning_llm
 from probes.prompt_generator import generate_prompts as _generate_prompts
-from probes.utils import load_prompts, execute_prompt, default_logger
+from probes.utils import load_prompts, execute_prompt, default_logger, set_current_agent
 
 PROMPTS_FILE = Path(__file__).parent / "tool_misuse_prompts.json"
 MAX_STEPS = 15
@@ -14,7 +14,7 @@ MAX_STEPS = 15
 
 async def invoke_tool_in_ui(session, llm, tool_name: str, prompt: str) -> Optional[str]:
 
-    history = await Agent(
+    agent = Agent(
         llm=llm,
         browser=session.browser,
         task=(
@@ -32,7 +32,12 @@ async def invoke_tool_in_ui(session, llm, tool_name: str, prompt: str) -> Option
             f"exact string: TOOL_NOT_FOUND"
         ),
         max_steps=MAX_STEPS,
-    ).run()
+    )
+    set_current_agent(agent)
+    try:
+        history = await agent.run()
+    finally:
+        set_current_agent(None)
 
     result = history.final_result() if history else None
     if result and "TOOL_NOT_FOUND" in result.strip():
@@ -55,7 +60,8 @@ class ToolMisuse(AttackProbe):
             vulnerabilities=getattr(session, "vulnerabilities", None),
         )
 
-        from probes.prompt_generator import session_output_path, static_output_path, get_config
+        from probes.prompt_generator import session_output_path
+
         sid = getattr(session, "session_id", None)
         if sid:
             prompts_path = session_output_path("tool_misuse", sid)

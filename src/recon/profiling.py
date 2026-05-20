@@ -1,4 +1,5 @@
 from browser_use import Agent, Controller
+from probes.utils import set_current_agent
 from pydantic import BaseModel
 import browser
 
@@ -40,7 +41,11 @@ async def run_recon(output_model: type[BaseModel], max_steps: int = 20) -> BaseM
         browser_session=browser.instance,
         controller=controller,
     )
-    history = await agent.run(max_steps=max_steps)
+    set_current_agent(agent)
+    try:
+        history = await agent.run(max_steps=max_steps)
+    finally:
+        set_current_agent(None)
     result = history.final_result()
 
     if isinstance(result, output_model):
